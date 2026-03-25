@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分數除法練習</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%);
+            min-height: 100vh; padding: 20px; user-select: none;
+        }
+        .app-container { max-width: 850px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 32px; color: #1565c0; margin-bottom: 6px; }
+        .header p { font-size: 16px; color: #555; }
+        .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); padding: 30px; }
+        .question-label { font-size: 14px; color: #999; margin-bottom: 6px; }
+        .question-text { font-size: 22px; color: #333; line-height: 1.6; margin-bottom: 10px; }
+        .question-math { font-size: 20px; color: #1565c0; font-weight: bold; text-align: center; margin: 14px 0; padding: 12px; background: #e3f2fd; border-radius: 10px; }
+        .visual-area { margin: 20px 0; }
+        .visual-area h3 { font-size: 16px; color: #666; margin-bottom: 10px; text-align: center; }
+        .remaining-display { text-align: center; font-size: 20px; font-weight: bold; color: #1565c0; margin-bottom: 12px; padding: 8px 16px; background: #e3f2fd; border-radius: 10px; }
+        .remaining-display .liters { color: #e65100; font-size: 24px; }
+        .cups-and-trash { display: flex; align-items: flex-start; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .cups-area { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; flex: 1; min-height: 70px; padding: 10px; border: 2px dashed #bbdefb; border-radius: 12px; background: #f8fbff; transition: all 0.3s; }
+        .liter-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .liter-group-cups { display: flex; gap: 4px; padding: 6px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; position: relative; transition: all 0.3s; }
+        .liter-group-cups.all-removed { border-color: #eee; background: #f5f5f5; opacity: 0.5; }
+        .liter-group-label { font-size: 13px; font-weight: bold; color: #1565c0; background: #e3f2fd; padding: 2px 10px; border-radius: 8px; }
+        .liter-group-label.partial-label { color: #e65100; background: #fff3e0; }
+        .liter-group-remaining { font-size: 11px; color: #999; }
+        .cup { width: 48px; height: 56px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 2px solid rgba(0,0,0,0.15); cursor: grab; transition: all 0.2s; position: relative; }
+        .cup:active { cursor: grabbing; }
+        .cup:hover { transform: scale(1.1); z-index: 10; }
+        .cup.dragging { opacity: 0.4; transform: scale(0.9); }
+        .cup .cup-icon { font-size: 20px; }
+        .cup .cup-label { font-size: 10px; margin-top: 2px; }
+        .cup .cup-label .frac { font-size: 1em; }
+        .cup .cup-label .frac .num { border-bottom-width: 1px; padding: 0 2px 1px; }
+        .cup .cup-label .frac .den { padding: 1px 2px 0; }
+        .cup-full { background: linear-gradient(135deg, #42a5f5, #1e88e5); }
+        .cup-half { background: linear-gradient(to top, #66bb6a 50%, #e0e0e0 50%); width: 48px; }
+        .cup-half .cup-icon { position: relative; }
+        .cup-half .half-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #999; border-radius: 1px; }
+        .cup.removing { animation: cupRemove 0.5s ease forwards; }
+        @keyframes cupRemove { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.5) rotate(20deg); opacity: 0.5; } 100% { transform: scale(0) rotate(45deg); opacity: 0; } }
+        .trash-zone { width: 100px; min-height: 110px; border: 3px dashed #bbb; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #fafafa; transition: all 0.3s; flex-shrink: 0; }
+        .trash-zone.drag-over { border-color: #ef5350; background: #ffebee; transform: scale(1.08); box-shadow: 0 0 20px rgba(239,83,80,0.3); }
+        .trash-icon { font-size: 40px; transition: transform 0.3s; }
+        .trash-zone.drag-over .trash-icon { transform: scale(1.2) rotate(-10deg); }
+        .trash-label { font-size: 13px; color: #999; font-weight: bold; }
+        .trash-count { font-size: 12px; color: #ef5350; font-weight: bold; }
+        .reset-row { text-align: center; margin-top: 10px; }
+        .btn-reset { padding: 6px 18px; font-size: 14px; font-weight: bold; border: 2px solid #ef5350; border-radius: 8px; background: #fff; color: #ef5350; cursor: pointer; transition: all 0.2s; }
+        .btn-reset:hover { background: #ef5350; color: #fff; }
+        .visual-legend { display: flex; justify-content: center; gap: 20px; font-size: 13px; color: #666; margin-top: 10px; }
+        .legend-dot { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 4px; }
+        .answer-section { margin-top: 20px; }
+        .answer-section label { font-size: 18px; font-weight: bold; color: #333; display: block; margin-bottom: 10px; }
+        .fraction-input-group { display: flex; align-items: center; gap: 6px; }
+        .fraction-input-group input { width: 60px; height: 44px; text-align: center; font-size: 22px; border: 2px solid #bbb; border-radius: 8px; outline: none; transition: border-color 0.2s; }
+        .fraction-input-group input:focus { border-color: #1565c0; }
+        .fraction-input-group .divider { font-size: 30px; color: #666; font-weight: bold; }
+        .fraction-input-group .label-text { font-size: 14px; color: #888; }
+        .btn { padding: 12px 28px; font-size: 18px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+        .btn-submit { background: linear-gradient(135deg, #66bb6a, #43a047); color: #fff; }
+        .btn-hint { background: linear-gradient(135deg, #ffb74d, #ff9800); color: #fff; font-size: 15px; padding: 10px 20px; }
+        .btn-row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .feedback { margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 20px; font-weight: bold; text-align: center; display: none; }
+        .feedback.correct { background: #c8e6c9; color: #2e7d32; display: block; }
+        .feedback.wrong { background: #ffcdd2; color: #c62828; display: block; }
+        .steps { margin-top: 20px; display: none; }
+        .steps.show { display: block; }
+        .steps h3 { font-size: 18px; color: #1565c0; margin-bottom: 12px; }
+        .step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 10px 14px; background: #f5f5f5; border-radius: 10px; font-size: 16px; line-height: 1.6; }
+        .step-num { background: #1565c0; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; margin-top: 2px; }
+        .step-content { flex: 1; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 3px; font-size: 0.85em; }
+        .frac .num { border-bottom: 2px solid #333; padding: 0 4px 2px; }
+        .frac .den { padding: 2px 4px 0; }
+        .tip-text { text-align: center; font-size: 14px; color: #999; margin-top: 6px; font-style: italic; }
+        @media (max-width: 600px) { .header h1 { font-size: 24px; } .question-text { font-size: 18px; } .card { padding: 20px; } .fraction-input-group input { width: 50px; height: 40px; font-size: 18px; } .cup { width: 40px; height: 48px; } .cup .cup-icon { font-size: 16px; } }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>&#x1F9C3; &#x5206;&#x6578;&#x9664;&#x6CD5;&#x7DF4;&#x7FD2;</h1>
+        <p>&#x5B78;&#x7FD2;&#x7528;&#x5206;&#x6578;&#x9664;&#x6CD5;&#x89E3;&#x6C7A;&#x751F;&#x6D3B;&#x4E2D;&#x7684;&#x554F;&#x984C;&#xFF01;</p>
+    </div>
+    <div class="card">
+        <div class="question-label">&#x1F4D6; &#x984C;&#x76EE;</div>
+        <div class="question-text">&#x1F9C3; &#x5982;&#x679C;&#x6211;&#x6709; <b>3 <span class="frac"><span class="num">5</span><span class="den">8</span></span> L</b> &#x7684;&#x679C;&#x6C41;&#xFF0C;&#x5012;&#x6EFF;&#x4E00;&#x676F;&#x9700;&#x8981; <b><span class="frac"><span class="num">1</span><span class="den">4</span></span> L</b>&#xFF0C;&#x53EF;&#x4EE5;&#x5012;&#x6EFF;&#x591A;&#x5C11;&#x676F;&#x5462;&#xFF1F;</div>
+        <div class="question-math"><b>3</b> <span class="frac"><span class="num">5</span><span class="den">8</span></span> &#xF7; <span class="frac"><span class="num">1</span><span class="den">4</span></span> = &#xFF1F;</div>
+        <div class="visual-area">
+            <h3>&#x1F4CA; &#x4E92;&#x52D5;&#x5716;&#x793A; &#x2014; &#x628A;&#x676F;&#x5B50;&#x62D6;&#x5230;&#x5783;&#x573E;&#x6876;&#xFF01;</h3>
+            <div class="remaining-display">&#x5269;&#x9918;&#x679C;&#x6C41;&#xFF1A;<span class="liters" id="remainDisplay">3 <span class="frac"><span class="num">5</span><span class="den">8</span></span> L</span>&#xFF08;&#x5DF2;&#x5012; <span id="pouredDisplay">0</span> &#x676F;&#xFF09;</div>
+            <div class="cups-and-trash">
+                <div class="cups-area" id="cupsArea"></div>
+                <div class="trash-zone" id="trashZone">
+                    <div class="trash-icon">&#x1F5D1;&#xFE0F;</div>
+                    <div class="trash-label">&#x62D6;&#x5230;&#x9019;&#x88E1;</div>
+                    <div class="trash-count" id="trashCount"></div>
+                </div>
+            </div>
+            <div class="tip-text">&#x1F449; &#x9EDE;&#x64CA;&#x676F;&#x5B50;&#x6216;&#x62D6;&#x5230;&#x5783;&#x573E;&#x6876;&#x4F86;&#x79FB;&#x9664;</div>
+            <div class="reset-row"><button class="btn-reset" onclick="resetCups()">&#x21BA; &#x91CD;&#x7F6E;&#x676F;&#x5B50;</button></div>
+            <div class="visual-legend">
+                <span><span class="legend-dot" style="background:#42a5f5;"></span> &#x5B8C;&#x6574;&#x4E00;&#x676F; (<span class="frac"><span class="num">1</span><span class="den">4</span></span> L)</span>
+                <span><span class="legend-dot" style="background:#66bb6a;"></span> &#x534A;&#x676F; (<span class="frac"><span class="num">1</span><span class="den">8</span></span> L)</span>
+            </div>
+        </div>
+        <div class="answer-section">
+            <label>&#x270F;&#xFE0F; &#x8ACB;&#x8F38;&#x5165;&#x4F60;&#x7684;&#x7B54;&#x6848;&#xFF1A;</label>
+            <div class="fraction-input-group">
+                <div><div class="label-text">&#x6574;&#x6578;</div><input type="number" id="ansWhole" min="0" placeholder="0"></div>
+                <div><div class="label-text">&#x5206;&#x5B50;</div><input type="number" id="ansNum" min="0" placeholder="0"></div>
+                <span class="divider">/</span>
+                <div><div class="label-text">&#x5206;&#x6BCD;</div><input type="number" id="ansDen" min="1" placeholder="1"></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-submit" id="submitBtn" onclick="checkAnswer()">&#x63D0;&#x4EA4;&#x7B54;&#x6848;</button>
+                <button class="btn btn-hint" onclick="showHint()">&#x1F4A1; &#x63D0;&#x793A;</button>
+            </div>
+        </div>
+        <div class="feedback" id="feedback"></div>
+        <div class="steps" id="stepsArea"></div>
+    </div>
+</div>
+<script>
+var TOTAL_EIGHTHS = 29;
+var FULL_CUP_EIGHTHS = 2;
+var HALF_CUP_EIGHTHS = 1;
+var remainEighths = TOTAL_EIGHTHS;
+var ANS_NUM = 29, ANS_DEN = 2;
+
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a; }
+
+function formatFraction(eighths) {
+    if (eighths === 0) return '0 L';
+    var num = eighths, den = 8, g = gcd(num, den);
+    num /= g; den /= g;
+    if (den === 1) return num + ' L';
+    var whole = Math.floor(num / den), rem = num - whole * den;
+    if (whole === 0) return rem + '/' + den + ' L';
+    if (rem === 0) return whole + ' L';
+    return whole + ' ' + rem + '/' + den + ' L';
+}
+
+function fracHTML(num, den) {
+    return '<span class="frac"><span class="num">' + num + '</span><span class="den">' + den + '</span></span>';
+}
+
+function formatFractionHTML(eighths) {
+    if (eighths === 0) return '0 L';
+    var num = eighths, den = 8, g = gcd(num, den);
+    num /= g; den /= g;
+    if (den === 1) return num + ' L';
+    var whole = Math.floor(num / den), rem = num - whole * den;
+    if (whole === 0) return fracHTML(rem, den) + ' L';
+    if (rem === 0) return whole + ' L';
+    return whole + ' ' + fracHTML(rem, den) + ' L';
+}
+
+function updateDisplay() {
+    document.getElementById('remainDisplay').innerHTML = formatFractionHTML(remainEighths);
+    var currentFull = document.querySelectorAll('.cup-full:not(.removed)').length;
+    var currentHalf = document.querySelectorAll('.cup-half:not(.removed)').length;
+    var fullRemoved = 14 - currentFull;
+    var halfRemoved = 1 - currentHalf;
+    var totalPoured = fullRemoved + halfRemoved * 0.5;
+    if (totalPoured === Math.floor(totalPoured)) {
+        document.getElementById('pouredDisplay').innerHTML = '' + totalPoured;
+    } else {
+        var w = Math.floor(totalPoured);
+        document.getElementById('pouredDisplay').innerHTML = w > 0 ? w + ' ' + fracHTML(1, 2) : fracHTML(1, 2);
+    }
+    document.getElementById('trashCount').textContent = (fullRemoved + halfRemoved) > 0 ? (fullRemoved + halfRemoved) + ' \u676F\u5DF2\u79FB\u9664' : '';
+}
+
+function removeCup(el) {
+    if (el.classList.contains('removed')) return;
+    var isHalf = el.classList.contains('cup-half');
+    remainEighths -= isHalf ? HALF_CUP_EIGHTHS : FULL_CUP_EIGHTHS;
+    el.classList.add('removing', 'removed');
+    setTimeout(function() { el.style.display = 'none'; updateDisplay(); updateGroupLabels(); }, 480);
+    updateDisplay(); updateGroupLabels();
+}
+
+function makeCup(isFull) {
+    var cup = document.createElement('div');
+    cup.className = isFull ? 'cup cup-full' : 'cup cup-half';
+    cup.draggable = true;
+    if (isFull) {
+        cup.innerHTML = '<div class="cup-icon">\uD83E\uDD64</div><div class="cup-label">' + fracHTML(1, 4) + ' L</div>';
+    } else {
+        cup.innerHTML = '<div class="cup-icon" style="position:relative;">\uD83E\uDD64<div class="half-line"></div></div><div class="cup-label">' + fracHTML(1, 8) + ' L</div>';
+    }
+    cup.addEventListener('click', function() { removeCup(this); });
+    cup.addEventListener('dragstart', handleDragStart);
+    cup.addEventListener('dragend', handleDragEnd);
+    cup.addEventListener('touchstart', handleTouchStart, {passive: false});
+    cup.addEventListener('touchmove', handleTouchMove, {passive: false});
+    cup.addEventListener('touchend', handleTouchEnd);
+    return cup;
+}
+
+function renderCups() {
+    var area = document.getElementById('cupsArea');
+    area.innerHTML = '';
+    remainEighths = TOTAL_EIGHTHS;
+    // 14 full cups + 1 half cup
+    // Group: 4 cups = 1L. So groups of [4,4,4] = 3L, then 2 full + 1 half = 5/8 L
+    var cupIndex = 0;
+    // First 3 groups of 4 (= 3 L)
+    for (var g = 0; g < 3; g++) {
+        var group = document.createElement('div');
+        group.className = 'liter-group';
+        var label = document.createElement('div');
+        label.className = 'liter-group-label';
+        label.innerHTML = '= 1 L';
+        var cupsDiv = document.createElement('div');
+        cupsDiv.className = 'liter-group-cups';
+        cupsDiv.setAttribute('data-group', g);
+        for (var c = 0; c < 4; c++) {
+            cupsDiv.appendChild(makeCup(true));
+            cupIndex++;
+        }
+        group.appendChild(cupsDiv);
+        group.appendChild(label);
+        area.appendChild(group);
+    }
+    // Last group: 2 full cups + 1 half cup = 5/8 L
+    var lastGroup = document.createElement('div');
+    lastGroup.className = 'liter-group';
+    var lastCupsDiv = document.createElement('div');
+    lastCupsDiv.className = 'liter-group-cups';
+    lastCupsDiv.setAttribute('data-group', 3);
+    lastCupsDiv.appendChild(makeCup(true));
+    lastCupsDiv.appendChild(makeCup(true));
+    lastCupsDiv.appendChild(makeCup(false));
+    var lastLabel = document.createElement('div');
+    lastLabel.className = 'liter-group-label partial-label';
+    lastLabel.innerHTML = '= ' + fracHTML(5, 8) + ' L';
+    lastGroup.appendChild(lastCupsDiv);
+    lastGroup.appendChild(lastLabel);
+    area.appendChild(lastGroup);
+    updateDisplay();
+    updateGroupLabels();
+}
+
+function updateGroupLabels() {
+    var groups = document.querySelectorAll('.liter-group');
+    for (var i = 0; i < groups.length; i++) {
+        var cupsDiv = groups[i].querySelector('.liter-group-cups');
+        var label = groups[i].querySelector('.liter-group-label');
+        var fullCups = cupsDiv.querySelectorAll('.cup-full:not(.removed)').length;
+        var halfCups = cupsDiv.querySelectorAll('.cup-half:not(.removed)').length;
+        var eighths = fullCups * 2 + halfCups * 1;
+        var allRemoved = (eighths === 0);
+        if (allRemoved) { cupsDiv.classList.add('all-removed'); } else { cupsDiv.classList.remove('all-removed'); }
+        label.innerHTML = '= ' + formatFractionHTML(eighths);
+        if (allRemoved) { label.innerHTML = '= 0 L'; }
+    }
+}
+
+var draggedEl = null;
+function handleDragStart(e) { draggedEl = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function handleDragEnd(e) { this.classList.remove('dragging'); draggedEl = null; }
+
+var trashZone = document.getElementById('trashZone');
+trashZone.addEventListener('dragover', function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; this.classList.add('drag-over'); });
+trashZone.addEventListener('dragleave', function(e) { this.classList.remove('drag-over'); });
+trashZone.addEventListener('drop', function(e) { e.preventDefault(); this.classList.remove('drag-over'); if (draggedEl) { removeCup(draggedEl); draggedEl = null; } });
+
+var touchEl = null, touchClone = null;
+function handleTouchStart(e) {
+    e.preventDefault(); touchEl = this; this.classList.add('dragging');
+    touchClone = this.cloneNode(true); touchClone.style.position = 'fixed'; touchClone.style.pointerEvents = 'none';
+    touchClone.style.zIndex = '9999'; touchClone.style.opacity = '0.8'; touchClone.style.transform = 'scale(1.15)';
+    document.body.appendChild(touchClone);
+    var touch = e.touches[0]; touchClone.style.left = (touch.clientX - 24) + 'px'; touchClone.style.top = (touch.clientY - 28) + 'px';
+}
+function handleTouchMove(e) {
+    e.preventDefault(); if (!touchClone) return;
+    var touch = e.touches[0]; touchClone.style.left = (touch.clientX - 24) + 'px'; touchClone.style.top = (touch.clientY - 28) + 'px';
+    var r = trashZone.getBoundingClientRect();
+    if (touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) { trashZone.classList.add('drag-over'); } else { trashZone.classList.remove('drag-over'); }
+}
+function handleTouchEnd(e) {
+    if (touchClone) { document.body.removeChild(touchClone); touchClone = null; }
+    if (touchEl) {
+        touchEl.classList.remove('dragging');
+        var touch = e.changedTouches[0], r = trashZone.getBoundingClientRect();
+        if (touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) { removeCup(touchEl); }
+        trashZone.classList.remove('drag-over'); touchEl = null;
+    }
+}
+
+function resetCups() { renderCups(); }
+
+function checkAnswer() {
+    var userWhole = parseInt(document.getElementById('ansWhole').value) || 0;
+    var userNum = parseInt(document.getElementById('ansNum').value) || 0;
+    var userDen = parseInt(document.getElementById('ansDen').value) || 0;
+    if (userDen === 0 && userNum > 0) { alert('\u5206\u6BCD\u4E0D\u80FD\u70BA 0 \u5594\uFF01'); return; }
+    if (userDen === 0) userDen = 1;
+    var userImpNum = userWhole * userDen + userNum;
+    var isCorrect = (userImpNum * ANS_DEN === ANS_NUM * userDen);
+    var fb = document.getElementById('feedback');
+    if (isCorrect) { fb.className = 'feedback correct'; fb.innerHTML = '\uD83C\uDF89 \u7B54\u5C0D\u4E86\uFF01\u4F60\u771F\u68D2\uFF01\u7B54\u6848\u662F 14 ' + fracHTML(1,2) + ' \u676F\uFF01'; }
+    else { fb.className = 'feedback wrong'; fb.innerHTML = '\u274C \u4E0D\u5C0D\u5594\uFF0C\u6B63\u78BA\u7B54\u6848\u662F 14 ' + fracHTML(1,2) + ' \u676F\u3002\u770B\u770B\u4E0B\u9762\u7684\u89E3\u984C\u6B65\u9A5F\u5427\uFF01'; }
+    showSteps(); document.getElementById('submitBtn').style.display = 'none';
+}
+
+function showSteps() {
+    var area = document.getElementById('stepsArea');
+    var steps = [
+        '\u5217\u51FA\u7B97\u5F0F\uFF1A3 ' + fracHTML(5,8) + ' \u00F7 ' + fracHTML(1,4),
+        '\u628A\u5E36\u5206\u6578\u8B8A\u6210\u5047\u5206\u6578\uFF1A3 \u00D7 8 + 5 = 29\uFF0C\u6240\u4EE5 3 ' + fracHTML(5,8) + ' = ' + fracHTML(29,8),
+        '\u9664\u4EE5\u4E00\u500B\u5206\u6578 = \u4E58\u4EE5\u5B83\u7684\u5012\u6578\uFF1A' + fracHTML(29,8) + ' \u00F7 ' + fracHTML(1,4) + ' \u2192 ' + fracHTML(29,8) + ' \u00D7 ' + fracHTML(4,1),
+        '\u5206\u5B50 \u00D7 \u5206\u5B50\uFF0C\u5206\u6BCD \u00D7 \u5206\u6BCD\uFF1A29 \u00D7 4 = 116\uFF0C8 \u00D7 1 = 8\uFF0C\u5F97\u5230 ' + fracHTML(116,8),
+        '\u7D04\u5206\uFF1A' + fracHTML(116,8) + ' = ' + fracHTML(29,2) + '\uFF08116 \u548C 8 \u7684\u6700\u5927\u516C\u56E0\u6578\u662F 4\uFF09',
+        '\u5316\u6210\u5E36\u5206\u6578\uFF1A29 \u00F7 2 = 14 \u9918 1\uFF0C\u6240\u4EE5\u7B54\u6848\u662F <b>14 ' + fracHTML(1,2) + '</b> \u676F'
+    ];
+    var html = '<h3>\uD83D\uDCDD \u89E3\u984C\u6B65\u9A5F</h3>';
+    for (var i = 0; i < steps.length; i++) { html += '<div class="step"><div class="step-num">' + (i+1) + '</div><div class="step-content">' + steps[i] + '</div></div>'; }
+    area.innerHTML = html; area.className = 'steps show';
+}
+
+function showHint() { alert('\uD83D\uDCA1 \u63D0\u793A\uFF1A\u9664\u4EE5\u4E00\u500B\u5206\u6578\uFF0C\u7B49\u65BC\u4E58\u4EE5\u90A3\u500B\u5206\u6578\u7684\u5012\u6578\u3002\n\n\u5148\u628A 3 5/8 \u8B8A\u6210\u5047\u5206\u6578 \u2192 29/8\n\u7136\u5F8C\u628A \u00F7 1/4 \u8B8A\u6210 \u00D7 4/1'); }
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Enter' && document.getElementById('submitBtn').style.display !== 'none') { checkAnswer(); } });
+renderCups(); document.getElementById('ansWhole').focus();
+</script>
+</body>
+</html>
