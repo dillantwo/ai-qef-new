@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Display</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+    user-select: none;
+  }
+  #map-container {
+    position: relative;
+    width: 80%;
+    max-width: 800px;
+  }
+  #map {
+    width: 100%;
+    display: block;
+  }
+  #sprite {
+    position: absolute;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: url('/english/facingNorth.png');
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+  
+  /* Touch Controls positioned at bottom-right of map */
+  #controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    z-index: 20;
+  }
+  
+  .control-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  
+  .control-btn {
+    background-color: rgba(76, 175, 80, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: all 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .control-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    background-color: rgba(69, 160, 73, 0.9);
+  }
+  
+  .control-btn:hover {
+    background-color: rgba(69, 160, 73, 0.9);
+  }
+</style>
+</head>
+<body>
+<div id="map-container">
+  <img id="map" src="/english/map2.png" alt="Map of a specific location">
+  <div id="sprite"></div>
+  
+  <!-- Touch Controls positioned at bottom-right of map -->
+  <div id="controls">
+    <div class="control-row">
+      <button class="control-btn" id="up-btn">↑</button>
+    </div>
+    <div class="control-row">
+      <button class="control-btn" id="left-btn">←</button>
+      <button class="control-btn" id="down-btn">↓</button>
+      <button class="control-btn" id="right-btn">→</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sprite = document.getElementById('sprite');
+  const mapContainer = document.getElementById('map-container');
+  const mapImage = document.getElementById('map');
+  let spriteX = 50;
+  let spriteY = 50;
+
+  function setSpriteSize() {
+    const mapWidth = mapImage.offsetWidth;
+    const mapHeight = mapImage.offsetHeight;
+    
+    // Set sprite width to 1/15 of map width
+    const spriteWidth = mapWidth / 15;
+    const spriteHeight = spriteWidth * 2;
+    
+    sprite.style.width = `${spriteWidth}px`;
+    sprite.style.height = `${spriteHeight}px`;
+  }
+
+  function setControlSize() {
+    const mapWidth = mapImage.offsetWidth;
+    
+    // Control button size relative to map width (1/20 of map width)
+    const buttonSize = mapWidth / 20;
+    const fontSize = buttonSize * 0.4; // Font size relative to button size
+    
+    const buttons = document.querySelectorAll('.control-btn');
+    buttons.forEach(button => {
+      button.style.width = `${buttonSize}px`;
+      button.style.height = `${buttonSize}px`;
+      button.style.fontSize = `${fontSize}px`;
+    });
+  }
+
+  function updateSizes() {
+    setSpriteSize();
+    setControlSize();
+  }
+
+  function moveSprite(direction) {
+    switch (direction) {
+      case 'up':
+        spriteY = Math.max(5, spriteY - 5);
+        sprite.style.backgroundImage = "url('/english/facingNorth.png')";
+        break;
+      case 'down':
+        spriteY = Math.min(95, spriteY + 5);
+        sprite.style.backgroundImage = "url('/english/facingSouth.png')";
+        break;
+      case 'left':
+        spriteX = Math.max(5, spriteX - 5);
+        sprite.style.backgroundImage = "url('/english/facingWest.png')";
+        break;
+      case 'right':
+        spriteX = Math.min(95, spriteX + 5);
+        sprite.style.backgroundImage = "url('/english/facingEast.png')";
+        break;
+    }
+    sprite.style.top = `${spriteY}%`;
+    sprite.style.left = `${spriteX}%`;
+  }
+
+  // Set sizes when map loads
+  mapImage.addEventListener('load', updateSizes);
+  
+  // Update sizes on window resize
+  window.addEventListener('resize', updateSizes);
+  
+  // Set sizes immediately if image is already loaded
+  if (mapImage.complete) {
+    updateSizes();
+  }
+
+  // Keyboard controls
+  document.addEventListener('keydown', (event) => {
+    switch (event.key) {
+      case 'ArrowUp':
+        moveSprite('up');
+        break;
+      case 'ArrowDown':
+        moveSprite('down');
+        break;
+      case 'ArrowLeft':
+        moveSprite('left');
+        break;
+      case 'ArrowRight':
+        moveSprite('right');
+        break;
+    }
+  });
+
+  // Touch controls
+  document.getElementById('up-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    moveSprite('up');
+  });
+
+  document.getElementById('down-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    moveSprite('down');
+  });
+
+  document.getElementById('left-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    moveSprite('left');
+  });
+
+  document.getElementById('right-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    moveSprite('right');
+  });
+
+  // Click events for mouse users
+  document.getElementById('up-btn').addEventListener('click', () => moveSprite('up'));
+  document.getElementById('down-btn').addEventListener('click', () => moveSprite('down'));
+  document.getElementById('left-btn').addEventListener('click', () => moveSprite('left'));
+  document.getElementById('right-btn').addEventListener('click', () => moveSprite('right'));
+
+  // Enable keyboard controls
+  document.body.tabIndex = 0;
+  document.body.focus();
+  
+  document.body.addEventListener('click', () => {
+    document.body.focus();
+  });
+</script>
+</body>
+</html>

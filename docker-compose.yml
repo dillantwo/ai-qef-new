@@ -1,0 +1,63 @@
+services:
+  # ---------- MongoDB ----------
+  mongo:
+    image: mongo:latest
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ai-qef
+    # Not exposed to host by default; only the app container connects.
+    # Uncomment the following to access from host for debugging:
+    # ports:
+    #   - "27017:27017"
+
+  # ---------- Next.js App ----------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_PATH: /aitools
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/ai-qef
+      AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME}
+      AZURE_API_KEY: ${AZURE_API_KEY}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
+      SESSION_SECRET: ${SESSION_SECRET}
+    # Not exposed to host; NGINX proxies traffic.
+    # Uncomment to access directly for debugging:
+    # ports:
+    #   - "3000:3000"
+
+  # ---------- NGINX Reverse Proxy ----------
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-www:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+
+  # ---------- Certbot (Let's Encrypt) ----------
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    # Auto-renew every 12 hours
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
+
+volumes:
+  mongo-data:
+  certbot-www:
+  certbot-certs:

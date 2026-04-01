@@ -9,15 +9,10 @@ import {
   Bot,
   User,
   Pencil,
-  Plus,
-  Minus,
-  X,
-  Divide,
   ArrowLeft,
-  Variable,
   Monitor,
   Smartphone,
-  type LucideIcon,
+  Loader2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -25,23 +20,9 @@ import rehypeKatex from "rehype-katex";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-
-// Map icon name (from DB) to actual Lucide component
-const iconMap: Record<string, LucideIcon> = {
-  Plus, Minus, X, Divide, Variable,
-};
-
-interface ToolFromDB {
-  key: string;
-  label: string;
-  sub: string;
-  icon: string;
-  bg: string;
-  iconBg: string;
-  border: string;
-  hover: string;
-  text: string;
-}
+import { useToolbox, type ToolFromDB } from "@/contexts/ToolboxContext";
+import { basePath } from "@/lib/utils";
+import { DefaultChatTransport } from "ai";
 
 interface ToolboxConfigFromDB {
   type: string;
@@ -51,19 +32,19 @@ interface ToolboxConfigFromDB {
   isActive: boolean;
 }
 
-export default function DashboardPage() {
+export default function MathDashboardPage() {
   return (
     <Suspense>
-      <DashboardContent />
+      <MathDashboardContent />
     </Suspense>
   );
 }
 
-function DashboardContent() {
+function MathDashboardContent() {
   const searchParams = useSearchParams();
   const urlType = searchParams.get("type") || "other";
+  const toolbox = useToolbox();
 
-  // Read data from sessionStorage (set by home page) — must be in useEffect to avoid hydration mismatch
   const [dashboardData, setDashboardData] = useState<{ type: string; question: string; imageData?: string } | null>(null);
 
   useEffect(() => {
@@ -77,12 +58,16 @@ function DashboardContent() {
   const question = dashboardData?.question || "";
   const questionImage = dashboardData?.imageData || null;
 
-  const { messages, sendMessage, status, stop } = useChat();
+  const { messages, sendMessage, status, stop } = useChat({
+    transport: new DefaultChatTransport({ api: `${basePath}/api/chat` }),
+  });
 
   const [input, setInput] = useState("");
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
   const [toolboxConfig, setToolboxConfig] = useState<ToolboxConfigFromDB | null>(null);
+  const [allToolboxConfigs, setAllToolboxConfigs] = useState<ToolboxConfigFromDB[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isExtractingParams, setIsExtractingParams] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasSentInitial = useRef(false);
@@ -90,19 +75,123 @@ function DashboardContent() {
   const isLoading = status === "submitted" || status === "streaming";
   const canSend = input.trim() && !isLoading;
 
+  const selectedTool = toolbox?.selectedTool ?? null;
   const tools = toolboxConfig?.tools ?? [];
   const typeLabel = toolboxConfig?.label ?? type;
 
   // Fetch toolbox config from DB
   useEffect(() => {
-    fetch("/api/toolbox")
+    fetch(`${basePath}/api/toolbox`)
       .then((res) => res.json())
       .then((configs: ToolboxConfigFromDB[]) => {
+        setAllToolboxConfigs(configs);
         const matched = configs.find((c) => c.type === type);
         if (matched) setToolboxConfig(matched);
       })
       .catch(() => {});
   }, [type]);
+
+  // Fetch AI-recommended tools
+  const [recommendedToolKeys, setRecommendedToolKeys] = useState<string[]>([]);
+  useEffect(() => {
+    if (!question || !toolboxConfig?.tools.length) return;
+    fetch(`${basePath}/api/recommend-tools`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        tools: toolboxConfig.tools.map((t) => ({ key: t.key, label: t.label, sub: t.sub })),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => setRecommendedToolKeys(data.recommendedKeys ?? []))
+      .catch(() => {});
+  }, [question, toolboxConfig]);
+
+  // Register tools into sidebar context
+  const register = toolbox?.register;
+  useEffect(() => {
+    if (register && toolboxConfig) {
+      const mathConfigs = allToolboxConfigs.filter(
+        (c) => c.type !== "english" && c.type !== "chinese" && c.type !== "classical-chinese"
+      );
+      register({
+        tools: toolboxConfig.tools,
+        allToolGroups: mathConfigs.map((c) => ({ label: c.label, tools: c.tools })),
+        typeLabel: toolboxConfig.label,
+        question,
+        questionImage,
+        recommendedToolKeys,
+      });
+    }
+  }, [register, toolboxConfig, allToolboxConfigs, question, questionImage, recommendedToolKeys]);
+
+  // React to tool selection from sidebar
+  useEffect(() => {
+    if (!selectedTool) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    if (!question) {
+      const fallbackUrl = selectedTool === "fraction-expanding-simplifying" ? `${basePath}/math/es.html` : `${basePath}/math/preview.html`;
+      setPreviewUrl(fallbackUrl);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewUrl(null);
+    setIsExtractingParams(true);
+
+    (async () => {
+      try {
+        const res = await fetch(`${basePath}/api/extract-params`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, toolKey: selectedTool }),
+        });
+        if (!res.ok) throw new Error("Extract failed");
+        if (cancelled) return;
+        const params = await res.json();
+
+        if (selectedTool === "fraction-expanding-simplifying") {
+          const qs = new URLSearchParams({
+            numerator: String(params.numerator ?? 2),
+            denominator: String(params.denominator ?? 8),
+            mode: params.mode ?? "expand",
+          });
+          // 傳遞目標分數（-1 表示空格，不傳該參數讓 es.html 顯示 □）
+          if (params.targetNumerator != null && params.targetNumerator !== -1) {
+            qs.set("targetNum", String(params.targetNumerator));
+          }
+          if (params.targetDenominator != null && params.targetDenominator !== -1) {
+            qs.set("targetDen", String(params.targetDenominator));
+          }
+          if (!cancelled) setPreviewUrl(`${basePath}/math/es.html?${qs.toString()}`);
+        } else {
+          const qs = new URLSearchParams({
+            whole1: String(params.whole1 ?? 0),
+            num1: String(params.num1 ?? 0),
+            den1: String(params.den1 ?? 1),
+            whole2: String(params.whole2 ?? 0),
+            num2: String(params.num2 ?? 0),
+            den2: String(params.den2 ?? 1),
+            operation: params.operation ?? selectedTool.split("-")[1] ?? "div",
+            context: params.contextText ?? "",
+            unit: params.unit ?? "",
+          });
+          if (!cancelled) setPreviewUrl(`${basePath}/math/preview.html?${qs.toString()}`);
+        }
+      } catch {
+        const fallbackUrl = selectedTool === "fraction-expanding-simplifying" ? `${basePath}/math/es.html` : `${basePath}/math/preview.html`;
+        if (!cancelled) setPreviewUrl(fallbackUrl);
+      } finally {
+        if (!cancelled) setIsExtractingParams(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [selectedTool, question]);
 
   // Auto-send the initial question to get AI response
   useEffect(() => {
@@ -136,7 +225,7 @@ function DashboardContent() {
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      {/* Left panel: Toolbox / HTML Preview */}
+      {/* Left panel: HTML Preview or placeholder */}
       <div className="flex flex-1 flex-col min-w-0">
         {selectedTool ? (
           <>
@@ -146,7 +235,7 @@ function DashboardContent() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => setSelectedTool(null)}
+                  onClick={() => toolbox?.setSelectedTool(null)}
                 >
                   <ArrowLeft className="size-4" />
                 </Button>
@@ -180,17 +269,24 @@ function DashboardContent() {
                   viewMode === "mobile" ? "max-w-[390px]" : "w-full"
                 }`}
               >
-                <iframe
-                  src="/preview.html"
-                  className="h-full w-full rounded-xl"
-                  sandbox="allow-scripts"
-                  title="HTML Preview"
-                />
+                {isExtractingParams || !previewUrl ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                    <Loader2 className="size-8 animate-spin" />
+                    <span className="text-sm">正在根據題目生成練習...</span>
+                  </div>
+                ) : (
+                  <iframe
+                    src={previewUrl}
+                    className="h-full w-full rounded-xl"
+                    sandbox="allow-scripts"
+                    title="HTML Preview"
+                  />
+                )}
               </div>
             </div>
           </>
         ) : (
-          /* Toolbox selection */
+          /* Placeholder when no tool selected */
           <div className="flex-1 overflow-y-auto p-6">
             {/* Question display */}
             {(question || questionImage) && (
@@ -221,32 +317,10 @@ function DashboardContent() {
               </div>
             )}
 
-            <h2 className="text-lg font-semibold mb-4">工具箱</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {tools.map(({ key, label, sub, icon, bg, iconBg, border, hover, text }) => {
-                const Icon = iconMap[icon] ?? Variable;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedTool(key)}
-                    className={`flex flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all cursor-pointer shadow-sm hover:shadow-md ${bg} ${border} ${hover}`}
-                  >
-                    <div className={`flex items-center justify-center size-12 rounded-xl ${iconBg} text-white shadow-sm`}>
-                      <Icon className="size-6" strokeWidth={2.5} />
-                    </div>
-                    <span className={`text-base font-semibold ${text}`}>{label}</span>
-                    <span className="text-xs text-muted-foreground">{sub}</span>
-                  </button>
-                );
-              })}
+            <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+              <p className="text-sm">請從左側工具箱選擇工具開始練習</p>
+              <p className="text-xs mt-1">或在右側與 AI 對話解題</p>
             </div>
-
-            {tools.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                <p className="text-sm">此題型暫無專用工具箱</p>
-                <p className="text-xs mt-1">請在右側與 AI 對話解題</p>
-              </div>
-            )}
           </div>
         )}
       </div>

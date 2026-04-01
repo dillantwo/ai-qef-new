@@ -19,6 +19,38 @@ function fixBrokenLatex(text: string): string {
     .replace(/\n(?=[a-zA-Z])/g, "\\n"); // fixes \ne, \nu …
 }
 
+/**
+ * Wrap orphan LaTeX commands (not already inside $..$ or $$..$$) in
+ * inline math delimiters so remark-math / rehype-katex can render them.
+ */
+function ensureLatexDelimiters(text: string): string {
+  const segments: string[] = [];
+  const mathRegex = /\$\$[\s\S]*?\$\$|\$(?:[^$\\]|\\.)*?\$/g;
+  let lastIndex = 0;
+  let m;
+  while ((m = mathRegex.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push(wrapOrphanLatex(text.slice(lastIndex, m.index)));
+    }
+    segments.push(m[0]);
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) {
+    segments.push(wrapOrphanLatex(text.slice(lastIndex)));
+  }
+  return segments.join("");
+}
+
+function wrapOrphanLatex(text: string): string {
+  const wrapped = text.replace(
+    /\d*\\(?:frac|dfrac|tfrac|binom)\{[^}]*\}\{[^}]*\}|\\(?:text|textbf|textit|texttt|textrm|mathrm|mathbf|mathcal|mathbb|sqrt|overline|underline|bar|hat|vec|tilde)\{[^}]*\}|\\(?:times|div|cdot|pm|mp|leq|geq|neq|approx|infty|alpha|beta|gamma|delta|theta|pi|sigma|omega|sum|prod|int|lim|log|sin|cos|tan|to|rightarrow|leftarrow)/g,
+    (m) => `$${m}$`
+  );
+  // Merge adjacent inline math groups like $a$$b$ → $a b$ (add space to avoid
+  // remark-math mis-parsing $$ as a block-math delimiter).
+  return wrapped.replace(/\$\$/g, "$ $");
+}
+
 export async function POST(req: Request) {
   const { question, imageData } = await req.json();
 
@@ -26,8 +58,24 @@ export async function POST(req: Request) {
   await connectDB();
   const configs = await ToolboxConfig.find({ isActive: true }).lean();
   const validTypes = configs.map((c) => c.type);
-  const typeDescriptions = configs
-    .map((c) => `- ${c.type}：${c.description}`)
+
+  // Hardcoded fallback descriptions in case DB is empty or missing entries
+  const fallbackDescriptions: Record<string, string> = {
+    fraction: "分數相關題目（分數加減乘除、通分、約分、帶分數運算、分數應用題等）",
+    algebra: "代數相關題目（方程式、未知數、代數運算等）",
+  };
+
+  // Merge DB types with fallback types to ensure they're always available
+  const allTypeSet = new Set([...Object.keys(fallbackDescriptions), ...validTypes, "other"]);
+  const allTypes = [...allTypeSet] as [string, ...string[]];
+
+  const typeDescriptions = allTypes
+    .filter((t) => t !== "other")
+    .map((t) => {
+      const fromDB = configs.find((c) => c.type === t);
+      const desc = fromDB?.description ?? fallbackDescriptions[t] ?? t;
+      return `- ${t}：${desc}`;
+    })
     .join("\n");
 
   const messages: Array<{ role: "user"; content: string | Array<{ type: "text"; text: string } | { type: "image"; image: string; mimeType?: string }> }> = [];
@@ -59,24 +107,30 @@ export async function POST(req: Request) {
     });
   }
 
-  // Build enum dynamically: valid types + "other"
-  const allTypes = [...new Set([...validTypes, "other"])] as [string, ...string[]];
-
   const result = await generateObject({
     model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
     system: `你是一位數學題型分類專家。根據學生輸入的題目，判斷它屬於哪個題型。
 
+分類原則（非常重要）：
+- 根據題目所需的**核心數學運算**來分類，而非題目的表面情境或故事背景
+- 例如：「把 3⅝ L 橙汁倒進 ¼ L 的杯子」雖然是應用題，但核心運算是分數除法，應分類為 fraction
+- 只有當題目的核心運算確實不屬於任何已定義的題型時，才分類為 other
+
 可選題型：
 ${typeDescriptions}
-- other：其他題型（不屬於以上任何題型）
+- other：其他題型（核心運算不屬於以上任何題型）
 
 同時提取題目的文字描述。如果是圖片題目，請描述圖片中的數學題目內容。
 
-重要：在 question 欄位中，所有數學表達式必須使用 LaTeX 格式：
+重要：在 question 欄位中，數學表達式使用 LaTeX 指令，但**不要**加 $ 符號：
 - 分數用 \\frac{分子}{分母}，例如 \\frac{5}{6}
 - 帶分數用 整數\\frac{分子}{分母}，例如 2\\frac{5}{6}
 - 乘號用 \\times，除號用 \\div
-- 用 $ 符號包裹行內數學公式，例如 $2\\frac{5}{6} + \\frac{3}{4} - 1\\frac{1}{3} =$`,
+- 單位用 \\text{單位}，例如 \\text{L}
+- 填空用底線 ______
+- 不要使用 $ 或 $$ 符號
+
+範例輸出：店員把 3\\frac{5}{8} \\text{L} 橙汁倒進一些玻璃杯裏，每隻玻璃杯的容量是 \\frac{1}{4} \\text{L}，最多可倒滿______隻玻璃杯。`,
     schema: z.object({
       type: z
         .enum(allTypes)
@@ -89,8 +143,9 @@ ${typeDescriptions}
   });
 
   const obj = result.object;
-  return Response.json({
-    ...obj,
-    question: fixBrokenLatex(obj.question),
-  });
+  // 1. Fix JSON-broken escapes  2. Strip stray $ delimiters  3. Re-wrap properly
+  let q = fixBrokenLatex(obj.question);
+  q = q.replace(/\$\$/g, " ").replace(/\$/g, "");
+  q = ensureLatexDelimiters(q);
+  return Response.json({ ...obj, question: q });
 }
