@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calculator,
@@ -58,6 +59,12 @@ export default function Home() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const userSubjects = user?.subjects ?? [];
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
 
   return (
     <>
