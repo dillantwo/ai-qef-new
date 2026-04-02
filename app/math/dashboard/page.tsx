@@ -303,7 +303,7 @@ function MathDashboardContent() {
                         className="mt-2 max-h-32 rounded-lg border border-border object-contain"
                       />
                     )}
-                    <div className="text-sm font-medium leading-relaxed mt-2 prose prose-sm prose-neutral dark:prose-invert max-w-none">
+                    <div className="text-lg font-medium leading-relaxed mt-2 prose prose-lg prose-neutral dark:prose-invert max-w-none [&_.katex]:text-2xl">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath]}
                         rehypePlugins={[rehypeKatex]}

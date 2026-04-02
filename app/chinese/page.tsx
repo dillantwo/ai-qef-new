@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PenTool, FileText, MessageSquare } from "lucide-react";
+import { PenTool, FileText, MessageSquare, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const topics: {
   id: string;
@@ -42,33 +43,29 @@ const topics: {
 const colorMap: Record<
   string,
   {
-    cardBg: string;
-    iconBg: string;
-    iconRing: string;
-    title: string;
-    hoverShadow: string;
+    ring: string;
+    gradient: string;
+    icon: string;
+    arrow: string;
   }
 > = {
   orange: {
-    cardBg: "bg-gradient-to-br from-orange-50 to-amber-50",
-    iconBg: "bg-gradient-to-br from-orange-400 to-amber-500",
-    iconRing: "ring-orange-200",
-    title: "text-orange-700",
-    hoverShadow: "hover:shadow-orange-200/60",
+    ring: "ring-orange-200 dark:ring-orange-800",
+    gradient: "from-orange-100 to-amber-50 dark:from-orange-950/60 dark:to-amber-900/30",
+    icon: "text-orange-600 dark:text-orange-400",
+    arrow: "text-orange-600 dark:text-orange-400",
   },
   green: {
-    cardBg: "bg-gradient-to-br from-emerald-50 to-green-50",
-    iconBg: "bg-gradient-to-br from-emerald-400 to-green-500",
-    iconRing: "ring-emerald-200",
-    title: "text-emerald-700",
-    hoverShadow: "hover:shadow-emerald-200/60",
+    ring: "ring-emerald-200 dark:ring-emerald-800",
+    gradient: "from-emerald-100 to-green-50 dark:from-emerald-950/60 dark:to-green-900/30",
+    icon: "text-emerald-600 dark:text-emerald-400",
+    arrow: "text-emerald-600 dark:text-emerald-400",
   },
   purple: {
-    cardBg: "bg-gradient-to-br from-purple-50 to-violet-50",
-    iconBg: "bg-gradient-to-br from-purple-400 to-violet-500",
-    iconRing: "ring-purple-200",
-    title: "text-purple-700",
-    hoverShadow: "hover:shadow-purple-200/60",
+    ring: "ring-purple-200 dark:ring-purple-800",
+    gradient: "from-purple-100 to-violet-50 dark:from-purple-950/60 dark:to-violet-900/30",
+    icon: "text-purple-600 dark:text-purple-400",
+    arrow: "text-purple-600 dark:text-purple-400",
   },
 };
 
@@ -108,43 +105,34 @@ export default function ChinesePage() {
                       }
                     }}
                     className={[
-                      "group relative cursor-pointer border-2 border-transparent transition-all duration-200",
+                      "group relative cursor-pointer transition-all duration-200",
                       available
-                        ? `${c.cardBg} ${c.hoverShadow} hover:shadow-xl hover:-translate-y-1 hover:border-white/80`
-                        : "bg-muted/30 cursor-not-allowed opacity-50",
+                        ? `bg-gradient-to-br ${c.gradient} ${c.ring} hover:shadow-lg hover:-translate-y-0.5`
+                        : "opacity-50 cursor-not-allowed",
                     ].join(" ")}
                   >
-                    <CardContent className="flex flex-col items-center gap-4 pt-8 pb-6">
-                      {/* Large icon */}
-                      <div
-                        className={[
-                          "flex size-16 items-center justify-center rounded-2xl shadow-md ring-4 transition-transform duration-200 group-hover:scale-110",
-                          available
-                            ? `${c.iconBg} ${c.iconRing} text-white`
-                            : "bg-muted ring-muted-foreground/20 text-muted-foreground",
-                        ].join(" ")}
-                      >
-                        <Icon className="size-8" strokeWidth={2} />
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex size-12 items-center justify-center rounded-full bg-white/80 dark:bg-white/10 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                          <Icon className={`size-6 ${c.icon}`} strokeWidth={1.8} />
+                        </div>
+                        {!available && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            即將推出
+                          </Badge>
+                        )}
                       </div>
-
-                      {/* Text */}
-                      <div className="text-center space-y-1">
-                        <p
-                          className={`text-lg font-bold ${available ? c.title : "text-muted-foreground"}`}
-                        >
-                          {label}
-                        </p>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {description}
-                        </p>
-                      </div>
-
-                      {!available && (
-                        <span className="absolute top-3 right-3 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                          即將推出
+                      <CardTitle className="text-base mt-1">{label}</CardTitle>
+                      <CardDescription>{description}</CardDescription>
+                    </CardHeader>
+                    {available && (
+                      <CardContent className="pt-0">
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${c.arrow} group-hover:gap-2 transition-all`}>
+                          開始學習
+                          <ArrowRight className="size-3.5" />
                         </span>
-                      )}
-                    </CardContent>
+                      </CardContent>
+                    )}
                   </Card>
                 );
               }

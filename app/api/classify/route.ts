@@ -42,13 +42,85 @@ function ensureLatexDelimiters(text: string): string {
 }
 
 function wrapOrphanLatex(text: string): string {
-  const wrapped = text.replace(
-    /\d*\\(?:frac|dfrac|tfrac|binom)\{[^}]*\}\{[^}]*\}|\\(?:text|textbf|textit|texttt|textrm|mathrm|mathbf|mathcal|mathbb|sqrt|overline|underline|bar|hat|vec|tilde)\{[^}]*\}|\\(?:times|div|cdot|pm|mp|leq|geq|neq|approx|infty|alpha|beta|gamma|delta|theta|pi|sigma|omega|sum|prod|int|lim|log|sin|cos|tan|to|rightarrow|leftarrow)/g,
-    (m) => `$${m}$`
-  );
-  // Merge adjacent inline math groups like $a$$b$ → $a b$ (add space to avoid
-  // remark-math mis-parsing $$ as a block-math delimiter).
-  return wrapped.replace(/\$\$/g, "$ $");
+  // Commands that consume one or more {…} brace groups
+  const braceRe =
+    /^\\(?:frac|dfrac|tfrac|binom|text|textbf|textit|texttt|textrm|mathrm|mathbf|mathcal|mathbb|sqrt|overline|underline|bar|hat|vec|tilde|boxed|rule|phantom|hspace|vspace)(?![a-zA-Z])/;
+  // Standalone symbol commands (no braces)
+  const simpleRe =
+    /^\\(?:times|div|cdot|pm|mp|leq|geq|neq|approx|infty|alpha|beta|gamma|delta|theta|pi|sigma|omega|sum|prod|int|lim|log|sin|cos|tan|to|rightarrow|leftarrow)(?![a-zA-Z])/;
+
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < text.length) {
+    // Leading digits for mixed fractions like 3\frac{5}{8}
+    if (/\d/.test(text[i])) {
+      let k = i;
+      while (k < text.length && /\d/.test(text[k])) k++;
+      if (k < text.length && text[k] === "\\" && braceRe.test(text.slice(k))) {
+        const end = consumeLatexCommand(text, k, braceRe);
+        out.push("$", text.slice(i, end), "$");
+        i = end;
+        continue;
+      }
+    }
+
+    if (text[i] === "\\") {
+      const rest = text.slice(i);
+      if (braceRe.test(rest)) {
+        const end = consumeLatexCommand(text, i, braceRe);
+        out.push("$", text.slice(i, end), "$");
+        i = end;
+        continue;
+      }
+      const sm = rest.match(simpleRe);
+      if (sm) {
+        out.push("$", sm[0], "$");
+        i += sm[0].length;
+        continue;
+      }
+    }
+
+    out.push(text[i]);
+    i++;
+  }
+
+  // Merge adjacent inline math groups: $a$$b$ → $a b$
+  return out.join("").replace(/\$\$/g, "$ $");
+}
+
+/** Consume a brace-command starting at `pos` and return the index after the last brace group. */
+function consumeLatexCommand(text: string, pos: number, re: RegExp): number {
+  const cmdMatch = text.slice(pos).match(re)!;
+  let j = pos + cmdMatch[0].length;
+
+  // Eat successive {…} groups (skip spaces between them)
+  while (j < text.length) {
+    let s = j;
+    while (s < text.length && text[s] === " ") s++;
+    if (s < text.length && text[s] === "{") {
+      const close = matchBrace(text, s);
+      if (close === -1) break;
+      j = close + 1;
+    } else {
+      break;
+    }
+  }
+  return j;
+}
+
+/** Return the index of the `}` that balances the `{` at `pos`, or -1. */
+function matchBrace(text: string, pos: number): number {
+  if (text[pos] !== "{") return -1;
+  let depth = 1;
+  for (let i = pos + 1; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
 }
 
 export async function POST(req: Request) {
@@ -127,10 +199,10 @@ ${typeDescriptions}
 - 帶分數用 整數\\frac{分子}{分母}，例如 2\\frac{5}{6}
 - 乘號用 \\times，除號用 \\div
 - 單位用 \\text{單位}，例如 \\text{L}
-- 填空用底線 ______
+- 填空位置留空即可，例如 \\frac{}{12} 表示分子待填
 - 不要使用 $ 或 $$ 符號
 
-範例輸出：店員把 3\\frac{5}{8} \\text{L} 橙汁倒進一些玻璃杯裏，每隻玻璃杯的容量是 \\frac{1}{4} \\text{L}，最多可倒滿______隻玻璃杯。`,
+範例輸出：店員把 3\\frac{5}{8} \\text{L} 橙汁倒進一些玻璃杯裏，每隻玻璃杯的容量是 \\frac{1}{4} \\text{L}，最多可倒滿 隻玻璃杯。`,
     schema: z.object({
       type: z
         .enum(allTypes)

@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Compass, MapPin, BookOpen, MessageCircle, Mic } from "lucide-react";
+import { Compass, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const topics = [
   {
@@ -15,13 +17,12 @@ const topics = [
   },
 ];
 
-const colorMap: Record<string, { bg: string; iconBg: string; border: string; hover: string; text: string }> = {
+const colorMap: Record<string, { ring: string; gradient: string; badge: string; arrow: string }> = {
   blue: {
-    bg: "bg-blue-50",
-    iconBg: "bg-blue-500",
-    border: "border-blue-200",
-    hover: "hover:border-blue-400 hover:shadow-blue-100",
-    text: "text-blue-700",
+    ring: "ring-blue-200 dark:ring-blue-800",
+    gradient: "from-blue-100 to-blue-50 dark:from-blue-950/60 dark:to-blue-900/30",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+    arrow: "text-blue-600 dark:text-blue-400",
   },
 };
 
@@ -49,39 +50,39 @@ export default function EnglishPage() {
             {topics.map(({ id, label, description, icon: Icon, color, available }) => {
               const c = colorMap[color] ?? colorMap.blue;
               return (
-                <button
+                <Card
                   key={id}
-                  onClick={() => available && router.push(`/english/dashboard?topic=${id}`)}
-                  disabled={!available}
                   className={[
-                    "group relative flex items-start gap-4 rounded-xl border-2 p-5 text-left transition-all duration-200",
+                    "group relative cursor-pointer transition-all duration-200",
                     available
-                      ? `${c.bg} ${c.border} ${c.hover} hover:shadow-lg hover:-translate-y-0.5 cursor-pointer`
-                      : "bg-muted/30 border-border/50 cursor-not-allowed opacity-50",
+                      ? `bg-gradient-to-br ${c.gradient} ${c.ring} hover:shadow-lg hover:-translate-y-0.5`
+                      : "opacity-50 cursor-not-allowed",
                   ].join(" ")}
+                  onClick={() => available && router.push(`/english/dashboard?topic=${id}`)}
                 >
-                  <div
-                    className={[
-                      "flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform group-hover:scale-110",
-                      available ? `${c.iconBg} text-white` : "bg-muted text-muted-foreground",
-                    ].join(" ")}
-                  >
-                    <Icon className="size-5" strokeWidth={2.5} />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className={`text-sm font-semibold ${available ? c.text : "text-muted-foreground"}`}>
-                      {label}
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {description}
-                    </p>
-                  </div>
-                  {!available && (
-                    <span className="absolute top-2.5 right-2.5 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                      Coming Soon
-                    </span>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-white/80 dark:bg-white/10 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                        <Icon className="size-6 text-blue-600 dark:text-blue-400" strokeWidth={1.8} />
+                      </div>
+                      {!available && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Coming Soon
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-base mt-1">{label}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                  </CardHeader>
+                  {available && (
+                    <CardContent className="pt-0">
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${c.arrow} group-hover:gap-2 transition-all`}>
+                        Start learning
+                        <ArrowRight className="size-3.5" />
+                      </span>
+                    </CardContent>
                   )}
-                </button>
+                </Card>
               );
             })}
           </div>

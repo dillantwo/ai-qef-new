@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { Clock, LogOut, MessageSquare, Sparkles, Variable, Zap } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -86,6 +90,8 @@ function ToolItem({
 export function AppSidebar() {
   const { user, logout } = useAuth();
   const toolbox = useToolbox();
+  const router = useRouter();
+  const pathname = usePathname();
   const initials = user?.displayName?.charAt(0).toUpperCase() ?? "U";
 
   const tools = toolbox?.tools ?? [];
@@ -115,7 +121,10 @@ export function AppSidebar() {
             AI for Subject Learning
           </span>
         </Link>
-        <Button className="mt-4 w-full" size="lg">
+        <Button className="mt-4 w-full" size="lg" onClick={() => {
+          const subject = pathname.split('/')[1] || 'math';
+          router.push(`/${subject}`);
+        }}>
           + Add New Question
         </Button>
       </SidebarHeader>
@@ -211,9 +220,11 @@ export function AppSidebar() {
                   <button className="flex items-start gap-2.5 w-full rounded-lg px-3 py-2.5 text-left hover:bg-muted transition-colors">
                     <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium leading-snug line-clamp-2">
-                        {question}
-                      </p>
+                      <div className="text-xs font-medium leading-snug line-clamp-2 prose prose-sm max-w-none [&_p]:m-0">
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                          {question}
+                        </ReactMarkdown>
+                      </div>
                       <p className="text-[10px] text-muted-foreground mt-0.5">剛剛</p>
                     </div>
                   </button>
