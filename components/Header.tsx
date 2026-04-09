@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { ChevronLeft, LogOut } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { basePath } from "@/lib/utils";
 
 export default function Header({ backHref, backLabel }: { backHref?: string; backLabel?: string } = {}) {
   const { user, logout } = useAuth();
+  const logoSrc = `${basePath}/logo.png`.replace(/\/+$/g, "").replace(/([^:]\/)\/+/g, "$1") || "/logo.png";
 
   return (
     <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-background">
@@ -19,23 +21,16 @@ export default function Header({ backHref, backLabel }: { backHref?: string; bac
             {backLabel ?? "返回"}
           </Link>
         )}
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-4"
-          >
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-        </div>
-        <span className="text-base font-semibold tracking-tight">
-          AI for Subject Learning
-        </span>
+        <Link href="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <img
+            src={logoSrc}
+            alt="AI Learning Platform logo"
+            className="h-9 w-auto object-contain"
+          />
+          <span className="text-base font-semibold tracking-tight">
+            AI and Coding for Subject Learning
+          </span>
+        </Link>
       </div>
 
       {user && (

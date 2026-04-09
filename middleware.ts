@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const SESSION_COOKIE = "session";
+const PUBLIC_FILE = /\.[^/]+$/;
 
 // Routes that are accessible without authentication
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
@@ -27,7 +28,8 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/public")
+    pathname.startsWith("/public") ||
+    PUBLIC_FILE.test(pathname)
   ) {
     return NextResponse.next();
   }
@@ -78,6 +80,6 @@ export const config = {
      * - _next/image (image optimization)
      * - favicon.ico
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };

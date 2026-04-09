@@ -2,7 +2,15 @@
 
 import { Suspense, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, BookOpen, Loader2, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  BookText,
+  Calculator,
+  FlaskConical,
+  Languages,
+  Loader2,
+  ScrollText,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
@@ -16,12 +24,41 @@ export default function LoginPage() {
   );
 }
 
+const subjectHighlights = [
+  {
+    name: "數學",
+    description: "解題步驟與即時回饋",
+    icon: Calculator,
+  },
+  {
+    name: "中文",
+    description: "閱讀理解與寫作引導",
+    icon: BookText,
+  },
+  {
+    name: "英文",
+    description: "句型練習與語感建立",
+    icon: Languages,
+  },
+  {
+    name: "科學",
+    description: "概念拆解與實驗思考",
+    icon: FlaskConical,
+  },
+  {
+    name: "人文",
+    description: "文本分析與觀點整理",
+    icon: ScrollText,
+  },
+];
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const logoSrc = `${basePath}/logo.png`.replace(/\/+/g, "/");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,45 +100,55 @@ function LoginForm() {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid w-full overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="relative flex flex-col justify-between gap-10 border-b border-[#d8d8d8] bg-[linear-gradient(135deg,_#ffffff_0%,_#f5f8ff_55%,_#ffffff_100%)] px-6 py-8 sm:px-8 sm:py-10 lg:min-h-[720px] lg:border-b-0 lg:border-r lg:px-12 lg:py-12">
-            <div className="flex items-center justify-between gap-4">
+          <section className="relative flex flex-col border-b border-[#d8d8d8] bg-[linear-gradient(135deg,_#ffffff_0%,_#f5f8ff_55%,_#ffffff_100%)] px-6 py-8 sm:px-8 sm:py-10 lg:min-h-[720px] lg:border-b-0 lg:border-r lg:px-12 lg:py-12">
+            <div className="flex items-center gap-4">
               <div className="inline-flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[6px_6px_0px_#080808]">
-                  <BookOpen className="size-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[1.4px] text-[#5a5a5a]">
-                    AI Learning Platform
-                  </p>
-                  <p className="text-lg font-semibold tracking-[-0.02em] text-[#080808]">
-                    智能學習工作台
-                  </p>
-                </div>
+                <img
+                  src={logoSrc}
+                  alt="AI Learning Platform logo"
+                  className="h-11 w-auto object-contain"
+                />
+                <p className="text-lg font-semibold tracking-[-0.02em] text-[#080808]">
+                  AI and Coding for Subject Learning
+                </p>
               </div>
-              <span className="inline-flex items-center rounded-[4px] bg-[#146ef5]/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
-                Secure Access
-              </span>
             </div>
 
-            <div className="flex flex-1 items-center">
-              <div className="max-w-xl space-y-6">
-                <p className="text-[12px] font-semibold uppercase tracking-[1.5px] text-[#146ef5]">
-                  Design-led learning system
-                </p>
+            <div className="mt-16 flex flex-1 flex-col justify-center">
+              <div className="max-w-xl">
                 <h1 className="text-[44px] leading-[0.98] font-semibold tracking-[-0.05em] text-[#080808] sm:text-[56px] lg:text-[72px]">
-                  進入你的 AI 教學與學習控制台
+                  進入你的 AI 學習平台
                 </h1>
-                <p className="max-w-lg text-base leading-7 text-[#363636] sm:text-lg">
-                  以清晰、精準、可執行的工作流管理課程內容，從知識提取到互動練習都集中在同一個介面中。
+                <p className="mt-5 max-w-lg text-base leading-7 text-[#4d4d4d] sm:text-lg">
+                  從課堂內容、互動練習到 AI 工具建議，使用AI 工具提升學習效果。
                 </p>
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <span className="inline-flex items-center rounded-[4px] border border-[#d8d8d8] bg-white px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#080808]">
-                    數學 / 中文 / 英文
-                  </span>
-                  <span className="inline-flex items-center rounded-[4px] border border-[#d8d8d8] bg-white px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#080808]">
-                    備課 / 練習 / 對話
-                  </span>
-                </div>
+              </div>
+
+              <div className="mt-10 grid gap-3 sm:grid-cols-2">
+                {subjectHighlights.map((subject) => {
+                  const Icon = subject.icon;
+
+                  return (
+                    <div
+                      key={subject.name}
+                      className="rounded-[8px] border border-[#d8d8d8] bg-white/80 p-4 shadow-[0px_18px_40px_rgba(20,110,245,0.08)] backdrop-blur-sm transition duration-200 hover:-translate-y-1 hover:border-[#b9cdfa]"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-[6px] bg-[#146ef5]/10 text-[#146ef5]">
+                          <Icon className="size-5" />
+                        </div>
+                        <div>
+                          <p className="text-base font-semibold text-[#080808]">
+                            {subject.name}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-[#5a5a5a]">
+                            {subject.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -184,12 +231,6 @@ function LoginForm() {
                   </Button>
                 </form>
 
-                <div className="mt-8 flex items-start gap-3 rounded-[4px] border border-[#d8d8d8] bg-[#f7f8fb] px-4 py-3 text-sm leading-6 text-[#5a5a5a]">
-                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#146ef5]" />
-                  <p>
-                    成功登入後，系統會根據你的帳戶權限自動載入可用科目與工具配置。
-                  </p>
-                </div>
               </div>
             </div>
           </section>

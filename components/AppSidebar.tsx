@@ -38,6 +38,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { basePath } from "@/lib/utils";
 
 function ToolItem({
   toolKey,
@@ -93,6 +94,7 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const initials = user?.displayName?.charAt(0).toUpperCase() ?? "U";
+  const logoSrc = `${basePath}/logo.png`.replace(/\/+$/g, "").replace(/([^:]\/)\/+/g, "$1") || "/logo.png";
 
   const tools = toolbox?.tools ?? [];
   const selectedTool = toolbox?.selectedTool ?? null;
@@ -114,11 +116,13 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground">
-            <Zap className="size-5" />
-          </div>
+          <img
+            src={logoSrc}
+            alt="AI Learning Platform logo"
+            className="h-10 w-auto object-contain"
+          />
           <span className="text-base font-semibold leading-tight">
-            AI for Subject Learning
+            AI and Coding for Subject Learning
           </span>
         </Link>
         <Button className="mt-4 w-full" size="lg" onClick={() => {
