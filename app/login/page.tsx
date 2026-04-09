@@ -26,28 +26,28 @@ export default function LoginPage() {
 
 const subjectHighlights = [
   {
-    name: "數學",
-    description: "解題步驟與即時回饋",
+    name: "數學科",
+    description: "解題工具與即時回饋",
     icon: Calculator,
   },
   {
-    name: "中文",
+    name: "中國語文科",
     description: "閱讀理解與寫作引導",
     icon: BookText,
   },
   {
-    name: "英文",
-    description: "句型練習與語感建立",
+    name: "English Language",
+    description: "Location and direction、Gratitude letter、Reading Comprehension。",
     icon: Languages,
   },
   {
-    name: "科學",
-    description: "概念拆解與實驗思考",
+    name: "科學科",
+    description: "電路、航天科技",
     icon: FlaskConical,
   },
   {
-    name: "人文",
-    description: "文本分析與觀點整理",
+    name: "人文科",
+    description: "水資源、抗日戰爭",
     icon: ScrollText,
   },
 ];

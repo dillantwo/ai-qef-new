@@ -18,7 +18,7 @@ const subjects = [
     id: "math",
     label: "數學科",
     labelEn: "Mathematics",
-    description: "代數、函數與解題步驟拆解。",
+    description: "解題工具與即時回饋。",
     icon: Calculator,
     href: "/math",
     available: true,
@@ -28,7 +28,7 @@ const subjects = [
     id: "chinese",
     label: "中國語文科",
     labelEn: "Chinese Language",
-    description: "閱讀理解、寫作與古文支援。",
+    description: "閱讀理解與寫作引導。",
     icon: BookOpen,
     href: "/chinese",
     available: true,
@@ -38,7 +38,7 @@ const subjects = [
     id: "english",
     label: "英國語文科",
     labelEn: "English Language",
-    description: "語法、寫作與情境練習。",
+    description: "Location and direction、Gratitude letter、Reading Comprehension。",
     icon: Globe,
     href: "/english",
     available: true,
@@ -48,7 +48,7 @@ const subjects = [
     id: "science",
     label: "科學科",
     labelEn: "Science",
-    description: "實驗概念與跨單元推理功能即將加入。",
+    description: "電路、航天科技。",
     icon: FlaskConical,
     href: "/science",
     available: false,
@@ -58,7 +58,7 @@ const subjects = [
     id: "humanities",
     label: "人文科",
     labelEn: "Humanities",
-    description: "議題分析、資料整理與觀點比較。",
+    description: "水資源、抗日戰爭。",
     icon: Landmark,
     href: "/humanities",
     available: false,
@@ -180,7 +180,7 @@ export default function Home() {
                           <div className="mt-auto flex items-center justify-between border-t border-[#d8d8d8] pt-5 text-sm">
                             <span className="font-medium text-[#363636]">
                               {enabled
-                                ? "進入科目工作台"
+                                ? "進入科目學習"
                                 : !available
                                   ? "功能正在準備中"
                                   : "請聯絡管理員開通權限"}
