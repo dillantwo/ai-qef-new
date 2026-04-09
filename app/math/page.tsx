@@ -35,6 +35,18 @@ const suggestions = [
   { label: "周界/面積/體積 Perimeter/Area/Volume", icon: Box },
 ];
 
+const suggestionAccents = [
+  "#146ef5",
+  "#7a3dff",
+  "#ed52cb",
+  "#00d722",
+  "#ff6b00",
+  "#ffae13",
+  "#ee1d36",
+  "#3b89ff",
+  "#006acc",
+];
+
 export default function MathPage() {
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -44,7 +56,7 @@ export default function MathPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canSend = (input.trim() || files) && !isClassifying;
+  const canSend = !!(input.trim() || files) && !isClassifying;
 
   async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve) => {
@@ -158,11 +170,11 @@ export default function MathPage() {
       {/* Lightbox overlay */}
       {previewSrc && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 cursor-zoom-out"
+          className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/70"
           onClick={() => setPreviewSrc(null)}
         >
           <button
-            className="absolute top-4 right-4 size-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 transition-colors"
+            className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-full bg-white text-[#080808] transition-colors hover:bg-white/85"
             onClick={() => setPreviewSrc(null)}
           >
             <X className="size-5" />
@@ -170,7 +182,7 @@ export default function MathPage() {
           <img
             src={previewSrc}
             alt="Preview"
-            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+            className="max-h-[90vh] max-w-[90vw] rounded-[8px] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
@@ -178,36 +190,36 @@ export default function MathPage() {
 
       <Header backHref="/" backLabel="選科目" />
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4">
+      <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-white px-4 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(to_right,rgba(8,8,8,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(8,8,8,0.03)_1px,transparent_1px)] before:bg-[size:28px_28px] before:content-[''] after:pointer-events-none after:absolute after:-top-24 after:left-1/2 after:h-[340px] after:w-[660px] after:-translate-x-1/2 after:bg-[radial-gradient(circle_at_center,rgba(20,110,245,0.18),transparent_68%)] after:content-['']">
         <div className="flex w-full max-w-2xl flex-col items-center gap-8">
           {/* Heading */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
+          <div className="space-y-2 text-center">
+            <h1 className="text-[clamp(2rem,4.4vw,3.6rem)] font-semibold leading-[1.05] tracking-[-0.032em] text-[#080808]">
               請輸入數學題目，AI將為您解答
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[16px] font-medium leading-[1.6] tracking-[-0.01em] text-[#5a5a5a]">
               這是一個基於AI的數學問題學習平台，您可以在下方輸入任何數學題目。
             </p>
           </div>
 
           {/* Input Area */}
           <form onSubmit={handleSubmit} className="w-full">
-            <div className="relative w-full rounded-xl border border-border bg-background shadow-sm">
+            <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] transition-all before:pointer-events-none before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[#146ef5]/55 before:to-transparent before:content-[''] focus-within:border-[#146ef5] focus-within:shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.015),0px_30px_18px_rgba(20,110,245,0.09),0px_13px_13px_rgba(20,110,245,0.14),0px_3px_7px_rgba(20,110,245,0.2)]">
               {/* Image preview */}
               {files && files.length > 0 && (
-                <div className="flex gap-2 px-4 pt-3 flex-wrap">
+                <div className="flex flex-wrap gap-2 px-4 pt-3">
                   {Array.from(files).map((file, i) => (
                     <div key={i} className="relative group">
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
-                        className="size-16 rounded-lg object-cover border border-border cursor-zoom-in"
+                        className="size-16 cursor-zoom-in rounded-[4px] border border-[#d8d8d8] object-cover"
                         onClick={() => setPreviewSrc(URL.createObjectURL(file))}
                       />
                       <button
                         type="button"
                         onClick={() => removeFile(i)}
-                        className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-foreground text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-[#080808] text-white opacity-0 transition-opacity group-hover:opacity-100"
                       >
                         <X className="size-3" />
                       </button>
@@ -224,7 +236,7 @@ export default function MathPage() {
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 disabled={isClassifying}
-                className="min-h-[100px] resize-none border-0 bg-transparent px-4 pt-4 pb-12 text-base shadow-none focus-visible:ring-0"
+                className="min-h-[100px] resize-none border-0 bg-transparent px-4 pt-4 pb-12 text-[16px] font-medium leading-[1.6] tracking-[-0.01em] text-[#080808] shadow-none placeholder:text-[#ababab] focus-visible:ring-0"
               />
 
               <input
@@ -243,14 +255,15 @@ export default function MathPage() {
                   size="icon-sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isClassifying}
+                  className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:translate-x-[2px] hover:border-[#898989] hover:bg-white hover:text-[#080808]"
                 >
-                  <ImagePlus className="size-4 text-muted-foreground" />
+                  <ImagePlus className="size-4 text-[#5a5a5a]" />
                 </Button>
 
                 <Button
                   type="submit"
                   size="icon"
-                  className="rounded-lg"
+                  className="rounded-[4px] border border-transparent bg-[#146ef5] text-white shadow-[0_8px_20px_rgba(20,110,245,0.34)] transition-all hover:translate-x-[6px] hover:bg-[#0055d4] hover:shadow-[0_10px_24px_rgba(20,110,245,0.44)]"
                   disabled={!canSend}
                 >
                   {isClassifying ? (
@@ -265,14 +278,20 @@ export default function MathPage() {
 
           {/* Suggestion Tags */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {suggestions.map(({ label, icon: Icon }) => (
+            {suggestions.map(({ label, icon: Icon }, index) => (
               <Badge
                 key={label}
                 variant="outline"
-                className="cursor-pointer gap-1.5 px-3 py-1.5 text-sm font-normal hover:bg-muted transition-colors"
+                className="h-auto cursor-pointer gap-1.5 rounded-[4px] border-[#d8d8d8] px-3 py-1.5 text-[12.8px] font-medium leading-[1.2] tracking-[0.04em] text-[#222222] transition-all hover:border-[var(--accent-color)] hover:bg-[var(--accent-soft)]"
                 onClick={() => handleSuggestionClick(label)}
+                style={
+                  {
+                    "--accent-color": suggestionAccents[index],
+                    "--accent-soft": `${suggestionAccents[index]}1A`,
+                  } as React.CSSProperties
+                }
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-3.5 text-[var(--accent-color)]" />
                 {label}
               </Badge>
             ))}

@@ -10,9 +10,10 @@ import {
   User,
   Pencil,
   ArrowLeft,
-  Monitor,
-  Smartphone,
+  PanelRight,
   Loader2,
+  Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -63,7 +64,7 @@ function MathDashboardContent() {
   });
 
   const [input, setInput] = useState("");
-  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [chatVisible, setChatVisible] = useState(true);
   const [toolboxConfig, setToolboxConfig] = useState<ToolboxConfigFromDB | null>(null);
   const [allToolboxConfigs, setAllToolboxConfigs] = useState<ToolboxConfigFromDB[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,7 +74,7 @@ function MathDashboardContent() {
   const hasSentInitial = useRef(false);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = input.trim() && !isLoading;
+  const canSend = !!input.trim() && !isLoading;
 
   const selectedTool = toolbox?.selectedTool ?? null;
   const tools = toolboxConfig?.tools ?? [];
@@ -224,60 +225,60 @@ function MathDashboardContent() {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,_#ffffff_0%,_#f7fbff_45%,_#ffffff_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(20,110,245,0.14),_transparent_48%)]" />
+
       {/* Left panel: HTML Preview or placeholder */}
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="relative flex min-w-0 flex-1 flex-col border-r border-[#d8d8d8]">
         {selectedTool ? (
           <>
             {/* Preview header */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-2">
+            <div className="flex items-center justify-between border-b border-[#d8d8d8] bg-white/90 px-4 py-2">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => toolbox?.setSelectedTool(null)}
+                  className="rounded-[4px]"
                 >
                   <ArrowLeft className="size-4" />
                 </Button>
-                <span className="text-sm font-medium">
-                  {tools.find((t) => t.key === selectedTool)?.label}{" "}
-                  {tools.find((t) => t.key === selectedTool)?.sub}
-                </span>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">
+                    Active tool
+                  </p>
+                  <span className="text-sm font-semibold text-[#080808]">
+                    {tools.find((t) => t.key === selectedTool)?.label}{" "}
+                    {tools.find((t) => t.key === selectedTool)?.sub}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant={viewMode === "desktop" ? "outline" : "ghost"}
-                  size="icon-sm"
-                  onClick={() => setViewMode("desktop")}
-                >
-                  <Monitor className="size-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "mobile" ? "outline" : "ghost"}
-                  size="icon-sm"
-                  onClick={() => setViewMode("mobile")}
-                >
-                  <Smartphone className="size-4" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setChatVisible((v) => !v)}
+                className="rounded-[4px]"
+                title={chatVisible ? "隱藏 AI 助手" : "顯示 AI 助手"}
+              >
+                <PanelRight className="size-4" />
+              </Button>
             </div>
 
             {/* HTML Preview */}
-            <div className="flex-1 overflow-auto p-4 bg-muted/30">
+            <div className="flex-1 overflow-auto bg-transparent p-4">
               <div
-                className={`h-full mx-auto rounded-xl border border-border bg-white transition-all ${
-                  viewMode === "mobile" ? "max-w-[390px]" : "w-full"
-                }`}
+                className="mx-auto h-full w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] transition-all"
               >
                 {isExtractingParams || !previewUrl ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                    <Loader2 className="size-8 animate-spin" />
-                    <span className="text-sm">正在根據題目生成練習...</span>
+                  <div className="flex h-full flex-col items-center justify-center gap-3 text-[#5a5a5a]">
+                    <Loader2 className="size-8 animate-spin text-[#146ef5]" />
+                    <span className="text-sm font-medium">正在根據題目生成練習...</span>
                   </div>
                 ) : (
                   <iframe
                     src={previewUrl}
-                    className="h-full w-full rounded-xl"
+                    className="h-full w-full rounded-[8px]"
                     sandbox="allow-scripts"
                     title="HTML Preview"
                   />
@@ -290,20 +291,23 @@ function MathDashboardContent() {
           <div className="flex-1 overflow-y-auto p-6">
             {/* Question display */}
             {(question || questionImage) && (
-              <div className="rounded-xl border border-border bg-muted/40 p-4 mb-6">
+              <div className="mb-6 rounded-[8px] border border-[#d8d8d8] bg-white p-5 shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <Badge variant="outline" className="text-xs font-normal">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">
+                      Problem detected
+                    </p>
+                    <Badge variant="outline" className="rounded-[4px] border-[#d8d8d8] bg-[#146ef5]/10 text-xs font-semibold uppercase tracking-[0.8px] text-[#146ef5]">
                       {typeLabel}
                     </Badge>
                     {questionImage && (
                       <img
                         src={questionImage}
                         alt="題目圖片"
-                        className="mt-2 max-h-32 rounded-lg border border-border object-contain"
+                        className="mt-3 max-h-32 rounded-[8px] border border-[#d8d8d8] object-contain"
                       />
                     )}
-                    <div className="text-lg font-medium leading-relaxed mt-2 prose prose-lg prose-neutral dark:prose-invert max-w-none [&_.katex]:text-2xl">
+                    <div className="prose prose-lg mt-3 max-w-none text-lg font-medium leading-relaxed prose-neutral [&_.katex]:text-2xl">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath]}
                         rehypePlugins={[rehypeKatex]}
@@ -312,40 +316,60 @@ function MathDashboardContent() {
                       </ReactMarkdown>
                     </div>
                   </div>
-                  <Pencil className="size-4 shrink-0 text-muted-foreground mt-1" />
+                  <Pencil className="mt-1 size-4 shrink-0 text-[#ababab]" />
                 </div>
               </div>
             )}
 
-            <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
-              <p className="text-sm">請從左側工具箱選擇工具開始練習</p>
-              <p className="text-xs mt-1">或在右側與 AI 對話解題</p>
+            <div className="flex flex-col items-center justify-center rounded-[8px] border border-dashed border-[#d8d8d8] bg-white/70 py-16 text-center">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[4px] bg-[#146ef5]/10 text-[#146ef5]">
+                <Sparkles className="size-5" />
+              </div>
+              <p className="text-sm font-semibold text-[#080808]">請從左側工具箱選擇工具開始練習</p>
+              <p className="mt-1 text-xs text-[#5a5a5a]">或在右側與 AI 對話解題</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Right panel: AI Chat (narrower) */}
-      <div className="flex w-80 shrink-0 flex-col border-l border-border min-h-0">
+      {chatVisible && <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">
+        <div className="border-b border-[#d8d8d8] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#146ef5] text-white">
+                <MessageSquare className="size-4" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">Math assistant</p>
+                <p className="text-sm font-semibold text-[#080808]">AI Chatbot</p>
+              </div>
+            </div>
+            <Badge className="rounded-[4px] border-0 bg-[#146ef5]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
+              Live
+            </Badge>
+          </div>
+        </div>
+
         {/* Chat messages */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-2 ${
+              className={`flex items-start gap-2 ${
                 message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
               {message.role === "assistant" && (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <Bot className="size-3" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
+                  <Bot className="size-4" strokeWidth={2} />
                 </div>
               )}
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm leading-relaxed prose prose-sm max-w-none ${
+                className={`prose prose-sm max-w-none max-w-[85%] rounded-[8px] border px-3 py-2 text-sm leading-relaxed ${
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground prose-invert"
-                    : "bg-muted prose-neutral dark:prose-invert"
+                    ? "border-[#146ef5] bg-[#146ef5] text-white prose-invert"
+                    : "border-[#d8d8d8] bg-white text-[#080808] prose-neutral"
                 }`}
               >
                 {message.parts
@@ -361,19 +385,19 @@ function MathDashboardContent() {
                   ))}
               </div>
               {message.role === "user" && (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <User className="size-3" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-[#d8d8d8] bg-[#f7f7f7] text-[#4f4f4f]">
+                  <User className="size-4" strokeWidth={2} />
                 </div>
               )}
             </div>
           ))}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-            <div className="flex gap-2 justify-start">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Bot className="size-3" />
+            <div className="flex items-start gap-2 justify-start">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
+                <Bot className="size-4" strokeWidth={2} />
               </div>
-              <div className="bg-muted rounded-lg px-3 py-2 text-sm">
+              <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
                 <span className="animate-pulse">思考中...</span>
               </div>
             </div>
@@ -383,16 +407,16 @@ function MathDashboardContent() {
         </div>
 
         {/* Chat input */}
-        <div className="border-t border-border px-3 py-3">
+        <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
           <form onSubmit={handleSubmit}>
-            <div className="relative w-full rounded-xl border border-border bg-background shadow-sm">
+            <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
               <Textarea
                 ref={textareaRef}
                 placeholder="繼續提問..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="min-h-[50px] resize-none border-0 bg-transparent px-3 pt-2.5 pb-9 text-sm shadow-none focus-visible:ring-0"
+                className="min-h-[58px] resize-none border-0 bg-transparent px-3 pt-3 pb-10 text-sm shadow-none focus-visible:ring-0"
               />
               <div className="absolute bottom-1.5 right-1.5">
                 {isLoading ? (
@@ -400,7 +424,7 @@ function MathDashboardContent() {
                     type="button"
                     size="icon-sm"
                     variant="outline"
-                    className="rounded-lg"
+                    className="rounded-[4px]"
                     onClick={stop}
                   >
                     <Square className="size-3" />
@@ -409,7 +433,7 @@ function MathDashboardContent() {
                   <Button
                     type="submit"
                     size="icon-sm"
-                    className="rounded-lg"
+                    className="rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
                     disabled={!canSend}
                   >
                     <ArrowUp className="size-3.5" />
@@ -419,7 +443,7 @@ function MathDashboardContent() {
             </div>
           </form>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

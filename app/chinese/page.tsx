@@ -3,147 +3,201 @@
 import { useRouter } from "next/navigation";
 import { PenTool, FileText, MessageSquare, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 const topics: {
   id: string;
   label: string;
+  labelEn: string;
   description: string;
   icon: typeof PenTool;
-  color: string;
+  accent: string;
   available: boolean;
 }[] = [
   {
     id: "scenery-description",
     label: "景物描寫",
-    description: "學習景物描寫的技巧與手法",
+    labelEn: "Scenery Description",
+    description: "從觀察、感官描寫到段落鋪陳，建立具畫面感的寫作能力。",
     icon: PenTool,
-    color: "orange",
+    accent: "#ff6b00",
     available: true,
   },
   {
     id: "character-description",
     label: "人物描寫",
-    description: "學習人物描寫的技巧與手法",
+    labelEn: "Character Description",
+    description: "掌握人物外貌、語言、動作與心理描寫的組織方式。",
     icon: MessageSquare,
-    color: "green",
+    accent: "#00d722",
     available: true,
   },
   {
     id: "classical-chinese",
     label: "文言文閱讀",
-    description: "AI 標註虛詞並解釋用法",
+    labelEn: "Classical Chinese",
+    description: "利用 AI 標註虛詞與語義關係，快速理解文言文句式與用法。",
     icon: FileText,
-    color: "purple",
+    accent: "#7a3dff",
     available: true,
   },
 ];
 
-const colorMap: Record<
-  string,
-  {
-    ring: string;
-    gradient: string;
-    icon: string;
-    arrow: string;
-  }
-> = {
-  orange: {
-    ring: "ring-orange-200 dark:ring-orange-800",
-    gradient: "from-orange-100 to-amber-50 dark:from-orange-950/60 dark:to-amber-900/30",
-    icon: "text-orange-600 dark:text-orange-400",
-    arrow: "text-orange-600 dark:text-orange-400",
-  },
-  green: {
-    ring: "ring-emerald-200 dark:ring-emerald-800",
-    gradient: "from-emerald-100 to-green-50 dark:from-emerald-950/60 dark:to-green-900/30",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    arrow: "text-emerald-600 dark:text-emerald-400",
-  },
-  purple: {
-    ring: "ring-purple-200 dark:ring-purple-800",
-    gradient: "from-purple-100 to-violet-50 dark:from-purple-950/60 dark:to-violet-900/30",
-    icon: "text-purple-600 dark:text-purple-400",
-    arrow: "text-purple-600 dark:text-purple-400",
-  },
-};
-
 export default function ChinesePage() {
   const router = useRouter();
+  const featuredTopic = topics.find((topic) => topic.id === "classical-chinese");
+  const writingTopics = topics.filter((topic) => topic.id !== "classical-chinese");
+
+  function navigateToTopic(topicId: string, available: boolean) {
+    if (!available) return;
+    if (topicId === "classical-chinese") {
+      router.push("/chinese/classical-chinese");
+      return;
+    }
+    router.push(`/chinese/dashboard?topic=${topicId}`);
+  }
 
   return (
     <>
       <Header backHref="/" backLabel="選科目" />
 
-      <main className="flex flex-1 flex-col px-6 py-10">
-        <div className="w-full max-w-3xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">
-              中國語文科
-            </h1>
-            <p className="text-base text-muted-foreground">
-              請選擇學習主題，開始使用互動工具學習 📚
-            </p>
-          </div>
+      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,_#fffdf8_0%,_#f8f7f4_48%,_#ffffff_100%)]" />
+        <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(255,174,19,0.12),_transparent_42%)]" />
+        <div className="absolute right-0 top-24 h-56 w-56 translate-x-1/4 rounded-full bg-[#146ef5]/8 blur-3xl" />
 
-          {/* Topic cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {topics.map(
-              ({ id, label, description, icon: Icon, color, available }) => {
-                const c = colorMap[color] ?? colorMap.orange;
-                return (
-                  <Card
+        <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="flex w-full flex-col gap-10 py-2">
+            <section className="grid gap-8 border-b border-[#d8d8d8] px-2 pb-8 pt-4 sm:px-0 lg:grid-cols-[minmax(0,1.2fr)_320px] lg:items-end">
+              <div className="space-y-5">
+                <p className="text-[12px] font-semibold uppercase tracking-[1.5px] text-[#a36a00]">
+                  Chinese topic studio
+                </p>
+                <div className="space-y-3">
+                  <h1 className="max-w-4xl font-serif text-[42px] leading-[1.02] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[54px] lg:text-[68px]">
+                    中文科主題練習台
+                  </h1>
+                  <p className="max-w-2xl text-base leading-7 text-[#4f4f4f] sm:text-lg">
+                    這裡不是再次選科目，而是直接進入中文科內部的主題選擇。你可以按寫作類型或閱讀工具，切進不同的學習工作流。
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <span className="inline-flex items-center rounded-[4px] bg-[#ffae13]/12 px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#a36a00]">
+                    Chinese only
+                  </span>
+                  <span className="inline-flex items-center rounded-[4px] border border-[#d8d8d8] bg-white px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#080808]">
+                    {topics.length} topics ready
+                  </span>
+                </div>
+              </div>
+
+              <aside className="rounded-[8px] border border-[#d8d8d8] bg-white/90 p-5 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
+                  Page guide
+                </p>
+                <div className="mt-4 space-y-4 text-sm leading-6 text-[#4f4f4f]">
+                  <p>寫作主題提供段落組織與描寫練習。</p>
+                  <p>文言文入口提供 AI 標註與理解輔助。</p>
+                  <p>每張卡片都會直接進入中文科對應工具，不會回到科目層級。</p>
+                </div>
+              </aside>
+            </section>
+
+            <section className="grid gap-4 px-2 sm:px-0 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.92fr)]">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {writingTopics.map(({ id, label, labelEn, description, icon: Icon, accent, available }) => (
+                  <button
                     key={id}
-                    onClick={() => {
-                      if (!available) return;
-                      if (id === "classical-chinese") {
-                        router.push("/chinese/classical-chinese");
-                      } else {
-                        router.push(`/chinese/dashboard?topic=${id}`);
-                      }
-                    }}
+                    onClick={() => navigateToTopic(id, available)}
+                    disabled={!available}
                     className={[
-                      "group relative cursor-pointer transition-all duration-200",
+                      "group flex min-h-[320px] flex-col rounded-[8px] border p-6 text-left transition duration-200",
                       available
-                        ? `bg-gradient-to-br ${c.gradient} ${c.ring} hover:shadow-lg hover:-translate-y-0.5`
-                        : "opacity-50 cursor-not-allowed",
+                        ? "cursor-pointer border-[#d8d8d8] bg-white hover:-translate-y-1 hover:border-[#080808]"
+                        : "cursor-not-allowed border-[#d8d8d8] bg-[#f3f3f1]",
                     ].join(" ")}
                   >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex size-12 items-center justify-center rounded-full bg-white/80 dark:bg-white/10 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
-                          <Icon className={`size-6 ${c.icon}`} strokeWidth={1.8} />
-                        </div>
-                        {!available && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            即將推出
-                          </Badge>
-                        )}
+                    <div className="flex items-center justify-between gap-4">
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-[4px] text-white shadow-[6px_6px_0px_#080808]"
+                        style={{ backgroundColor: accent }}
+                      >
+                        <Icon className="size-5" />
                       </div>
-                      <CardTitle className="text-base mt-1">{label}</CardTitle>
-                      <CardDescription>{description}</CardDescription>
-                    </CardHeader>
-                    {available && (
-                      <CardContent className="pt-0">
-                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${c.arrow} group-hover:gap-2 transition-all`}>
-                          開始學習
-                          <ArrowRight className="size-3.5" />
-                        </span>
-                      </CardContent>
-                    )}
-                  </Card>
-                );
-              }
-            )}
-          </div>
+                      <span className="text-[11px] font-semibold uppercase tracking-[1.1px] text-[#ababab]">
+                        {labelEn}
+                      </span>
+                    </div>
 
-          {topics.length === 0 && (
-            <div className="text-center text-muted-foreground py-12">
-              <p className="text-sm">主題即將推出，敬請期待。</p>
-            </div>
-          )}
+                    <div className="mt-12 space-y-4">
+                      <h2 className="text-[32px] leading-[1.04] font-semibold tracking-[-0.04em] text-[#080808]">
+                        {label}
+                      </h2>
+                      <p className="text-sm leading-7 text-[#5a5a5a]">
+                        {description}
+                      </p>
+                    </div>
+
+                    <div className="mt-auto border-t border-[#d8d8d8] pt-5">
+                      <span className="inline-flex items-center gap-2 text-sm font-medium text-[#080808] transition-transform duration-200 group-hover:translate-x-1">
+                        開始這個寫作主題
+                        <ArrowRight className="size-4 text-[#146ef5]" />
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {featuredTopic && (
+                <button
+                  onClick={() => navigateToTopic(featuredTopic.id, featuredTopic.available)}
+                  disabled={!featuredTopic.available}
+                  className={[
+                    "group relative flex min-h-[420px] flex-col overflow-hidden rounded-[8px] border p-6 text-left transition duration-200",
+                    featuredTopic.available
+                      ? "cursor-pointer border-[#d8d8d8] bg-[linear-gradient(180deg,_#ffffff_0%,_#f7f3ff_100%)] hover:translate-x-[6px] hover:border-[#080808]"
+                      : "cursor-not-allowed border-[#d8d8d8] bg-[#f3f3f1]",
+                  ].join(" ")}
+                >
+                  <div className="absolute right-0 top-0 h-32 w-32 translate-x-1/4 -translate-y-1/4 rounded-full bg-[#7a3dff]/12 blur-3xl" />
+                  <div className="relative flex items-center justify-between gap-4">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-[4px] text-white shadow-[6px_6px_0px_#080808]"
+                      style={{ backgroundColor: featuredTopic.accent }}
+                    >
+                      <featuredTopic.icon className="size-5" />
+                    </div>
+                    <span className="inline-flex rounded-[4px] bg-[#7a3dff]/10 px-3 py-1 text-[12px] font-semibold uppercase tracking-[1px] text-[#7a3dff]">
+                      Featured tool
+                    </span>
+                  </div>
+
+                  <div className="relative mt-14 space-y-5">
+                    <p className="text-[12px] font-semibold uppercase tracking-[1.4px] text-[#ababab]">
+                      {featuredTopic.labelEn}
+                    </p>
+                    <h2 className="font-serif text-[38px] leading-[1.02] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[46px]">
+                      {featuredTopic.label}
+                    </h2>
+                    <p className="max-w-md text-base leading-7 text-[#4f4f4f]">
+                      {featuredTopic.description}
+                    </p>
+                  </div>
+
+                  <div className="relative mt-8 grid gap-3 border-t border-[#d8d8d8] pt-5 text-sm text-[#5a5a5a]">
+                    <p>適合快速拆解虛詞、句式與上下文關係。</p>
+                    <p>進入後可直接貼上文段，讓 AI 協助標註與說明。</p>
+                  </div>
+
+                  <div className="relative mt-auto flex items-center justify-between pt-6">
+                    <span className="text-sm font-medium text-[#080808]">
+                      進入文言文閱讀工具
+                    </span>
+                    <ArrowRight className="size-4 text-[#7a3dff] transition-transform duration-200 group-hover:translate-x-1" />
+                  </div>
+                </button>
+              )}
+            </section>
+          </div>
         </div>
       </main>
     </>
