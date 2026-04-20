@@ -601,6 +601,18 @@
             }
             return true;
         });
+
+        // 完成後自動將頁面捲動到底部，確保最終答案輸入框可見
+        const scrollBottom = () => {
+            const doc = document.scrollingElement || document.documentElement;
+            if (doc) {
+                try { window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }); }
+                catch (e) { window.scrollTo(0, doc.scrollHeight); }
+            }
+        };
+        setTimeout(scrollBottom, 100);
+        setTimeout(scrollBottom, 400);
+        setTimeout(scrollBottom, 800);
     }
 
     function toggleRearrange() {

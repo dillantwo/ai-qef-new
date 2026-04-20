@@ -1003,6 +1003,22 @@
 
             document.getElementById('bot-public-unit').innerHTML = `💡 公共分數單位為： <b style="display:inline-flex; align-items:center; vertical-align:middle;">${getFracHtml(1, cd1, 'var(--dark)')}</b>`;
             document.getElementById('drag-instruction').innerHTML = `💡 太棒了！全部合併完成，請填寫下方最終答案！${hint}`;
+
+            // 合併完成後自動將頁面捲動到底部，確保最終答案輸入框可見
+            const scrollBottom = () => {
+                const doc = document.scrollingElement || document.documentElement;
+                if (doc) {
+                    try {
+                        window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' });
+                    } catch (e) {
+                        window.scrollTo(0, doc.scrollHeight);
+                    }
+                }
+            };
+            // 多次嘗試，確保 DOM/動畫更新完成後仍能滾到底
+            setTimeout(scrollBottom, 100);
+            setTimeout(scrollBottom, 400);
+            setTimeout(scrollBottom, 800);
         }
     }
 

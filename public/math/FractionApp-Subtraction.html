@@ -837,6 +837,18 @@
         document.getElementById('bot-public-unit').innerHTML = `💡 公共分數單位為： <b style="display:inline-flex; align-items:center; vertical-align:middle;">${getFracHtml(1, cd1, 'var(--dark)')}</b>`;
         document.getElementById('drag-instruction').innerHTML = `💡 減去完畢！請填寫下方最終答案！${hint}`;
         
+        // 完成後自動將頁面捲動到底部，確保最終答案輸入框可見
+        const scrollBottom = () => {
+            const doc = document.scrollingElement || document.documentElement;
+            if (doc) {
+                try { window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }); }
+                catch (e) { window.scrollTo(0, doc.scrollHeight); }
+            }
+        };
+        setTimeout(scrollBottom, 100);
+        setTimeout(scrollBottom, 400);
+        setTimeout(scrollBottom, 800);
+
         // 顯示重新排列按鈕並重置狀態
         let btn = document.getElementById('rearrange-btn');
         if (btn) {

@@ -855,6 +855,18 @@
         // 確保移除不必要的提示字句
         document.getElementById('bot-public-unit').style.display = 'none';
         document.getElementById('drag-instruction').innerHTML = `💡 太棒了！全部量測完成。可以看出總共裝滿了幾「份」嗎？請填寫下方最終答案！${hint}`;
+
+        // 完成後自動將頁面捲動到底部，確保最終答案輸入框可見
+        const scrollBottom = () => {
+            const doc = document.scrollingElement || document.documentElement;
+            if (doc) {
+                try { window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }); }
+                catch (e) { window.scrollTo(0, doc.scrollHeight); }
+            }
+        };
+        setTimeout(scrollBottom, 100);
+        setTimeout(scrollBottom, 400);
+        setTimeout(scrollBottom, 800);
     }
 
     function updateUI() {

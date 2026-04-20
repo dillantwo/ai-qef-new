@@ -736,6 +736,25 @@
             drawProcess(n1, d1, n2, d2, fnVal, currentOp, anim);
             const maxGrid = (currentOp === '*') ? d2 : d1;
             drawNumberLine(maxGrid);
+
+            // 答對目標時，自動把頁面捲到底（讓 iframe 父頁也看到答案）
+            const targetMatched = targetNum !== null && targetDen !== null
+                && Number(n2) === Number(targetNum) && Number(d2) === Number(targetDen);
+            if (targetMatched && !window.__esScrolledForTarget) {
+                window.__esScrolledForTarget = true;
+                const scrollBottom = () => {
+                    const doc = document.scrollingElement || document.documentElement;
+                    if (doc) {
+                        try { window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }); }
+                        catch (e) { window.scrollTo(0, doc.scrollHeight); }
+                    }
+                };
+                setTimeout(scrollBottom, 100);
+                setTimeout(scrollBottom, 400);
+                setTimeout(scrollBottom, 800);
+            } else if (!targetMatched) {
+                window.__esScrolledForTarget = false;
+            }
         } else {
             // 長度一致但數字錯（如分子分母乘數不同），清空長條但不完全隱藏組件
             bp.style.visibility = 'visible';
