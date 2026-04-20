@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClockApp1(24hrs)</title>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #1B1B1F; 
+            --hour-color: #ff4757; 
+            --min-color: #2ed573;  
+            --bg: #ffffff; 
+            --arc-color: rgba(255, 165, 0, 0.4); /* 夾角扇形的顏色 */
+        }
+        body { font-family: 'Outfit', sans-serif; background: #f0f0f0; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        
+        .paper { 
+            background: white; width: 100%; max-width: 500px; padding: 30px; 
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative; min-height: 650px; box-sizing: border-box;
+        }
+
+        /* 頂部控制列 */
+        .top-control-bar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 20px; font-weight: bold; font-size: 0.9rem;
+        }
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        .icon-btn { background: white; border: 1px solid #ccc; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 1.1rem; }
+        .toggle-btn {
+            background: #eee; border: 1px solid #ccc; padding: 6px 12px;
+            border-radius: 20px; cursor: pointer; transition: 0.2s; font-weight: bold;
+        }
+        .toggle-btn.active { background: #333; color: white; border-color: #333; }
+
+        /* 時鐘 */
+        .clock-wrap { width: 340px; height: 340px; margin: 20px auto 30px; position: relative; }
+        .num-12 { font-size: 22px; font-weight: 700; fill: #333; }
+        .num-24 { font-size: 18px; font-weight: 600; fill: #888; transition: opacity 0.3s; }
+        .tick-min { stroke: #ccc; stroke-width: 1.5; } 
+        .tick-hour { stroke: #333; stroke-width: 3; } 
+        .hand { stroke-linecap: round; }
+        .drag-circle { cursor: grab; }
+        .drag-circle:active { cursor: grabbing; }
+
+        /* 下方跳字鐘與資訊區 */
+        .info-area { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
+        
+        .digital-display { 
+            border: 3px solid #333; border-radius: 16px; padding: 15px 20px;
+            display: flex; align-items: center; gap: 5px; background: #fff;
+            position: relative;
+        }
+        .time-box { display: flex; flex-direction: column; align-items: center; }
+        .time-box input { 
+            width: 60px; text-align: center; font-size: 2.2rem; border: none; 
+            font-family: 'DM Mono', monospace; font-weight: bold; background: none;
+        }
+        #disp-h { color: var(--hour-color); }
+        #disp-m { color: var(--min-color); }
+        
+        .step-btn { background: #eee; border: none; border-radius: 4px; width: 35px; height: 25px; cursor: pointer; font-size: 12px; }
+        .step-btn:hover { background: #ddd; }
+        
+        .ampm-label { font-size: 1.1rem; font-weight: 800; margin-left: 10px; min-width: 70px; color: #333; display: flex; align-items: center; gap: 5px; }
+        
+        .angle-display {
+            font-size: 1.1rem; font-weight: bold; color: #666;
+            background: #fff3e0; padding: 8px 16px; border-radius: 8px;
+            border: 1px dashed #ffa500; display: none; /* 預設隱藏 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="top-control-bar">
+        <div class="control-group">
+            <span>24-hour system</span>
+            <button id="toggle24Num" class="icon-btn" title="顯示外圈24小時數字">👁️</button>
+        </div>
+        <div class="control-group">
+            <button id="snapBtn" class="toggle-btn" title="指針自動對齊5分鐘">Snap: 1m (關)</button>
+            <button id="angleBtn" class="toggle-btn" title="顯示時針與分針的夾角">顯示夾角</button>
+        </div>
+    </div>
+
+    <div class="clock-wrap">
+        <svg id="clock" viewBox="-40 -40 480 480">
+            <circle cx="200" cy="200" r="190" fill="none" stroke="#333" stroke-width="3" />
+            
+            <g id="ticks"></g>
+            
+            <g id="scale12"></g>
+            <g id="scale24" style="opacity: 0;"></g>
+            
+            <path id="angleArc" fill="var(--arc-color)" d="" style="opacity: 0; transition: opacity 0.3s;" />
+
+            <line id="hourHand" class="hand" x1="200" y1="200" x2="200" y2="120" stroke="var(--hour-color)" stroke-width="10" />
+            <line id="minHand" class="hand" x1="200" y1="200" x2="200" y2="70" stroke="var(--min-color)" stroke-width="6" />
+            
+            <circle class="drag-circle" id="hDot" cx="200" cy="120" r="18" fill="var(--hour-color)" />
+            <circle class="drag-circle" id="mDot" cx="200" cy="70" r="15" fill="var(--min-color)" />
+            
+            <circle cx="200" cy="200" r="8" fill="#333" />
+        </svg>
+    </div>
+
+    <div class="info-area">
+        <button id="modeBtn" class="toggle-btn active" style="font-size: 1rem; padding: 8px 20px;">模式: AM/PM</button>
+        
+        <div class="digital-display">
+            <div class="time-box">
+                <button class="step-btn" onclick="stepTime(60)">▲</button>
+                <input type="text" id="disp-h" value="09" readonly>
+                <button class="step-btn" onclick="stepTime(-60)">▼</button>
+            </div>
+            <span style="font-size: 2rem; font-weight: bold;">:</span>
+            <div class="time-box">
+                <button class="step-btn" onclick="stepTime(1)">▲</button>
+                <input type="text" id="disp-m" value="06" readonly>
+                <button class="step-btn" onclick="stepTime(-1)">▼</button>
+            </div>
+            <div class="ampm-label" id="disp-ampm"><span id="dayNightIcon">☀️</span> <span id="ampmText">A.M.</span></div>
+        </div>
+
+        <div id="angleDisplay" class="angle-display">
+            指針夾角：<span id="angleValue">0</span>°
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTime = 546; 
+    let is24HDisplay = false; 
+    let show24Numbers = false; 
+    let snapTo5Min = false;
+    let showAngle = false;
+    let dragging = null;
+    let lastAngle = 0;
+
+    // --- 1. 生成刻度與數字 ---
+    const ticksG = document.getElementById('ticks');
+    const scale12 = document.getElementById('scale12');
+    const scale24 = document.getElementById('scale24');
+
+    for (let i = 0; i < 60; i++) {
+        const angle = (i * 6) * Math.PI / 180;
+        const isHour = i % 5 === 0;
+        const rInner = isHour ? 175 : 182;
+        const rOuter = 190;
+        
+        ticksG.innerHTML += `<line x1="${200+rInner*Math.sin(angle)}" y1="${200-rInner*Math.cos(angle)}" 
+                                  x2="${200+rOuter*Math.sin(angle)}" y2="${200-rOuter*Math.cos(angle)}" 
+                                  class="${isHour ? 'tick-hour' : 'tick-min'}" />`;
+        
+        if (isHour) {
+            const val12 = i / 5 === 0 ? 12 : i / 5;
+            const aNum = (val12 * 30) * Math.PI / 180;
+            
+            const x12 = 200 + 145 * Math.sin(aNum);
+            const y12 = 200 - 145 * Math.cos(aNum);
+            scale12.innerHTML += `<text x="${x12}" y="${y12}" class="num-12" text-anchor="middle" dominant-baseline="central">${val12}</text>`;
+            
+            const x24 = 200 + 215 * Math.sin(aNum); 
+            const y24 = 200 - 215 * Math.cos(aNum);
+            const val24 = val12 + 12 === 24 ? 24 : val12 + 12;
+            scale24.innerHTML += `<text x="${x24}" y="${y24}" class="num-24" text-anchor="middle" dominant-baseline="central">${val24}</text>`;
+        }
+    }
+
+    // --- 2. 控制開關邏輯 ---
+    document.getElementById('toggle24Num').onclick = function() {
+        show24Numbers = !show24Numbers;
+        scale24.style.opacity = show24Numbers ? "1" : "0";
+        this.innerText = show24Numbers ? "👁️‍🗨️" : "👁️";
+    };
+
+    document.getElementById('modeBtn').onclick = function() {
+        is24HDisplay = !is24HDisplay;
+        this.innerText = is24HDisplay ? "模式: 24H" : "模式: AM/PM";
+        this.classList.toggle('active');
+        updateUI();
+    };
+
+    document.getElementById('snapBtn').onclick = function() {
+        snapTo5Min = !snapTo5Min;
+        this.innerText = snapTo5Min ? "Snap: 5m (開)" : "Snap: 1m (關)";
+        this.classList.toggle('active');
+        if (snapTo5Min) snapTime(); // 立刻吸附
+    };
+
+    document.getElementById('angleBtn').onclick = function() {
+        showAngle = !showAngle;
+        this.classList.toggle('active');
+        document.getElementById('angleArc').style.opacity = showAngle ? "1" : "0";
+        document.getElementById('angleDisplay').style.display = showAngle ? "block" : "none";
+        updateUI();
+    };
+
+    function stepTime(mins) {
+        currentTime = (currentTime + mins + 1440) % 1440;
+        if (snapTo5Min) currentTime = Math.round(currentTime / 5) * 5;
+        updateUI();
+    }
+
+    function snapTime() {
+        // 將時間四捨五入到最近的 5 分鐘
+        currentTime = Math.round(currentTime / 5) * 5;
+        updateUI();
+    }
+
+    // --- 3. 拖動邏輯 ---
+    const clock = document.getElementById('clock');
+    ['hDot', 'mDot'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('mousedown', (e) => startDrag(e, id));
+        el.addEventListener('touchstart', (e) => startDrag(e.touches ? e.touches : e, id), {passive: false});
+    });
+
+    function startDrag(e, id) {
+        dragging = id;
+        lastAngle = getAngle(e);
+        document.onmousemove = onMove;
+        document.ontouchmove = (ev) => { ev.preventDefault(); onMove(ev.touches[0]); };
+        
+        // 滑鼠放開時停止拖動，若開啟了 Snap 則執行吸附
+        document.onmouseup = document.ontouchend = () => { 
+            dragging = null; 
+            document.onmousemove = null; 
+            document.ontouchmove = null;
+            if (snapTo5Min) snapTime();
+        };
+    }
+
+    function onMove(e) {
+        if(!dragging) return;
+        let curA = getAngle(e);
+        let diff = curA - lastAngle;
+        if (diff > 180) diff -= 360; if (diff < -180) diff += 360;
+        
+        let minsChange = diff * (dragging === 'mDot' ? 60/360 : 720/360);
+        // 如果是 mDot 拖動且需要吸附手感，讓過程平滑，放開時才精準吸附
+        currentTime = (currentTime + minsChange + 1440) % 1440;
+        lastAngle = curA;
+        updateUI();
+    }
+
+    function getAngle(e) {
+        const r = clock.getBoundingClientRect();
+        const x = e.clientX - (r.left + r.width/2), y = e.clientY - (r.top + r.height/2);
+        let a = Math.atan2(y, x) * 180 / Math.PI + 90;
+        return a < 0 ? a + 360 : a;
+    }
+
+    // --- 4. 畫夾角扇形 (SVG Arc) ---
+    function drawAngleArc(hA, mA) {
+        // 計算內角(<=180度)
+        let diff = Math.abs(hA - mA);
+        let innerA = Math.min(diff, 360 - diff);
+        
+        if(innerA === 0) {
+            document.getElementById('angleArc').setAttribute('d', '');
+            return 0;
+        }
+
+        // 決定畫圖的起點和終點，確保畫出的是較小的那個扇形
+        let start = hA;
+        let end = mA;
+        let cwDiff = (mA - hA + 360) % 360;
+        if (cwDiff > 180) { start = mA; end = hA; }
+
+        // 計算圓弧的起點座標 (半徑 60)
+        let rad1 = (start - 90) * Math.PI / 180;
+        let rad2 = (end - 90) * Math.PI / 180;
+        let p1x = 200 + 60 * Math.cos(rad1), p1y = 200 + 60 * Math.sin(rad1);
+        let p2x = 200 + 60 * Math.cos(rad2), p2y = 200 + 60 * Math.sin(rad2);
+
+        // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
+        let d = `M 200 200 L ${p1x} ${p1y} A 60 60 0 0 1 ${p2x} ${p2y} Z`;
+        document.getElementById('angleArc').setAttribute('d', d);
+        
+        return innerA;
+    }
+
+    // --- 5. 更新畫面 ---
+    function updateUI() {
+        const h = Math.floor(currentTime / 60);
+        const m = Math.floor(currentTime % 60);
+
+        // 指針角度計算
+        const hA = (h % 12) * 30 + (m / 60) * 30;
+        const mA = m * 6;
+        
+        // 旋轉指針
+        document.getElementById('hourHand').setAttribute('transform', `rotate(${hA}, 200, 200)`);
+        document.getElementById('hDot').setAttribute('transform', `rotate(${hA}, 200, 200)`);
+        document.getElementById('minHand').setAttribute('transform', `rotate(${mA}, 200, 200)`);
+        document.getElementById('mDot').setAttribute('transform', `rotate(${mA}, 200, 200)`);
+
+        // 更新夾角與數字
+        if (showAngle) {
+            let angle = drawAngleArc(hA, mA);
+            document.getElementById('angleValue').innerText = angle.toFixed(1);
+        }
+
+        // 更新跳字鐘
+        const dispH = document.getElementById('disp-h');
+        const dispM = document.getElementById('disp-m');
+        const ampmText = document.getElementById('ampmText');
+        const dayNightIcon = document.getElementById('dayNightIcon');
+
+        // 判斷晝夜圖示 (06:00~17:59 為太陽，其餘為月亮)
+        const isDayTime = (h >= 6 && h < 18);
+        dayNightIcon.innerText = isDayTime ? "☀️" : "🌙";
+
+        if (is24HDisplay) {
+            dispH.value = h.toString().padStart(2, '0');
+            ampmText.innerText = "";
+        } else {
+            dispH.value = (h % 12 || 12).toString().padStart(2, '0');
+            ampmText.innerText = h < 12 ? "A.M." : "P.M.";
+        }
+        dispM.value = m.toString().padStart(2, '0');
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>

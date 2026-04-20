@@ -145,6 +145,17 @@ function MathDashboardContent() {
       return;
     }
 
+    // 直接連結到 HTML 的工具（不需要 AI 提取參數）
+    const staticHtmlMap: Record<string, string> = {
+      "clock-24hrs": "ClockApp1-24hrs.html",
+      "clock-time-difference": "ClockApp2-TimeDifference.html",
+    };
+    const staticHtml = staticHtmlMap[selectedTool];
+    if (staticHtml) {
+      setPreviewUrl(`${basePath}/math/${staticHtml}`);
+      return;
+    }
+
     const fractionOpHtmlMap: Record<string, string> = {
       "fraction-addition": "FractionApp-Addition.html",
       "fraction-subtraction": "FractionApp-Subtraction.html",

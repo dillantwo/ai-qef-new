@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClockApp2(TimeDifference)</title>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <style>
+        :root { --primary: #1B1B1F; --start: #ff4757; --end: #2ed573; --bg: #F4F1EC; --accent: #3498db; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px 10px; margin: 0; }
+        
+        .app { max-width: 750px; width: 100%; background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); box-sizing: border-box; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        
+        .clocks-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; }
+        .clock-column { display: flex; flex-direction: column; align-items: center; width: 300px; }
+
+        .clock-wrap { width: 260px; height: 260px; margin-bottom: 20px; position: relative; }
+        .clock-num { font-size: 24px; font-weight: 700; fill: #333; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .circle { cursor: grab; transition: r 0.2s; }
+        .circle:active { cursor: grabbing; r: 18; }
+
+        .controls { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .time-row { display: flex; align-items: center; justify-content: space-around; background: #f8f9fa; padding: 12px 15px; border-radius: 16px; border: 2px solid #eee; width: 100%; box-sizing: border-box; }
+        .label-text { font-weight: 800; font-size: 1.1rem; min-width: 60px; }
+
+        .val-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .step-btn { background: #e0e0e0; border: none; width: 32px; height: 26px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .step-btn:active { background: #d0d0d0; }
+        
+        .time-input { width: 44px; text-align: center; border: 1px solid #ccc; border-radius: 8px; padding: 4px; font-family: 'DM Mono'; font-size: 1.2rem; background: white; transition: all 0.2s; }
+        .time-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.4); }
+
+        .btn-toggle { background: #eee; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+        .btn-toggle.active { background: var(--primary); color: white; }
+
+        /* 下方作答與挑戰區塊排版 */
+        .result-area { margin-top: 35px; text-align: center; border-top: 2px dashed #ddd; padding-top: 25px; }
+        .result-label { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 5px; }
+        .hint-text { font-size: 1.05rem; color: #d35400; font-weight: 700; background: #fef0f0; display: inline-block; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #fadbd8; }
+        
+        /* 學生輸入答案區 */
+        .answer-box { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .ans-input { width: 60px; font-size: 1.5rem; text-align: center; padding: 8px; border: 2px solid #ccc; border-radius: 10px; font-weight: bold; transition: all 0.2s; }
+        .ans-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.4); }
+        .ans-unit { font-size: 1.5rem; font-weight: bold; color: #555; }
+        
+        .feedback-msg { font-size: 1.1rem; font-weight: bold; min-height: 24px; margin: 10px 0; }
+        .correct { color: #27ae60; }
+        .wrong { color: #e74c3c; }
+
+        .btn-primary { background: #2ecc71; color: white; padding: 12px 25px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.96); }
+        
+        /* 教學詳解步驟區 */
+        .btn-hint { background: #9b59b6; color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 5px; display: none; }
+        .steps-box { background: #fdf2e9; border: 2px dashed #e67e22; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; font-size: 1.1rem; line-height: 1.8; color: #333; max-width: 450px; margin-left: auto; margin-right: auto; display: none; }
+        .steps-box strong { color: #d35400; font-size: 1.15rem; }
+        .step-equation { background: white; padding: 12px; border-radius: 8px; border: 1px solid #ccc; text-align: center; font-size: 1.15rem; margin-bottom: 15px; font-weight: bold; }
+        .step-equation.borrowed { border: 2px dashed #e67e22; background: #fffcf8; }
+
+        .divider { width: 100%; height: 1px; background: #eee; margin: 25px 0; }
+
+        .quiz-box { background: #e3f2fd; border-radius: 12px; padding: 15px; margin-top: 15px; display: none; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        #quizMsg { color: #1976d2; font-weight: 700; margin-bottom: 12px; font-size: 1.1rem; }
+        .btn-quiz { background: var(--accent); color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-check { background: #f39c12; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <h2 style="margin:0; font-size: 1.5rem; display:flex; align-items:center; gap:8px;">⏱️Time Difference</h2>
+        <button id="modeToggle" class="btn-toggle">Mode: AM/PM</button>
+    </div>
+    
+    <div class="clocks-container">
+        <div class="clock-column">
+            <div class="clock-wrap">
+                <svg id="clockS" viewBox="0 0 400 400">
+                    <circle cx="200" cy="200" r="185" fill="#fff" stroke="#1B1B1F" stroke-width="8" />
+                    <g id="ticksS"></g>
+                    <g id="numbersS"></g>
+                    <g id="groupS">
+                        <line id="hourHandS" x1="200" y1="200" x2="200" y2="110" stroke="var(--start)" stroke-width="10" stroke-linecap="round" />
+                        <line id="minHandS" x1="200" y1="200" x2="200" y2="60" stroke="var(--start)" stroke-width="6" stroke-linecap="round" />
+                        <circle class="circle" id="hS" cx="200" cy="110" r="15" fill="var(--start)" />
+                        <circle class="circle" id="mS" cx="200" cy="60" r="11" fill="var(--start)" />
+                    </g>
+                    <circle cx="200" cy="200" r="8" fill="#1B1B1F" />
+                </svg>
+            </div>
+            
+            <div class="controls">
+                <div class="time-row" style="border-left: 6px solid var(--start);">
+                    <div class="label-text" style="color: var(--start);">Time 1</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <button id="sAm" class="btn-toggle active" style="padding: 2px 8px; font-size: 0.7rem;">AM</button>
+                        <button id="sPm" class="btn-toggle" style="padding: 2px 8px; font-size: 0.7rem;">PM</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <div class="val-group">
+                            <button class="step-btn" onclick="stepTime('s', 60)">▲</button>
+                            <input type="text" id="sH" class="time-input" onchange="handleManualInput('s', 'H', this.value)">
+                            <button class="step-btn" onclick="stepTime('s', -60)">▼</button>
+                        </div>
+                        <span style="font-weight:bold">:</span>
+                        <div class="val-group">
+                            <button class="step-btn" onclick="stepTime('s', 1)">▲</button>
+                            <input type="text" id="sM" class="time-input" onchange="handleManualInput('s', 'M', this.value)">
+                            <button class="step-btn" onclick="stepTime('s', -1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="clock-column">
+            <div class="clock-wrap">
+                <svg id="clockE" viewBox="0 0 400 400">
+                    <circle cx="200" cy="200" r="185" fill="#fff" stroke="#1B1B1F" stroke-width="8" />
+                    <g id="ticksE"></g>
+                    <g id="numbersE"></g>
+                    <g id="groupE">
+                        <line id="hourHandE" x1="200" y1="200" x2="200" y2="110" stroke="var(--end)" stroke-width="10" stroke-linecap="round" opacity="0.9" />
+                        <line id="minHandE" x1="200" y1="200" x2="200" y2="60" stroke="var(--end)" stroke-width="6" stroke-linecap="round" opacity="0.9" />
+                        <circle class="circle" id="hE" cx="200" cy="110" r="15" fill="var(--end)" />
+                        <circle class="circle" id="mE" cx="200" cy="60" r="11" fill="var(--end)" />
+                    </g>
+                    <circle cx="200" cy="200" r="8" fill="#1B1B1F" />
+                </svg>
+            </div>
+
+            <div class="controls">
+                <div class="time-row" style="border-left: 6px solid var(--end);">
+                    <div class="label-text" style="color: var(--end);">Time 2</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <button id="eAm" class="btn-toggle active" style="padding: 2px 8px; font-size: 0.7rem;">AM</button>
+                        <button id="ePm" class="btn-toggle" style="padding: 2px 8px; font-size: 0.7rem;">PM</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <div class="val-group">
+                            <button class="step-btn" onclick="stepTime('e', 60)">▲</button>
+                            <input type="text" id="eH" class="time-input" onchange="handleManualInput('e', 'H', this.value)">
+                            <button class="step-btn" onclick="stepTime('e', -60)">▼</button>
+                        </div>
+                        <span style="font-weight:bold">:</span>
+                        <div class="val-group">
+                            <button class="step-btn" onclick="stepTime('e', 1)">▲</button>
+                            <input type="text" id="eM" class="time-input" onchange="handleManualInput('e', 'M', this.value)">
+                            <button class="step-btn" onclick="stepTime('e', -1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="result-area">
+        <div class="result-label">✏️ 算算看，經過了多少時間？</div>
+        <div class="hint-text">💡 提示：借位時 1 小時 = 60 分鐘（不是 100 喔）</div>
+        
+        <div class="answer-box">
+            <input type="number" id="inputH" class="ans-input" min="0" max="23" placeholder="0">
+            <span class="ans-unit">h</span>
+            <input type="number" id="inputM" class="ans-input" min="0" max="59" placeholder="0">
+            <span class="ans-unit">m</span>
+        </div>
+        
+        <button id="verifyAnsBtn" class="btn-primary">✔️ 檢查我的計算</button>
+        <div id="feedbackTxt" class="feedback-msg"></div>
+        
+        <button id="showStepsBtn" class="btn-hint">👀 不知道怎麼算？點我看橫式詳解</button>
+        <div id="stepsBox" class="steps-box"></div>
+        
+        <div class="divider"></div>
+        
+        <button id="quizBtn" class="btn-quiz">🎲 隨機挑戰 (設定 Time 2)</button>
+        
+        <div id="quizBox" class="quiz-box">
+            <div id="quizMsg"></div>
+            <button id="checkBtn" class="btn-check">✔️ 檢查 Time 2</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let startTime = 540, endTime = 885, is24H = false;
+    let dragging = null, lastAngle = 0, activeClock = null;
+    let quizTargetDiff = 0;
+
+    const tickGS = document.getElementById('ticksS'), tickGE = document.getElementById('ticksE');
+    const numGS = document.getElementById('numbersS'), numGE = document.getElementById('numbersE');
+    
+    for(let i=0; i<60; i++) {
+        const a = (i * 6) * Math.PI / 180;
+        const isHour = i % 5 === 0;
+        const r1 = isHour ? 172 : 178; 
+        const r2 = 185;                
+        const strokeW = isHour ? 3 : 1;
+        const strokeC = isHour ? "#1B1B1F" : "#999";
+        const lineStr = `<line x1="${200 + r1 * Math.sin(a)}" y1="${200 - r1 * Math.cos(a)}" x2="${200 + r2 * Math.sin(a)}" y2="${200 - r2 * Math.cos(a)}" stroke="${strokeC}" stroke-width="${strokeW}" />`;
+        tickGS.innerHTML += lineStr;
+        tickGE.innerHTML += lineStr;
+
+        if (isHour) {
+            let num = i === 0 ? 12 : i / 5;
+            const textStr = `<text x="${200 + 145 * Math.sin(a)}" y="${200 - 145 * Math.cos(a)}" class="clock-num">${num}</text>`;
+            numGS.innerHTML += textStr;
+            numGE.innerHTML += textStr;
+        }
+    }
+
+    document.getElementById('modeToggle').onclick = (e) => { is24H = !is24H; e.target.innerText = `Mode: ${is24H ? '24H' : 'AM/PM'}`; updateUI(); };
+
+    const setMode = (type, pm) => {
+        let t = type === 's' ? startTime : endTime, h = Math.floor(t / 60), m = t % 60;
+        h = pm ? (h < 12 ? h + 12 : h) : (h >= 12 ? h - 12 : h);
+        if (type === 's') startTime = h * 60 + m; else endTime = h * 60 + m;
+        updateUI();
+    };
+
+    document.getElementById('sAm').onclick = () => setMode('s', false); document.getElementById('sPm').onclick = () => setMode('s', true);
+    document.getElementById('eAm').onclick = () => setMode('e', false); document.getElementById('ePm').onclick = () => setMode('e', true);
+    function stepTime(t, d) { if(t === 's') startTime = (startTime + d + 1440) % 1440; else endTime = (endTime + d + 1440) % 1440; updateUI(); }
+
+    function handleManualInput(type, unit, val) {
+        let num = parseInt(val);
+        if (isNaN(num)) { updateUI(); return; } 
+
+        let t = type === 's' ? startTime : endTime;
+        let currentH = Math.floor(t / 60);
+        let currentM = t % 60;
+
+        if (unit === 'H') {
+            if (is24H) {
+                num = Math.max(0, Math.min(23, num));
+                currentH = num;
+            } else {
+                num = Math.max(1, Math.min(12, num));
+                let isPM = currentH >= 12; 
+                if (num === 12) {
+                    currentH = isPM ? 12 : 0;
+                } else {
+                    currentH = isPM ? num + 12 : num;
+                }
+            }
+        } else if (unit === 'M') {
+            num = Math.max(0, Math.min(59, num));
+            currentM = num;
+        }
+
+        let newTime = currentH * 60 + currentM;
+        if (type === 's') startTime = newTime;
+        else endTime = newTime;
+
+        updateUI();
+    }
+
+    ['hS', 'mS', 'hE', 'mE'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('mousedown', (e) => startDrag(e, id));
+        el.addEventListener('touchstart', (e) => startDrag(e.touches[0], id), {passive: false});
+    });
+
+    function startDrag(e, id) { 
+        dragging = id; 
+        activeClock = id.endsWith('S') ? document.getElementById('clockS') : document.getElementById('clockE');
+        lastAngle = getAngle(e, activeClock); 
+        
+        document.addEventListener('mousemove', onMove); 
+        document.addEventListener('touchmove', onTouchMove, {passive: false}); 
+        document.addEventListener('mouseup', stopDrag); 
+        document.addEventListener('touchend', stopDrag); 
+    }
+    
+    function onTouchMove(e) { e.preventDefault(); onMove(e.touches[0]); }
+    
+    function onMove(e) {
+        if (!dragging || !activeClock) return;
+        const curA = getAngle(e, activeClock); 
+        let diff = curA - lastAngle;
+        if (diff > 180) diff -= 360; 
+        if (diff < -180) diff += 360;
+        
+        const mins = Math.round(diff * (dragging.startsWith('m') ? 60/360 : 720/360));
+        if (dragging.endsWith('S')) {
+            startTime = (startTime + mins + 1440) % 1440; 
+        } else {
+            endTime = (endTime + mins + 1440) % 1440; 
+        }
+        
+        lastAngle = curA; 
+        updateUI();
+    }
+    
+    function getAngle(e, clockEl) { 
+        const r = clockEl.getBoundingClientRect(); 
+        const x = e.clientX - (r.left + r.width/2);
+        const y = e.clientY - (r.top + r.height/2); 
+        let a = Math.atan2(y, x) * 180 / Math.PI + 90; 
+        return a < 0 ? a + 360 : a; 
+    }
+    
+    function stopDrag() { 
+        dragging = null; 
+        activeClock = null;
+        document.removeEventListener('mousemove', onMove); 
+        document.removeEventListener('touchmove', onTouchMove); 
+    }
+
+    document.getElementById('verifyAnsBtn').onclick = () => {
+        const actualDiff = (endTime - startTime + 1440) % 1440;
+        const actualH = Math.floor(actualDiff / 60);
+        const actualM = actualDiff % 60;
+        
+        const studentH = parseInt(document.getElementById('inputH').value) || 0;
+        const studentM = parseInt(document.getElementById('inputM').value) || 0;
+        
+        const feedback = document.getElementById('feedbackTxt');
+        const showStepsBtn = document.getElementById('showStepsBtn');
+        
+        if (studentH === actualH && studentM === actualM) {
+            feedback.innerHTML = `🎉 答對了！正確答案是 ${actualH} 小時 ${actualM} 分鐘。`;
+            feedback.className = "feedback-msg correct";
+            showStepsBtn.style.display = 'none';
+        } else {
+            feedback.innerHTML = `❌ 答案不太對喔！還記得 <strong>1 小時是 60 分鐘</strong> 嗎？重新算算看！`;
+            feedback.className = "feedback-msg wrong";
+            showStepsBtn.style.display = 'inline-block';
+        }
+    };
+
+    // 顯示水平(橫式)計算詳解步驟
+    document.getElementById('showStepsBtn').onclick = () => {
+        let t1 = startTime;
+        let t2 = endTime;
+        
+        // 處理跨日問題
+        let isNextDay = false;
+        if (t2 < t1) {
+            t2 += 1440; 
+            isNextDay = true;
+        }
+        
+        let h1 = Math.floor(t1 / 60) % 24, m1 = t1 % 60;
+        let h2 = Math.floor(t2 / 60) % 24, m2 = t2 % 60;
+        
+        // 為了讓學生好懂，如果是跨日，Time 2 的小時我們在算式裡加上 24
+        let calcH1 = h1;
+        let calcH2 = h2 + (isNextDay ? 24 : 0);
+        
+        let actualDiff = t2 - t1;
+        let diffH = Math.floor(actualDiff / 60);
+        let diffM = actualDiff % 60;
+
+        let html = `<strong>【橫式計算過程】</strong><br><br>`;
+        
+        if (isNextDay) {
+            html += `<div style="color: #c0392b; font-size: 0.95rem; margin-bottom: 10px;">💡 發現 Time 2 是隔天！所以我們先把 Time 2 的時間加上 24 小時。</div>`;
+        }
+
+        // 步驟 1：基本算式列出
+        html += `<div class="step-equation">`;
+        html += `<span style="color: var(--end);">Time 2 (${calcH2}時 ${m2}分)</span> &nbsp;&nbsp;<strong>－</strong>&nbsp;&nbsp; <span style="color: var(--start);">Time 1 (${calcH1}時 ${m1}分)</span>`;
+        html += `</div>`;
+        
+        // 步驟 2：判斷是否需要借位
+        if (m2 < m1) {
+            html += `👉 發現 <strong>${m2} 分鐘</strong> 不夠減 <strong>${m1} 分鐘</strong>！<br>`;
+            html += `👉 向小時借 1，<strong>1 小時變成 60 分鐘</strong><br><br>`;
+            
+            let m2_b = m2 + 60;
+            let calcH2_b = calcH2 - 1;
+            
+            html += `<div class="step-equation borrowed">`;
+            html += `借位後：<br> <span style="color: #d35400;">(${calcH2_b}時 ${m2_b}分)</span> &nbsp;&nbsp;<strong>－</strong>&nbsp;&nbsp; <span style="color: var(--start);">(${calcH1}時 ${m1}分)</span>`;
+            html += `</div>`;
+            
+            html += `👉 小時相減：${calcH2_b} - ${calcH1} = <strong>${diffH} 時</strong><br>`;
+            html += `👉 分鐘相減：${m2_b} - ${m1} = <strong>${diffM} 分</strong><br><br>`;
+        } else {
+            html += `👉 分鐘夠減，我們把小時和分鐘分開相減：<br><br>`;
+            html += `👉 小時相減：${calcH2} - ${calcH1} = <strong>${diffH} 時</strong><br>`;
+            html += `👉 分鐘相減：${m2} - ${m1} = <strong>${diffM} 分</strong><br><br>`;
+        }
+        
+        // 步驟 3：顯示最終答案
+        html += `<div style="text-align: center; font-size: 1.25rem; color: #27ae60; border-top: 1px dashed #ccc; padding-top: 15px; margin-top: 5px;">`;
+        html += `答：經過了 <strong>${diffH} 小時 ${diffM} 分鐘</strong>`;
+        html += `</div>`;
+        
+        const stepsBox = document.getElementById('stepsBox');
+        stepsBox.innerHTML = html;
+        stepsBox.style.display = 'block';
+    };
+
+    document.getElementById('quizBtn').onclick = () => {
+        startTime = Math.floor(Math.random() * 1440);
+        quizTargetDiff = (Math.floor(Math.random() * 11) + 1) * 60 + (Math.floor(Math.random() * 12) * 5); 
+        
+        document.getElementById('quizBox').style.display = 'block';
+        document.getElementById('quizMsg').innerText = `請將 Time 2 設為 Time 1 之後\n${Math.floor(quizTargetDiff/60)}h ${quizTargetDiff%60}m`;
+        updateUI();
+    };
+
+    document.getElementById('checkBtn').onclick = () => {
+        let curDiff = (endTime - startTime + 1440) % 1440;
+        if (curDiff === quizTargetDiff) {
+            alert("🎉 正確！你成功設定了 Time 2！");
+            document.getElementById('quizBox').style.display = 'none';
+        } else {
+            alert(`❌ 挑戰失敗，目前的差距是 ${Math.floor(curDiff/60)}h ${curDiff%60}m，請調整 Time 2 再試試看！`);
+        }
+        updateUI();
+    };
+
+    function updateUI() {
+        const draw = (t, hH, mH, hC, mC, hI, mI, amB, pmB) => {
+            const h = Math.floor(t / 60), m = t % 60;
+            const hA = (h % 12) * 30 + (m / 60) * 30, mA = m * 6;
+            [hH, hC].forEach(el => el.setAttribute('transform', `rotate(${hA}, 200, 200)`));
+            [mH, mC].forEach(el => el.setAttribute('transform', `rotate(${mA}, 200, 200)`));
+            amB.parentElement.style.display = is24H ? 'none' : 'flex';
+            
+            hI.value = is24H ? h.toString().padStart(2, '0') : (h % 12 || 12);
+            mI.value = m.toString().padStart(2, '0');
+            
+            if(!is24H) { amB.classList.toggle('active', h < 12); pmB.classList.toggle('active', h >= 12); }
+        };
+        
+        draw(startTime, document.getElementById('hourHandS'), document.getElementById('minHandS'), document.getElementById('hS'), document.getElementById('mS'), document.getElementById('sH'), document.getElementById('sM'), document.getElementById('sAm'), document.getElementById('sPm'));
+        draw(endTime, document.getElementById('hourHandE'), document.getElementById('minHandE'), document.getElementById('hE'), document.getElementById('mE'), document.getElementById('eH'), document.getElementById('eM'), document.getElementById('eAm'), document.getElementById('ePm'));
+        
+        document.getElementById('feedbackTxt').innerText = "";
+        document.getElementById('feedbackTxt').className = "feedback-msg";
+        document.getElementById('showStepsBtn').style.display = 'none';
+        document.getElementById('stepsBox').style.display = 'none';
+    }
+    
+    updateUI();
+</script>
+</body>
+</html>
