@@ -203,13 +203,27 @@ function ChineseDashboardContent() {
                     : "bg-muted prose-neutral dark:prose-invert"
                 }`}
               >
+                {message.parts.some((p) => p.type === "file") && (
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
+                    {message.parts
+                      .filter((p): p is { type: "file"; mediaType: string; url: string; filename?: string } => p.type === "file" && p.mediaType.startsWith("image/"))
+                      .map((filePart, i) => (
+                        <img
+                          key={i}
+                          src={filePart.url}
+                          alt={filePart.filename ?? "uploaded image"}
+                          className="max-w-[200px] max-h-[200px] rounded object-contain"
+                        />
+                      ))}
+                  </div>
+                )}
                 {message.parts
                   .filter((part): part is { type: "text"; text: string } => part.type === "text")
                   .map((part, i) => (
                     <ReactMarkdown
                       key={i}
                       remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
+                      rehypePlugins={[[rehypeKatex, { strict: false }]]}
                     >
                       {part.text}
                     </ReactMarkdown>

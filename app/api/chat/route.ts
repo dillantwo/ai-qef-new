@@ -1,12 +1,56 @@
 import { azure } from "@ai-sdk/azure";
-import { streamText, type UIMessage, convertToModelMessages } from "ai";
+import { streamText, type UIMessage } from "ai";
+import type { ModelMessage } from "@ai-sdk/provider-utils";
+
+function uiMessagesToModelMessages(messages: UIMessage[]): ModelMessage[] {
+  return messages.map((msg) => {
+    if (msg.role === "assistant") {
+      return {
+        role: "assistant" as const,
+        content: msg.parts
+          .filter((p) => p.type === "text")
+          .map((p) => ({ type: "text" as const, text: (p as { text: string }).text })),
+      };
+    }
+    if (msg.role === "user") {
+      const content: Array<
+        | { type: "text"; text: string }
+        | { type: "file"; data: string; mediaType: string }
+      > = [];
+      for (const part of msg.parts) {
+        if (part.type === "text") {
+          content.push({ type: "text", text: part.text });
+        } else if (part.type === "file") {
+          const url = part.url;
+          if (url.startsWith("data:")) {
+            const match = url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              content.push({ type: "file", mediaType: match[1], data: match[2] });
+            }
+          } else {
+            content.push({ type: "file", mediaType: part.mediaType, data: url });
+          }
+        }
+      }
+      return { role: "user" as const, content };
+    }
+    return {
+      role: "system" as const,
+      content: msg.parts
+        .filter((p) => p.type === "text")
+        .map((p) => (p as { text: string }).text)
+        .join(""),
+    };
+  });
+}
 
 export async function POST(req: Request) {
-  const { messages } = (await req.json()) as { messages: UIMessage[] };
+  try {
+    const { messages } = (await req.json()) as { messages: UIMessage[] };
 
-  const result = streamText({
-    model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
-    system: `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
+    const result = streamText({
+      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
+      system: `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
 
 你的職責：
 1. 當學生第一次輸入題目時，只需要簡短告訴學生這是什麼題型即可，例如：「這是一道**分數除法**的應用題。」不要開始解題。
@@ -31,8 +75,15 @@ export async function POST(req: Request) {
 - 使用 Markdown 格式（標題用 ##、粗體用 **、列表用 -）
 - 第一次回答只說題型，保持簡短（1-2句話）
 - 後續回答才分步驟引導解題`,
-    messages: await convertToModelMessages(messages),
+    messages: uiMessagesToModelMessages(messages),
   });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("[chat] Error:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
 }

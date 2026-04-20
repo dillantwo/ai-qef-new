@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useEffect, useState } from "react";
+import { Suspense, useRef, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -14,6 +14,10 @@ import {
   Loader2,
   Sparkles,
   MessageSquare,
+  Mic,
+  MicOff,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -61,6 +65,9 @@ function MathDashboardContent() {
 
   const { messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({ api: `${basePath}/api/chat` }),
+    onError: (error) => {
+      console.error("[chat] Error:", error);
+    },
   });
 
   const [input, setInput] = useState("");
@@ -72,9 +79,13 @@ function MathDashboardContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasSentInitial = useRef(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [chatFiles, setChatFiles] = useState<File[]>([]);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = !!input.trim() && !isLoading;
+  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
 
   const selectedTool = toolbox?.selectedTool ?? null;
   const tools = toolboxConfig?.tools ?? [];
@@ -134,8 +145,20 @@ function MathDashboardContent() {
       return;
     }
 
+    const fractionOpHtmlMap: Record<string, string> = {
+      "fraction-addition": "FractionApp-Addition.html",
+      "fraction-subtraction": "FractionApp-Subtraction.html",
+      "fraction-multiplication": "FractionApp-Multiplication.html",
+      "fraction-division": "FractionApp-Division.html",
+    };
+    const fractionOpHtml = fractionOpHtmlMap[selectedTool];
+
     if (!question) {
-      const fallbackUrl = selectedTool === "fraction-expanding-simplifying" ? `${basePath}/math/es.html` : `${basePath}/math/preview.html`;
+      const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
+        ? `${basePath}/math/FractionApp-es.html`
+        : fractionOpHtml
+          ? `${basePath}/math/${fractionOpHtml}`
+          : `${basePath}/math/preview.html`;
       setPreviewUrl(fallbackUrl);
       return;
     }
@@ -149,7 +172,12 @@ function MathDashboardContent() {
         const res = await fetch(`${basePath}/api/extract-params`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, toolKey: selectedTool }),
+          body: JSON.stringify({
+            question,
+            toolKey: selectedTool,
+            // 只有在沒有文字題目時才傳圖片，避免 payload 過大
+            ...(!question && questionImage ? { imageData: questionImage } : {}),
+          }),
         });
         if (!res.ok) throw new Error("Extract failed");
         if (cancelled) return;
@@ -161,14 +189,24 @@ function MathDashboardContent() {
             denominator: String(params.denominator ?? 8),
             mode: params.mode ?? "expand",
           });
-          // 傳遞目標分數（-1 表示空格，不傳該參數讓 es.html 顯示 □）
+          // 傳遞目標分數（null/-1 表示空格，不傳該參數讓 FractionApp-es.html 顯示 □）
           if (params.targetNumerator != null && params.targetNumerator !== -1) {
             qs.set("targetNum", String(params.targetNumerator));
           }
           if (params.targetDenominator != null && params.targetDenominator !== -1) {
             qs.set("targetDen", String(params.targetDenominator));
           }
-          if (!cancelled) setPreviewUrl(`${basePath}/math/es.html?${qs.toString()}`);
+          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-es.html?${qs.toString()}`);
+        } else if (fractionOpHtml) {
+          const qs = new URLSearchParams();
+          if (params.num1 != null) qs.set("num1", String(params.num1));
+          // 分母為 0 通常代表題目缺少對應分數，使用默認 1 避免 HTML 除零
+          qs.set("den1", String(params.den1 && params.den1 !== 0 ? params.den1 : 1));
+          if (params.num2 != null) qs.set("num2", String(params.num2));
+          qs.set("den2", String(params.den2 && params.den2 !== 0 ? params.den2 : 1));
+          if (params.whole1 != null) qs.set("whole1", String(params.whole1));
+          if (params.whole2 != null) qs.set("whole2", String(params.whole2));
+          if (!cancelled) setPreviewUrl(`${basePath}/math/${fractionOpHtml}?${qs.toString()}`);
         } else {
           const qs = new URLSearchParams({
             whole1: String(params.whole1 ?? 0),
@@ -184,7 +222,11 @@ function MathDashboardContent() {
           if (!cancelled) setPreviewUrl(`${basePath}/math/preview.html?${qs.toString()}`);
         }
       } catch {
-        const fallbackUrl = selectedTool === "fraction-expanding-simplifying" ? `${basePath}/math/es.html` : `${basePath}/math/preview.html`;
+        const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
+          ? `${basePath}/math/FractionApp-es.html`
+          : fractionOpHtml
+            ? `${basePath}/math/${fractionOpHtml}`
+            : `${basePath}/math/preview.html`;
         if (!cancelled) setPreviewUrl(fallbackUrl);
       } finally {
         if (!cancelled) setIsExtractingParams(false);
@@ -192,24 +234,106 @@ function MathDashboardContent() {
     })();
 
     return () => { cancelled = true; };
-  }, [selectedTool, question]);
+  }, [selectedTool, question, questionImage]);
 
   // Auto-send the initial question to get AI response
   useEffect(() => {
-    if (question && !hasSentInitial.current) {
+    if ((question || questionImage) && !hasSentInitial.current) {
       hasSentInitial.current = true;
-      sendMessage({ text: question });
+      const files = questionImage
+        ? [{ type: "file" as const, mediaType: "image/png", url: questionImage }]
+        : undefined;
+      sendMessage({ text: question || "（見圖片）", ...(files ? { files } : {}) });
     }
-  }, [question, sendMessage]);
+  }, [question, questionImage, sendMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function doSend() {
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+      return;
+    }
+    if (isListening) { stopListening(); return; }
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'zh-HK';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop(); };
+  }, []);
+
+  function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function doSend() {
     if (!canSend) return;
-    sendMessage({ text: input.trim() });
+    if (isListening) stopListening();
+    const fileParts = await Promise.all(
+      chatFiles.map(async (file) => ({
+        type: "file" as const,
+        mediaType: file.type,
+        filename: file.name,
+        url: await fileToDataURL(file),
+      }))
+    );
+    sendMessage({ text: input.trim() || "（見圖片）", ...(fileParts.length > 0 ? { files: fileParts } : {}) });
     setInput("");
+    setChatFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  }
+
+  function removeChatFile(index: number) {
+    setChatFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    setChatFiles((prev) => [...prev, ...imageFiles]);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -265,6 +389,20 @@ function MathDashboardContent() {
               </Button>
             </div>
 
+            {/* Original question bar */}
+            {question && (
+              <div className="border-b border-[#d8d8d8] bg-[#f7fbff]/80 px-4 py-3">
+                <div className="prose prose-base mx-auto max-w-3xl text-center text-base font-medium leading-relaxed text-[#080808] prose-neutral [&_p]:my-0 [&_.katex]:text-lg">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                  >
+                    {question}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+
             {/* HTML Preview */}
             <div className="flex-1 overflow-auto bg-transparent p-4">
               <div
@@ -279,7 +417,6 @@ function MathDashboardContent() {
                   <iframe
                     src={previewUrl}
                     className="h-full w-full rounded-[8px]"
-                    sandbox="allow-scripts"
                     title="HTML Preview"
                   />
                 )}
@@ -310,7 +447,7 @@ function MathDashboardContent() {
                     <div className="prose prose-lg mt-3 max-w-none text-lg font-medium leading-relaxed prose-neutral [&_.katex]:text-2xl">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[[rehypeKatex, { strict: false }]]}
                       >
                         {question}
                       </ReactMarkdown>
@@ -372,13 +509,27 @@ function MathDashboardContent() {
                     : "border-[#d8d8d8] bg-white text-[#080808] prose-neutral"
                 }`}
               >
+                {message.parts.some((p) => p.type === "file") && (
+                  <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
+                    {message.parts
+                      .filter((p): p is { type: "file"; mediaType: string; url: string; filename?: string } => p.type === "file" && p.mediaType.startsWith("image/"))
+                      .map((filePart, i) => (
+                        <img
+                          key={i}
+                          src={filePart.url}
+                          alt={filePart.filename ?? "uploaded image"}
+                          className="max-w-[200px] max-h-[200px] rounded-[4px] border border-white/30 object-contain"
+                        />
+                      ))}
+                  </div>
+                )}
                 {message.parts
                   .filter((part): part is { type: "text"; text: string } => part.type === "text")
                   .map((part, i) => (
                     <ReactMarkdown
                       key={i}
                       remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
+                      rehypePlugins={[[rehypeKatex, { strict: false }]]}
                     >
                       {part.text}
                     </ReactMarkdown>
@@ -410,15 +561,77 @@ function MathDashboardContent() {
         <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
           <form onSubmit={handleSubmit}>
             <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
+              {/* Image preview thumbnails */}
+              {chatFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-3 pt-2">
+                  {chatFiles.map((file, i) => (
+                    <div key={i} className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="size-12 rounded-[4px] border border-[#d8d8d8] object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeChatFile(i)}
+                        className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#080808] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <Textarea
                 ref={textareaRef}
-                placeholder="繼續提問..."
+                placeholder="繼續提問...（可直接粘貼圖片）"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="min-h-[58px] resize-none border-0 bg-transparent px-3 pt-3 pb-10 text-sm shadow-none focus-visible:ring-0"
+                onPaste={handlePaste}
+                className="min-h-[58px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-3 pt-3 pb-10 text-sm shadow-none focus-visible:ring-0"
               />
-              <div className="absolute bottom-1.5 right-1.5">
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleChatFileChange}
+                className="hidden"
+              />
+
+              <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:border-[#898989] hover:bg-white"
+                    title="上傳圖片"
+                  >
+                    <ImagePlus className="size-3.5 text-[#5a5a5a]" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={toggleVoice}
+                    className={`rounded-[4px] border bg-white transition-all hover:bg-white ${
+                      isListening
+                        ? 'border-red-400 text-red-500 hover:border-red-500 hover:text-red-600'
+                        : 'border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]'
+                    }`}
+                    title={isListening ? '停止語音輸入' : '語音輸入'}
+                  >
+                    {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-[#5a5a5a]" />}
+                  </Button>
+                  {isListening && (
+                    <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>
+                  )}
+                </div>
                 {isLoading ? (
                   <Button
                     type="button"

@@ -225,7 +225,7 @@ export function AppSidebar() {
                     <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-medium leading-snug line-clamp-2 prose prose-sm max-w-none [&_p]:m-0">
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
                           {question}
                         </ReactMarkdown>
                       </div>

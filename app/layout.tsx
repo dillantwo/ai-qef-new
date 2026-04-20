@@ -40,7 +40,7 @@ export default function RootLayout({
       lang="zh-Hant"
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansTC.variable} ${notoSerifTC.variable} h-full antialiased`}
     >
-      <body className="h-full flex flex-col font-sans overflow-hidden">
+      <body suppressHydrationWarning className="h-full flex flex-col font-sans overflow-hidden">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

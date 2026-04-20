@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FractionApp36(Subtraction)</title>
+    
+    <script>
+        // Disable right-click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable keyboard shortcuts
+        document.onkeydown = function(e) {
+            if (e.keyCode === 123) return false;
+            if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) return false;
+            if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 85 || e.keyCode === 83)) return false;
+        };
+    </script>
+
+    <style>
+        :root { 
+            --yellow: #f1c40f; --red: #e74c3c; --orange: #e67e22; 
+            --dark: #2c3e50; --gray: #ecf0f1; --blue: #3498db; --success: #27ae60;
+            --anim-time: 0.6s;
+            --max-wholes: 1;
+        }
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background: transparent; display: flex; flex-direction: column; align-items: center; padding: 0; margin: 0; }
+        .container { background: transparent; padding: 20px 30px; border-radius: 0; box-shadow: none; max-width: 1000px; width: 100%; box-sizing: border-box; overflow-x: hidden; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #eee; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .title { font-size: 1.5rem; font-weight: bold; color: var(--dark); margin: 0; }
+        
+        .header-controls { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        
+        /* 版面設定群組 */
+        .settings-group { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 8px 15px; border-radius: 12px; border: 1px solid #ddd; }
+        .settings-group label { font-weight: bold; color: var(--dark); margin: 0; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .settings-group input[type=range] { cursor: pointer; width: 80px; }
+        .settings-group input[type=checkbox] { cursor: pointer; transform: scale(1.2); }
+
+        .btn-random { background: #9b59b6; color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .btn-random:hover { background: #8e44ad; transform: scale(1.05); }
+
+        .word-problem { font-size: 1.3rem; font-weight: bold; color: var(--dark); background: #e8f4f8; padding: 15px 25px; border-radius: 12px; border-left: 6px solid var(--blue); margin-bottom: 10px; width: 100%; text-align: center; box-sizing: border-box; display: none; line-height: 1.8; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .word-problem b { color: var(--red); font-size: 1.5rem; margin: 0 5px; padding: 2px 6px; background: white; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); display: inline-flex; align-items: center;}
+
+        .answer-zone { padding: 5px 0; text-align: center; color: var(--dark); display: flex; flex-direction: column; align-items: center; }
+        .formula { display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 2rem; flex-wrap: wrap; margin-bottom: 0; }
+        
+        .mixed-frac { display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 5px; border-radius: 10px; transition: 0.2s; }
+        .mixed-frac:hover { background: #f0f0f0; }
+        .whole-input { width: 45px; height: 50px; font-size: 1.8rem; text-align: center; border-radius: 8px; border: 2px solid #ccc; outline: none; transition: 0.3s; font-weight: bold; color: var(--dark); background: #fff; display: none; }
+        .whole-input:focus { border-color: var(--blue); box-shadow: 0 0 8px rgba(52, 152, 219, 0.4); }
+
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; }
+        .frac-input { width: 55px; height: 45px; font-size: 1.5rem; text-align: center; border-radius: 8px; font-weight: bold; color: var(--dark); transition: 0.3s; outline: none; border: 2px solid #ccc; background: #fff; }
+        .frac-text { font-size: 2rem; font-weight: bold; text-align: center; padding: 0 10px; color: var(--dark); }
+        .frac-line { width: 100%; height: 3px; background: var(--dark); margin: 5px 0; }
+
+        .animation-zone { width: 100%; padding-top: 5px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .instruction-text { font-size: 1.3rem; font-weight: bold; color: var(--dark); text-align: center; margin-bottom: 10px; background: #fff4e6; padding: 12px 25px; border-radius: 12px; border-left: 6px solid var(--orange); width: 100%; max-width: 850px; box-sizing: border-box; transition: opacity 0.5s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+        .inline-frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; font-weight: bold; line-height: 1; margin: 0 5px; position: relative; top: -0.1em; }
+        .inline-frac span { font-size: 1.1em; padding: 1px 4px; }
+        .inline-frac .line { height: 2px; background-color: currentColor; width: 100%; margin: 2px 0; }
+
+        #anim-area { width: 100%; min-height: 200px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; gap: 20px; }
+        
+        @keyframes fadeInSlow { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+        .fade-in-slow { animation: fadeInSlow 1s ease-out forwards; }
+
+        .tool-btn { background: #3498db; color: white; border: 2px solid transparent; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: transform 0.1s, background 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .tool-btn:hover { background: #2980b9; transform: scale(1.05); }
+        .tool-btn:active { transform: scale(0.95); background: #1f618d; }
+
+        /* 重新排列專用按鈕樣式 */
+        .btn-hint { background: var(--orange); color: white; border: none; padding: 10px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: 0.2s; box-shadow: 0 4px 6px rgba(230,126,34,0.3); margin-top: 15px; }
+        .btn-hint:hover { background: #d35400; transform: translateY(-2px); box-shadow: 0 6px 8px rgba(230,126,34,0.4); }
+
+        /* 長條圖直行排版容器 */
+        .bars-column { width: 70%; display: flex; flex-direction: column; }
+
+        .bar-wrap-container { width: 100%; display: flex; flex-wrap: wrap; gap: 15px; justify-content: flex-start; align-items: center; background: transparent; border: none; min-height: 60px; transition: opacity 0.3s; }
+        
+        .bar-unit { 
+            position: relative; 
+            height: 50px; 
+            width: calc((100% - (var(--max-wholes) - 1) * 15px) / var(--max-wholes));
+            min-width: 120px; 
+            flex: none; 
+            border: 3px solid var(--dark); 
+            box-sizing: border-box; 
+            background: transparent; 
+            border-radius: 4px; 
+            overflow: hidden; 
+        }
+
+        .bar-fill { height: 100%; transition: width var(--anim-time) ease; position: absolute; z-index: 1; top: 0; left: 0; opacity: 0.85; }
+        .grid-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: hidden; }
+        
+        .abs-thick-line { position: absolute; top: 0; width: 3px; height: 100%; background: var(--dark); transform: translateX(-50%); z-index: 4; }
+        .abs-thin-line { position: absolute; top: 0; width: 1px; height: 100%; background: var(--dark); transform: translateX(-50%); z-index: 3; }
+
+        /* --- 數線模式專用樣式 --- */
+        .bar-wrap-container.continuous { gap: 0 !important; }
+        .bar-wrap-container.continuous .bar-unit { 
+            width: calc(100% / var(--max-wholes)) !important; 
+            border-right: none; 
+            border-radius: 0; 
+        }
+        .bar-wrap-container.continuous .bar-unit:last-child { 
+            border-right: 3px solid var(--dark); 
+            border-top-right-radius: 4px; 
+            border-bottom-right-radius: 4px; 
+        }
+        .bar-wrap-container.continuous .bar-unit:first-child { 
+            border-top-left-radius: 4px; 
+            border-bottom-left-radius: 4px; 
+        }
+
+        .nl-wrap-container { width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; min-height: 45px; margin-top: 2px; border: none; position: relative; gap: 15px; }
+        .nl-wrap-container.continuous { gap: 0 !important; }
+        .nl-unit { 
+            position: relative; 
+            height: 45px; 
+            width: calc((100% - (var(--max-wholes) - 1) * 15px) / var(--max-wholes));
+            min-width: 120px; 
+            flex: none; 
+            box-sizing: border-box; 
+        }
+        .nl-wrap-container.continuous .nl-unit { width: calc(100% / var(--max-wholes)) !important; }
+
+        #bottom-answer-zone { width: 100%; max-width: 650px; background: #fff8e1; padding: 20px; border-radius: 15px; border: 2px dashed var(--red); margin-top: 15px; display: none; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: opacity 0.5s; z-index: 50; position: relative; }
+        .feedback-msg { font-size: 1.2rem; font-weight: bold; min-height: 28px; margin-top: 5px; opacity: 0; transition: opacity 0.3s, color 0.3s; text-align: center;}
+
+        /* 新增拖拉色塊的樣式 */
+        .drag-block { transition: transform 0.1s, opacity 0.2s; touch-action: manipulation; }
+        .drag-block:active { transform: scale(0.95); }
+
+        /* 垃圾桶提示框樣式 - 預設隱藏，指住才顯示 */
+        #trash-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+            z-index: 100;
+            font-weight: normal;
+            line-height: 1.6;
+            text-align: center;
+            pointer-events: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        #trash-can:hover #trash-tooltip {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header-controls { justify-content: center; }
+            .settings-group { width: 100%; justify-content: center; }
+            .formula { font-size: 1.5rem; }
+            .whole-input { width: 35px; height: 40px; font-size: 1.4rem; }
+            .frac-input { width: 45px; height: 35px; font-size: 1.2rem; }
+            .instruction-text, .word-problem { font-size: 1.1rem; padding: 12px 15px; flex-wrap: wrap; }
+            #bar1-row, #bar2-row { flex-direction: column; height: auto !important; gap: 10px; padding-bottom: 10px; }
+            .bars-column { width: 100% !important; }
+            .bar-wrap-container, .nl-wrap-container { justify-content: flex-start; }
+            .bar-unit, .nl-unit { min-width: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="title">異分母分數減法</div>
+        <div class="header-controls">
+            <div class="settings-group">
+                <label for="show-whole-cb">
+                    <input type="checkbox" id="show-whole-cb" onchange="toggleWholeNumber()"> 顯示帶分數
+                </label>
+                <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+                <label for="show-nl-cb">
+                    <input type="checkbox" id="show-nl-cb" onchange="toggleNumberLine()"> 顯示數線
+                </label>
+                <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+                <label for="speed-slider" title="調整擴分/約分的動畫速度">動畫速度: <span id="speed-val" style="color: var(--blue);">1.0</span>x</label>
+                <input type="range" id="speed-slider" min="0.5" max="3" step="0.1" value="1.0" oninput="updateSpeed()">
+            </div>
+            <button class="btn-random" onclick="randomChallenge()">🎲 隨機出題</button>
+        </div>
+    </div>
+
+    <div id="word-problem" class="word-problem"></div>
+
+    <div class="answer-zone">
+        <div class="formula">
+            <div class="mixed-frac" id="frac1-group" onclick="onFrac1Click()" title="點擊重置並顯示被減數圖形">
+                <input type="number" class="whole-input" id="w1" placeholder=" " min="0" max="10" oninput="updateUI()" onchange="updateUI()">
+                <div class="frac">
+                    <input type="number" class="frac-input" id="n1" value="2" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                    <div class="frac-line"></div>
+                    <input type="number" class="frac-input" id="d1" value="3" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                </div>
+            </div>
+            <span>-</span>
+            <div class="mixed-frac" id="frac2-group" onclick="onFrac2Click()" title="點擊重置並顯示減數圖形">
+                <input type="number" class="whole-input" id="w2" placeholder=" " min="0" max="10" oninput="updateUI()" onchange="updateUI()">
+                <div class="frac">
+                    <input type="number" class="frac-input" id="n2" value="1" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                    <div class="frac-line"></div>
+                    <input type="number" class="frac-input" id="d2" value="2" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="animation-zone" id="anim-zone">
+        <div id="drag-instruction" class="instruction-text">💡 準備中...</div>
+        <div id="anim-area"></div>
+
+        <div id="bottom-answer-zone">
+            <div id="bot-public-unit" style="font-size: 1.2rem; color: var(--blue); margin-bottom: 10px; font-weight: bold; background: #e8f4f8; padding: 5px 15px; border-radius: 8px;"></div>
+            
+            <div class="formula">
+                <div id="bot-frac1"></div>
+                <span>-</span>
+                <div id="bot-frac2"></div>
+                <span>=</span>
+                <div class="mixed-frac" style="cursor: default;">
+                    <input type="number" class="whole-input" id="ans-w" placeholder=" " min="0" oninput="autoCheck()">
+                    <div class="frac">
+                        <input type="number" class="frac-input" id="ans-num" placeholder="?" min="0" oninput="autoCheck()">
+                        <div class="frac-line" style="background: #ccc;"></div>
+                        <input type="number" class="frac-input" id="ans-den" placeholder="?" min="1" oninput="autoCheck()">
+                    </div>
+                </div>
+            </div>
+            <div id="feedback" class="feedback-msg"></div>
+            <button id="rearrange-btn" class="btn-hint" style="display: none;" onclick="toggleRearrange()">💡 提示：重新排列</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentWordProblemTemplate = null; 
+    let s1 = 1; 
+    let s2 = 1; 
+    let bar1Visible = false;
+    let bar2Visible = false;
+    let currentSpeed = 1.0; 
+    let isCommonDenomReady = false; 
+    let trashedCount = 0; // 追蹤丟棄的小格數量
+    let isRearranged = false; // 追蹤是否處於重新排列狀態
+
+    const wordProblemTemplates = [
+        "小明原本有 [FRAC1] 塊披薩，吃掉了 [FRAC2] 塊。請問還剩下多少塊披薩？",
+        "第一塊農田面積為 [FRAC1] 公頃，第二塊面積比第一塊少 [FRAC2] 公頃。請問第二塊農田的面積是多少公頃？",
+        "媽媽買了 [FRAC1] 公斤的蘋果，送給鄰居 [FRAC2] 公斤。請問還剩下多少公斤？",
+        "水桶裡原有 [FRAC1] 公升的水，倒出了 [FRAC2] 公升。請問現在水桶裡還剩下多少公升的水？",
+        "紅彩帶長 [FRAC1] 公尺，藍彩帶長 [FRAC2] 公尺。請問紅彩帶比藍彩帶長多少公尺？"
+    ];
+
+    function toggleWholeNumber() {
+        const showWhole = document.getElementById('show-whole-cb').checked;
+        
+        document.getElementById('w1').style.display = showWhole ? 'inline-block' : 'none';
+        document.getElementById('w2').style.display = showWhole ? 'inline-block' : 'none';
+        
+        if (!showWhole) {
+            document.getElementById('w1').value = '';
+            document.getElementById('w2').value = '';
+            document.getElementById('ans-w').value = '';
+        }
+        updateUI();
+    }
+
+    function updateSpeed() {
+        currentSpeed = parseFloat(document.getElementById('speed-slider').value);
+        document.getElementById('speed-val').innerText = currentSpeed.toFixed(1);
+        let duration = 0.6 / currentSpeed;
+        document.documentElement.style.setProperty('--anim-time', duration + 's');
+    }
+
+    function toggleNumberLine() {
+        if (bar1Visible) renderBar(1, 'none');
+        if (bar2Visible) renderBar(2, 'none');
+    }
+
+    function getSafeValues() {
+        let w1 = parseInt(document.getElementById('w1').value) || 0;
+        let d1 = parseInt(document.getElementById('d1').value) || 1;
+        let n1 = parseInt(document.getElementById('n1').value) || 0;
+        
+        let w2 = parseInt(document.getElementById('w2').value) || 0;
+        let d2 = parseInt(document.getElementById('d2').value) || 1;
+        let n2 = parseInt(document.getElementById('n2').value) || 0;
+
+        if (w1 < 0) w1 = 0; if (w2 < 0) w2 = 0;
+        if (d1 < 1) d1 = 1; if (d1 > 100) d1 = 100;
+        if (d2 < 1) d2 = 1; if (d2 > 100) d2 = 100;
+        if (n1 < 0) n1 = 0; if (n2 < 0) n2 = 0;
+
+        if (w1 === 0 && n1 === 0) n1 = 1;
+        if (w2 === 0 && n2 === 0) n2 = 1;
+
+        return { 
+            w1, n1, d1, 
+            w2, n2, d2, 
+            total_n1: w1 * d1 + n1, 
+            total_n2: w2 * d2 + n2 
+        };
+    }
+
+    function enforceInputLimits() {
+        const safe = getSafeValues();
+        document.getElementById('d1').value = safe.d1;
+        document.getElementById('d2').value = safe.d2;
+    }
+
+    function updateMaxWholes() {
+        const vals = getSafeValues();
+        let wholes1 = Math.max(1, Math.ceil(vals.total_n1 / vals.d1));
+        let wholes2 = Math.max(1, Math.ceil(vals.total_n2 / vals.d2));
+        let maxW = Math.max(wholes1, wholes2);
+
+        document.documentElement.style.setProperty('--max-wholes', maxW);
+    }
+
+    function getFracHtml(n, d, color = "inherit") {
+        return `<div class="inline-frac" style="color: ${color};"><span>${n}</span><div class="line"></div><span>${d}</span></div>`;
+    }
+
+    function getDisplayHtml(w, n, d, color) {
+        if (w > 0) {
+            return `<div style="display:inline-flex; align-items:center;">
+                        <span style="color:${color}; font-size:1.8rem; font-weight:bold; margin-right:4px; line-height:1;">${w}</span>
+                        ${getFracHtml(n, d, color)}
+                    </div>`;
+        }
+        return getFracHtml(n, d, color);
+    }
+
+    function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+    function onFrac1Click() {
+        let row = document.getElementById('bar1-row');
+        row.style.display = 'flex';
+        s1 = 1;
+        renderBar(1, 'none');
+        row.classList.remove('fade-in-slow');
+        void row.offsetWidth;
+        row.classList.add('fade-in-slow');
+        bar1Visible = true;
+        checkCommonDenom();
+    }
+
+    function onFrac2Click() {
+        let row = document.getElementById('bar2-row');
+        row.style.display = 'flex';
+        s2 = 1;
+        renderBar(2, 'none');
+        row.classList.remove('fade-in-slow');
+        void row.offsetWidth;
+        row.classList.add('fade-in-slow');
+        bar2Visible = true;
+        checkCommonDenom();
+    }
+
+    function applyTool(num, action) {
+        let changed = false;
+        let old_s = num === 1 ? s1 : s2;
+
+        if (num === 1) {
+            if (action === 'expand') { s1++; changed = true; }
+            else if (action === 'simplify' && s1 > 1) { s1--; changed = true; }
+        } else {
+            if (action === 'expand') { s2++; changed = true; }
+            else if (action === 'simplify' && s2 > 1) { s2--; changed = true; }
+        }
+
+        if (changed) {
+            renderBar(num, action, old_s);
+            setTimeout(checkCommonDenom, 650 / currentSpeed);
+        }
+    }
+
+    function applyGridAnimation(gridContainer, d, s, old_s, action) {
+        let animTimeMs = (0.6 / currentSpeed) * 1000;
+        let halfAnimMs = animTimeMs / 2;
+
+        gridContainer.innerHTML = '';
+        let html = '<div class="grid-overlay">';
+
+        for (let k = 1; k < d; k++) {
+            html += `<div class="abs-thick-line" style="left: ${(k/d)*100}%;"></div>`;
+        }
+
+        if (action === 'simplify') {
+            for (let k = 0; k < d; k++) {
+                let remove_j = Math.floor(old_s / 2);
+                for (let j = 1; j < old_s; j++) {
+                    let oldLeftPct = ((k * old_s + j) / (d * old_s)) * 100;
+                    let lineId = `line_${Math.random().toString(36).substr(2, 5)}`;
+                    
+                    if (j === remove_j) {
+                        html += `<div id="${lineId}" class="abs-thin-line removed-line" style="left: ${oldLeftPct}%; top: 0; height: 100%; transition: height ${halfAnimMs}ms ease-in;"></div>`;
+                    } else {
+                        let new_j = j < remove_j ? j : j - 1;
+                        let newLeftPct = ((k * s + new_j) / (d * s)) * 100;
+                        html += `<div id="${lineId}" class="abs-thin-line retained-line" style="left: ${oldLeftPct}%; top: 0; height: 100%; transition: left ${halfAnimMs}ms ease-out;" data-target-left="${newLeftPct}%"></div>`;
+                    }
+                }
+            }
+            html += '</div>';
+            gridContainer.innerHTML = html;
+
+            setTimeout(() => { gridContainer.querySelectorAll('.removed-line').forEach(l => l.style.height = '0%'); }, 50);
+            setTimeout(() => { gridContainer.querySelectorAll('.retained-line').forEach(l => l.style.left = l.getAttribute('data-target-left')); }, 50 + halfAnimMs);
+
+        } else if (action === 'expand') {
+            for (let k = 0; k < d; k++) {
+                for (let j = 1; j < s; j++) {
+                    let leftPct = ((k * s + j) / (d * s)) * 100;
+                    html += `<div class="abs-thin-line expand-anim-line" style="left: ${leftPct}%; height: 0%; top: 0; background: var(--orange); transition: height ${animTimeMs}ms cubic-bezier(0.4, 0, 0.2, 1), background-color ${animTimeMs}ms;"></div>`;
+                }
+            }
+            html += '</div>';
+            gridContainer.innerHTML = html;
+
+            setTimeout(() => {
+                gridContainer.querySelectorAll('.expand-anim-line').forEach(l => {
+                    l.style.height = '100%';
+                    setTimeout(() => l.style.background = 'var(--dark)', animTimeMs);
+                });
+            }, 50);
+
+        } else {
+            for (let k = 0; k < d; k++) {
+                for (let j = 1; j < s; j++) {
+                    let leftPct = ((k * s + j) / (d * s)) * 100;
+                    html += `<div class="abs-thin-line" style="left: ${leftPct}%;"></div>`;
+                }
+            }
+            html += '</div>';
+            gridContainer.innerHTML = html;
+        }
+    }
+
+    function renderBar(num, action = 'none', old_s = 1) {
+        const vals = getSafeValues();
+        const showNL = document.getElementById('show-nl-cb').checked;
+
+        let total_n = num === 1 ? vals.total_n1 : vals.total_n2;
+        let d = num === 1 ? vals.d1 : vals.d2;
+        let w = num === 1 ? vals.w1 : vals.w2;
+        let n = num === 1 ? vals.n1 : vals.n2;
+        let s = num === 1 ? s1 : s2;
+        let color = num === 1 ? 'var(--red)' : 'var(--blue)';
+
+        let maxW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--max-wholes')) || 1;
+
+        let label = document.getElementById(`label${num}`);
+        let wrap = document.getElementById(`bar${num}-wrap`);
+        let nlWrap = document.getElementById(`bar${num}-nl`);
+
+        if(label) {
+            label.innerHTML = getDisplayHtml(w, n * s, d * s, color);
+        }
+
+        if(wrap) {
+            if (showNL) wrap.classList.add('continuous');
+            else wrap.classList.remove('continuous');
+
+            if (action === 'none') {
+                wrap.innerHTML = '';
+                for (let i = 0; i < maxW; i++) {
+                    let unit = document.createElement('div');
+                    unit.className = 'bar-unit';
+                    unit.innerHTML = `<div class="bar-fill"></div><div class="bar-grid"></div>`;
+                    wrap.appendChild(unit);
+                }
+            }
+
+            let units = wrap.querySelectorAll('.bar-unit');
+            units.forEach((unit, idx) => {
+                let fill = unit.querySelector('.bar-fill');
+                let grid = unit.querySelector('.bar-grid');
+
+                let filled_parts = (total_n * s) - (idx * d * s);
+                let clamped = Math.max(0, Math.min(d * s, filled_parts));
+                let pct = (clamped / (d * s)) * 100;
+                
+                if (fill) {
+                    fill.style.width = `${pct}%`;
+                    fill.style.backgroundColor = color;
+                }
+
+                if (grid) applyGridAnimation(grid, d, s, old_s, action);
+            });
+        }
+
+        if(nlWrap) {
+            if (showNL) {
+                nlWrap.style.display = 'flex';
+                nlWrap.classList.add('continuous');
+                nlWrap.innerHTML = '';
+                for (let i = 0; i < maxW; i++) {
+                    let nlUnit = document.createElement('div');
+                    nlUnit.className = 'nl-unit';
+                    let labelsHtml = '';
+                    let currentD = d * s;
+                    for (let k = 0; k < currentD; k++) {
+                        let leftPct = (k / currentD) * 100;
+                        let valHtml = '';
+                        if (k === 0) {
+                            valHtml = `<span style="font-weight:bold; font-size:1.1rem; color:var(--dark);">${i}</span>`;
+                        } else {
+                            let fracPart = `<div class="inline-frac" style="font-size:0.85em; color:var(--dark);"><span>${k}</span><div class="line"></div><span>${currentD}</span></div>`;
+                            if (i > 0) {
+                                valHtml = `<div style="display: flex; align-items: center; justify-content: center;"><span style="font-weight:bold; font-size:1.05rem; margin-right:2px; color:var(--dark);">${i}</span>${fracPart}</div>`;
+                            } else {
+                                valHtml = fracPart;
+                            }
+                        }
+                        labelsHtml += `<div style="position: absolute; left: ${leftPct}%; top: 0px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 5;">
+                            <div style="width: 2px; height: 6px; background: var(--dark); margin-bottom: 2px;"></div>
+                            ${valHtml}
+                        </div>`;
+                    }
+                    if (i === maxW - 1) {
+                        labelsHtml += `<div style="position: absolute; left: 100%; top: 0px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 5;">
+                            <div style="width: 2px; height: 6px; background: var(--dark); margin-bottom: 2px;"></div>
+                            <span style="font-weight:bold; font-size:1.1rem; color:var(--dark);">${i + 1}</span>
+                        </div>`;
+                    }
+                    nlUnit.innerHTML = labelsHtml;
+                    nlWrap.appendChild(nlUnit);
+                }
+            } else {
+                nlWrap.style.display = 'none';
+                nlWrap.innerHTML = '';
+            }
+        }
+
+        if (action !== 'none') {
+            let animTimeMs = (0.6 / currentSpeed) * 1000;
+            setTimeout(() => {
+                let current_s = num === 1 ? s1 : s2;
+                if (current_s === s) renderBar(num, 'none'); 
+            }, 50 + animTimeMs);
+        }
+    }
+
+    function convertBarToDraggable(num, cd, color) {
+        let wrap = document.getElementById(`bar${num}-wrap`);
+        let units = wrap.querySelectorAll('.bar-unit');
+        
+        const vals = getSafeValues();
+        let total_n = num === 1 ? vals.total_n1 : vals.total_n2;
+        let s = num === 1 ? s1 : s2;
+        
+        units.forEach((unit, uIdx) => {
+            let fill = unit.querySelector('.bar-fill');
+            if (fill) fill.style.display = 'none'; 
+            
+            let filled_parts = (total_n * s) - (uIdx * cd);
+            let clamped = Math.max(0, Math.min(cd, filled_parts));
+            
+            let childNodes = Array.from(unit.childNodes);
+            childNodes.forEach(child => {
+                if (!child.classList.contains('bar-grid') && !child.classList.contains('bar-fill')) {
+                    unit.removeChild(child);
+                }
+            });
+
+            unit.style.display = 'flex';
+            unit.style.flexDirection = 'row';
+
+            let grid = unit.querySelector('.bar-grid');
+
+            // 無論是不是整數，只要有值，就將整個區域打包成一個 draggable 區塊，不再切成 1 小格
+            if (clamped > 0) {
+                let block = document.createElement('div');
+                block.className = 'drag-block';
+                block.id = `drag-${num}-${uIdx}-whole`;
+                block.style.width = `${(clamped / cd) * 100}%`;
+                block.style.height = '100%';
+                block.style.backgroundColor = color;
+                block.style.opacity = '0.85';
+                
+                // 只有被減數可以拖曳
+                if (num === 1) {
+                    block.draggable = true;
+                    block.style.cursor = 'grab';
+                }
+                
+                block.style.position = 'relative';
+                block.style.boxSizing = 'border-box';
+                block.style.borderRight = (isCommonDenomReady && clamped === cd) ? '1px solid rgba(255,255,255,0.4)' : 'none';
+                block.style.zIndex = '1';
+                block.setAttribute('data-pieces', clamped); 
+                
+                if (num === 1) {
+                    block.ondragstart = (e) => {
+                        e.dataTransfer.setData('text/plain', block.id);
+                        setTimeout(() => block.style.opacity = '0.4', 0);
+                    };
+                    block.ondragend = (e) => {
+                        if (block.draggable) block.style.opacity = '0.85';
+                    };
+
+                    block.onclick = () => {
+                        if (block.draggable) {
+                            if (isCommonDenomReady) trashPieces(block, num, cd);
+                            else triggerErrorMerge();
+                        }
+                    };
+                }
+
+                if (grid) unit.insertBefore(block, grid);
+                else unit.appendChild(block);
+            }
+        });
+    }
+
+    function triggerErrorMerge() {
+        document.getElementById('drag-instruction').innerHTML = `⚠️ 分母不同，無法直接相減！請先點擊「擴分/約分」尋找公共的分母。`;
+    }
+
+    // 更新拖拉扣除過程中的即時數量顯示標籤
+    function updateLabelsDuringDrag(cd) {
+        const vals = getSafeValues();
+        
+        let rem1 = (vals.total_n1 * s1) - trashedCount;
+        let w1 = Math.floor(rem1 / cd);
+        let n1 = rem1 % cd;
+        let label1 = document.getElementById('label1');
+        if (label1) label1.innerHTML = getDisplayHtml(w1, n1, cd, 'var(--red)');
+
+        let rem2 = (vals.total_n2 * s2) - trashedCount;
+        let w2 = Math.floor(rem2 / cd);
+        let n2 = rem2 % cd;
+        let label2 = document.getElementById('label2');
+        if (label2) label2.innerHTML = getDisplayHtml(w2, n2, cd, 'var(--blue)');
+    }
+
+    // 播放丟棄動畫，支援綁定 currentSpeed 動態時間參數與精確的起點座標
+    function animateToTrash(el, rect = null, isClone = false, durationMs = 3000) {
+        let trash = document.getElementById('trash-can');
+        let tRect = trash.getBoundingClientRect();
+        let startRect = rect || el.getBoundingClientRect();
+        
+        let clone = isClone ? el : el.cloneNode(true);
+        if (!isClone) {
+            el.style.display = 'none';
+        }
+        
+        clone.style.position = 'fixed';
+        clone.style.left = startRect.left + 'px';
+        clone.style.top = startRect.top + 'px';
+        clone.style.width = startRect.width + 'px';
+        clone.style.height = startRect.height + 'px';
+        clone.style.margin = '0';
+        clone.style.zIndex = '1000';
+        clone.style.transition = `all ${durationMs}ms cubic-bezier(0.25, 1, 0.5, 1)`;
+        clone.style.pointerEvents = 'none';
+        document.body.appendChild(clone);
+        
+        // 確保初始位置已繪製，再執行移動動畫
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                clone.style.left = (tRect.left + tRect.width/2 - startRect.width/2) + 'px';
+                clone.style.top = (tRect.top + tRect.height/2 - startRect.height/2) + 'px';
+                clone.style.transform = 'scale(0.1)';
+                clone.style.opacity = '0';
+            });
+        });
+        
+        setTimeout(() => {
+            clone.remove();
+        }, durationMs + 50);
+    }
+
+    // 核心減法邏輯：將小格丟進垃圾桶
+    function trashPieces(block, num, cd) {
+        if (num !== 1) return; // 只有點擊被減數才有效
+        
+        if (isRearranged) {
+            return; // 防呆：避免在展示重新排列期間進行扣除
+        }
+
+        const vals = getSafeValues();
+        let p = parseInt(block.getAttribute('data-pieces'));
+        let bar2Remaining = (vals.total_n2 * s2) - trashedCount;
+        let p_actual = Math.min(p, bar2Remaining);
+
+        if (p_actual <= 0) return;
+
+        // 計算被調整後的動畫長度
+        let animDuration = 3000 / currentSpeed;
+
+        // 處理被減數 (bar1) 的切割與動畫
+        if (p_actual === p) {
+            animateToTrash(block, null, false, animDuration);
+        } else {
+            let originalRect = block.getBoundingClientRect();
+            let removedWidth = originalRect.width * (p_actual / p);
+            let removedLeft = originalRect.left + originalRect.width - removedWidth;
+            
+            // 縮小原本的方塊
+            block.setAttribute('data-pieces', p - p_actual);
+            block.style.width = ((p - p_actual) / cd * 100) + '%';
+            
+            // 建立用來播放動畫的暫存方塊
+            let trashedPart = block.cloneNode(true);
+            trashedPart.style.width = ((p_actual) / cd * 100) + '%';
+            trashedPart.style.position = 'fixed';
+            trashedPart.style.left = removedLeft + 'px';
+            trashedPart.style.top = originalRect.top + 'px';
+            
+            let tRect = {
+                left: removedLeft,
+                top: originalRect.top,
+                width: removedWidth,
+                height: originalRect.height
+            };
+            
+            animateToTrash(trashedPart, tRect, true, animDuration);
+        }
+
+        // 處理減數 (bar2) 的對應方塊 (從右往左找)
+        let bar2Blocks = Array.from(document.querySelectorAll('[id^="drag-2-"]')).reverse();
+        let leftToTrash = p_actual;
+
+        for (let b2 of bar2Blocks) {
+            if (leftToTrash <= 0) break;
+            if (b2.style.display === 'none') continue;
+
+            let b2_p = parseInt(b2.getAttribute('data-pieces'));
+            if (b2_p <= leftToTrash) {
+                animateToTrash(b2, null, false, animDuration);
+                leftToTrash -= b2_p;
+            } else {
+                let b2OriginalRect = b2.getBoundingClientRect();
+                let b2RemovedWidth = b2OriginalRect.width * (leftToTrash / b2_p);
+                let b2RemovedLeft = b2OriginalRect.left + b2OriginalRect.width - b2RemovedWidth;
+                
+                // 縮小被扣除的部分
+                b2.setAttribute('data-pieces', b2_p - leftToTrash);
+                b2.style.width = ((b2_p - leftToTrash) / cd * 100) + '%';
+                
+                let b2Temp = b2.cloneNode(true);
+                b2Temp.style.width = (leftToTrash / cd * 100) + '%';
+                b2Temp.style.position = 'fixed';
+                b2Temp.style.left = b2RemovedLeft + 'px';
+                b2Temp.style.top = b2OriginalRect.top + 'px';
+                
+                // 準確傳遞藍色格扣除起點座標
+                let b2Rect = {
+                    left: b2RemovedLeft,
+                    top: b2OriginalRect.top,
+                    width: b2RemovedWidth,
+                    height: b2OriginalRect.height
+                };
+                
+                animateToTrash(b2Temp, b2Rect, true, animDuration);
+                
+                leftToTrash = 0;
+            }
+        }
+
+        trashedCount += p_actual;
+        updateTrashTooltip(cd);
+        updateLabelsDuringDrag(cd); 
+
+        if (trashedCount === (vals.total_n2 * s2)) {
+            setTimeout(showAnswerZone, animDuration + 50); // 等待減數動畫完成後再顯示作答區
+        }
+    }
+
+    function updateTrashTooltip(cd) {
+        let tooltip = document.getElementById('trash-tooltip');
+        if (trashedCount === 0) {
+            tooltip.innerHTML = "空";
+            return;
+        }
+        let w = Math.floor(trashedCount / cd);
+        let n = trashedCount % cd;
+        let fracHtml = '';
+        
+        if (w > 0 && n === 0) {
+            fracHtml = `<b>${w}</b> 個整數`;
+        } else if (w > 0) {
+            fracHtml = `<b>${w}</b> 個整數 和 <div class="inline-frac"><span>${n}</span><div class="line"></div><span>${cd}</span></div>`;
+        } else {
+            fracHtml = `<div class="inline-frac"><span>${n}</span><div class="line"></div><span>${cd}</span></div>`;
+        }
+        
+        // 分別顯示兩種顏色小格的數量
+        tooltip.innerHTML = `已丟棄:<br><span style="color:#ff6b6b; font-weight:bold;">被減數 (紅): ${fracHtml}</span><br><span style="color:#5dade2; font-weight:bold;">減數 (藍): ${fracHtml}</span>`;
+    }
+
+    function showAnswerZone() {
+        const vals = getSafeValues();
+        let cd1 = vals.d1 * s1;
+        document.getElementById('bottom-answer-zone').style.display = 'flex';
+        setTimeout(() => { document.getElementById('bottom-answer-zone').style.opacity = '1'; }, 50);
+        
+        document.getElementById('bot-frac1').innerHTML = getDisplayHtml(vals.w1, vals.n1 * s1, cd1, 'var(--red)');
+        document.getElementById('bot-frac2').innerHTML = getDisplayHtml(vals.w2, vals.n2 * s2, cd1, 'var(--blue)');
+        
+        const exactN = (vals.total_n1 * vals.d2) - (vals.total_n2 * vals.d1);
+        const exactD = vals.d1 * vals.d2;
+        
+        let hint = "";
+        if (exactN >= exactD) {
+            document.getElementById('ans-w').style.display = 'inline-block';
+            hint = " (可填帶分數或假分數)";
+        } else {
+            document.getElementById('ans-w').style.display = 'none';
+            document.getElementById('ans-w').value = '';
+        }
+
+        document.getElementById('bot-public-unit').innerHTML = `💡 公共分數單位為： <b style="display:inline-flex; align-items:center; vertical-align:middle;">${getFracHtml(1, cd1, 'var(--dark)')}</b>`;
+        document.getElementById('drag-instruction').innerHTML = `💡 減去完畢！請填寫下方最終答案！${hint}`;
+        
+        // 顯示重新排列按鈕並重置狀態
+        let btn = document.getElementById('rearrange-btn');
+        if (btn) {
+            btn.style.display = 'block';
+            btn.innerHTML = '💡 提示：重新排列';
+            isRearranged = false;
+        }
+    }
+
+    // 重新排列核心動畫邏輯 (重構為利用 tempContainer 且不被 overflow 裁切)
+    function toggleRearrange() {
+        let btn = document.getElementById('rearrange-btn');
+        if (document.getElementById('rearrange-temp-container')) return; // 動畫進行中防止重複點擊
+        
+        let animDuration = 3 / currentSpeed;
+        let animArea = document.getElementById('anim-area');
+        let animAreaRect = animArea.getBoundingClientRect();
+        
+        const vals = getSafeValues();
+        const cd = vals.d1 * s1;
+        const units = document.querySelectorAll('#bar1-wrap .bar-unit');
+        
+        // 抓取所有仍然存在（未被刪除）的紅色區塊
+        let originalBlocks = Array.from(document.querySelectorAll('#bar1-wrap .drag-block')).filter(b => b.style.display !== 'none' && parseInt(b.getAttribute('data-pieces')) > 0);
+        
+        let tempContainer = document.createElement('div');
+        tempContainer.id = 'rearrange-temp-container';
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '0';
+        tempContainer.style.width = '100%';
+        tempContainer.style.height = '100%';
+        tempContainer.style.pointerEvents = 'none';
+        tempContainer.style.zIndex = '100';
+        animArea.appendChild(tempContainer);
+
+        if (!isRearranged) {
+            // ---> 向前排列：全部飛向左上角填滿
+            let current_target_slot = 0;
+            
+            originalBlocks.forEach(block => {
+                block.style.opacity = '0'; // 隱藏原本的元素，改用分身動畫
+                
+                const rect = block.getBoundingClientRect();
+                const pieces = parseInt(block.getAttribute('data-pieces'));
+                const pieceWidthPx = rect.width / pieces; // 精確計算每一小格的實際像素寬度
+                
+                // 將每個群組化的 block 拆回一格一格來飛行，以順利繞過縫隙
+                for(let i = 0; i < pieces; i++) {
+                    let startX = rect.left + (i * pieceWidthPx) - animAreaRect.left;
+                    let startY = rect.top - animAreaRect.top;
+                    
+                    let unit_idx = Math.floor(current_target_slot / cd);
+                    let piece_in_unit = current_target_slot % cd;
+                    
+                    let targetLeft = 0;
+                    let targetTop = 0;
+                    let targetWidth = pieceWidthPx;
+                    
+                    if(units[unit_idx]) {
+                        const unit_rect = units[unit_idx].getBoundingClientRect();
+                        targetWidth = (unit_rect.width - 6) / cd; // 減去 6px 邊框
+                        targetLeft = unit_rect.left + 3 + piece_in_unit * targetWidth - animAreaRect.left;
+                        targetTop = unit_rect.top + 3 - animAreaRect.top;
+                    }
+                    
+                    let chunk = document.createElement('div');
+                    chunk.style.position = 'absolute';
+                    chunk.style.left = startX + 'px';
+                    chunk.style.top = startY + 'px';
+                    chunk.style.width = pieceWidthPx + 'px';
+                    chunk.style.height = rect.height + 'px';
+                    chunk.style.backgroundColor = 'var(--red)';
+                    chunk.style.opacity = '0.85';
+                    chunk.style.transition = `all ${animDuration}s cubic-bezier(0.25, 1, 0.5, 1)`;
+                    
+                    tempContainer.appendChild(chunk);
+                    
+                    // 開始飛行
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            chunk.style.left = targetLeft + 'px';
+                            chunk.style.top = targetTop + 'px';
+                            chunk.style.width = targetWidth + 'px';
+                        });
+                    });
+                    
+                    current_target_slot++;
+                }
+            });
+            
+            btn.innerHTML = '🔙 復原排列';
+            isRearranged = true;
+
+            setTimeout(() => {
+                // 動畫結束後，在真正的 DOM 內畫上重排後的常駐色塊
+                if (tempContainer.parentNode) tempContainer.parentNode.removeChild(tempContainer);
+                document.querySelectorAll('.rearranged-block').forEach(el => el.remove());
+                
+                if (isRearranged) {
+                    let slots_to_fill = current_target_slot;
+                    let current_fill = 0;
+                    units.forEach((unit) => {
+                        let fill_in_this = Math.min(cd, slots_to_fill - current_fill);
+                        if(fill_in_this > 0) {
+                            let rBlock = document.createElement('div');
+                            rBlock.className = 'rearranged-block';
+                            rBlock.style.position = 'absolute';
+                            rBlock.style.left = '0';
+                            rBlock.style.top = '0';
+                            rBlock.style.height = '100%';
+                            rBlock.style.width = `${(fill_in_this / cd) * 100}%`;
+                            rBlock.style.backgroundColor = 'var(--red)';
+                            rBlock.style.opacity = '0.85';
+                            rBlock.style.zIndex = '1';
+                            
+                            let grid = unit.querySelector('.bar-grid');
+                            if (grid) unit.insertBefore(rBlock, grid);
+                            else unit.appendChild(rBlock);
+                            
+                            current_fill += fill_in_this;
+                        }
+                    });
+                }
+            }, animDuration * 1000 + 50);
+
+        } else {
+            // ---> 向後復原：從排列好的位置飛回原本散落的位置
+            document.querySelectorAll('.rearranged-block').forEach(el => el.style.display = 'none');
+            
+            let current_target_slot = 0;
+            
+            originalBlocks.forEach(block => {
+                const rect = block.getBoundingClientRect(); // 注意：這時 block 因為沒有 transform，抓到的是它的「原始座標」
+                const pieces = parseInt(block.getAttribute('data-pieces'));
+                const pieceWidthPx = rect.width / pieces;
+                
+                for(let i = 0; i < pieces; i++) {
+                    let targetX = rect.left + (i * pieceWidthPx) - animAreaRect.left;
+                    let targetY = rect.top - animAreaRect.top;
+                    let targetWidth = pieceWidthPx;
+                    
+                    let unit_idx = Math.floor(current_target_slot / cd);
+                    let piece_in_unit = current_target_slot % cd;
+                    
+                    let startX = 0, startY = 0, startWidth = targetWidth;
+                    
+                    if(units[unit_idx]) {
+                        const unit_rect = units[unit_idx].getBoundingClientRect();
+                        startWidth = (unit_rect.width - 6) / cd; 
+                        startX = unit_rect.left + 3 + piece_in_unit * startWidth - animAreaRect.left;
+                        startY = unit_rect.top + 3 - animAreaRect.top;
+                    }
+                    
+                    let chunk = document.createElement('div');
+                    chunk.style.position = 'absolute';
+                    chunk.style.left = startX + 'px';
+                    chunk.style.top = startY + 'px';
+                    chunk.style.width = startWidth + 'px';
+                    chunk.style.height = rect.height + 'px';
+                    chunk.style.backgroundColor = 'var(--red)';
+                    chunk.style.opacity = '0.85';
+                    chunk.style.transition = `all ${animDuration}s cubic-bezier(0.25, 1, 0.5, 1)`;
+                    
+                    tempContainer.appendChild(chunk);
+                    
+                    // 開始飛回
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            chunk.style.left = targetX + 'px';
+                            chunk.style.top = targetY + 'px';
+                            chunk.style.width = targetWidth + 'px';
+                        });
+                    });
+                    
+                    current_target_slot++;
+                }
+            });
+            
+            btn.innerHTML = '💡 提示：重新排列';
+            isRearranged = false;
+
+            setTimeout(() => {
+                if (tempContainer.parentNode) tempContainer.parentNode.removeChild(tempContainer);
+                document.querySelectorAll('.rearranged-block').forEach(el => el.remove());
+                
+                if (!isRearranged) {
+                    originalBlocks.forEach(block => {
+                        block.style.opacity = '0.85'; // 把真正的原始色塊秀出來
+                    });
+                }
+            }, animDuration * 1000 + 50);
+        }
+    }
+
+    function setupSubtraction(cd1, cd2) {
+        let trashArea = document.getElementById('trash-area');
+        const vals = getSafeValues();
+
+        if (isCommonDenomReady) {
+            trashArea.style.display = 'flex';
+            trashedCount = 0;
+            updateTrashTooltip(cd1);
+
+            convertBarToDraggable(1, cd1, 'var(--red)');
+            convertBarToDraggable(2, cd2, 'var(--blue)');
+
+            let trashCan = document.getElementById('trash-can');
+            let wrap2 = document.getElementById('bar2-wrap'); // 將減數長條圖設為放置區
+            
+            let handleDrop = (e) => {
+                e.preventDefault();
+                wrap2.style.opacity = '1';
+                let draggedId = e.dataTransfer.getData('text/plain');
+                if (!draggedId) return;
+                let draggedEl = document.getElementById(draggedId);
+                if (draggedEl && draggedEl.classList.contains('drag-block')) {
+                    trashPieces(draggedEl, 1, cd1);
+                }
+            };
+
+            // 移除垃圾桶的拖曳與放置事件，拖拉到垃圾桶將無效
+            trashCan.ondragover = null;
+            trashCan.ondragleave = null;
+            trashCan.ondrop = null;
+            
+            // 減數長條圖 (bar2-wrap) 的拖曳事件
+            wrap2.ondragover = (e) => { e.preventDefault(); wrap2.style.opacity = '0.7'; };
+            wrap2.ondragleave = (e) => { wrap2.style.opacity = '1'; };
+            wrap2.ondrop = handleDrop;
+            
+            let wrap1 = document.getElementById('bar1-wrap');
+            wrap1.ondragover = null; wrap1.ondrop = null; wrap1.ondragleave = null;
+
+        } else {
+            trashArea.style.display = 'none';
+            convertBarToDraggable(1, cd1, 'var(--red)');
+            convertBarToDraggable(2, cd2, 'var(--blue)');
+
+            let wrap1 = document.getElementById('bar1-wrap');
+            let wrap2 = document.getElementById('bar2-wrap');
+            
+            let dragOverHandler = (e) => { e.preventDefault(); e.currentTarget.style.opacity = '0.7'; };
+            let dragLeaveHandler = (e) => { e.currentTarget.style.opacity = '1'; };
+            let dropHandler = (e) => {
+                e.preventDefault();
+                e.currentTarget.style.opacity = '1';
+                triggerErrorMerge();
+            };
+
+            wrap1.ondragover = dragOverHandler; wrap1.ondragleave = dragLeaveHandler; wrap1.ondrop = dropHandler;
+            wrap2.ondragover = dragOverHandler; wrap2.ondragleave = dragLeaveHandler; wrap2.ondrop = dropHandler;
+        }
+    }
+
+    function checkCommonDenom() {
+        if (!bar1Visible || !bar2Visible) return;
+        const vals = getSafeValues();
+        let cd1 = vals.d1 * s1;
+        let cd2 = vals.d2 * s2;
+
+        isCommonDenomReady = (cd1 === cd2 && cd1 > 0);
+
+        setupSubtraction(cd1, cd2);
+
+        document.getElementById('bottom-answer-zone').style.opacity = '0';
+        setTimeout(() => { document.getElementById('bottom-answer-zone').style.display = 'none'; }, 300);
+
+        // 隱藏重排按鈕
+        let btn = document.getElementById('rearrange-btn');
+        if(btn) btn.style.display = 'none';
+        isRearranged = false;
+
+        if (isCommonDenomReady) {
+            document.getElementById('drag-instruction').innerHTML = `💡 分母相同了！請點擊被減數的色塊，或將它拖入下方「減數長條圖」中扣除！`;
+            // 通分成功後，隱藏數標
+            document.getElementById('label1').style.opacity = '0';
+            document.getElementById('label2').style.opacity = '0';
+        } else {
+            document.getElementById('drag-instruction').innerHTML = `💡 試著將兩條長條圖拖拉在一起相減，看看會發生什麼事？（或點擊「擴/約分」讓分母相同）`;
+            // 未通分時，確保數標可見
+            document.getElementById('label1').style.opacity = '1';
+            document.getElementById('label2').style.opacity = '1';
+        }
+    }
+
+    function updateUI() {
+        const valsInput = getSafeValues();
+        // 防呆：被減數必須大於等於減數，否則強制交換避免負數
+        let val1 = valsInput.total_n1 / valsInput.d1;
+        let val2 = valsInput.total_n2 / valsInput.d2;
+        if (val1 < val2) {
+            document.getElementById('w1').value = valsInput.w2;
+            document.getElementById('n1').value = valsInput.n2;
+            document.getElementById('d1').value = valsInput.d2;
+            document.getElementById('w2').value = valsInput.w1;
+            document.getElementById('n2').value = valsInput.n1;
+            document.getElementById('d2').value = valsInput.d1;
+        }
+
+        enforceInputLimits();
+        updateMaxWholes(); 
+        const vals = getSafeValues();
+        
+        s1 = 1; s2 = 1;
+        bar1Visible = false; bar2Visible = false;
+        isCommonDenomReady = false;
+        trashedCount = 0;
+        
+        // 清理任何殘留的重新排列圖層與方塊
+        document.querySelectorAll('.rearranged-block').forEach(el => el.remove());
+        let tempContainer = document.getElementById('rearrange-temp-container');
+        if (tempContainer) tempContainer.remove();
+        
+        // 隱藏重排按鈕
+        let btn = document.getElementById('rearrange-btn');
+        if(btn) btn.style.display = 'none';
+        isRearranged = false;
+
+        let wpEl = document.getElementById('word-problem');
+        if (currentWordProblemTemplate) {
+            let frac1Html = `<b>${getDisplayHtml(vals.w1, vals.n1, vals.d1, 'var(--red)')}</b>`;
+            let frac2Html = `<b>${getDisplayHtml(vals.w2, vals.n2, vals.d2, 'var(--blue)')}</b>`;
+            wpEl.innerHTML = currentWordProblemTemplate.replace(/\[FRAC1\]/g, frac1Html).replace(/\[FRAC2\]/g, frac2Html);
+            wpEl.style.display = 'block';
+        } else {
+            wpEl.style.display = 'none';
+        }
+        
+        document.getElementById('ans-w').value = ''; 
+        document.getElementById('ans-w').style.display = 'none'; 
+        document.getElementById('ans-num').value = ''; 
+        document.getElementById('ans-den').value = '';
+        document.getElementById('feedback').style.opacity = '0';
+        document.getElementById('bottom-answer-zone').style.display = 'none';
+        document.getElementById('bottom-answer-zone').style.opacity = '0';
+        
+        const animArea = document.getElementById('anim-area');
+        animArea.innerHTML = `
+            <div id="bar1-row" style="display:none; position:relative; width:100%; min-height:80px; align-items:center; justify-content:space-between;">
+                <div id="label1" style="width:15%; text-align:center; transition: opacity 0.5s; opacity: 1;"></div>
+                <div class="bars-column">
+                    <div id="bar1-wrap" class="bar-wrap-container"></div>
+                    <div id="bar1-nl" class="nl-wrap-container" style="display:none;"></div>
+                </div>
+                <div style="width:15%; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <button class="tool-btn" onclick="applyTool(1, 'expand')">➕ 擴分</button>
+                    <button class="tool-btn" onclick="applyTool(1, 'simplify')">➖ 約分</button>
+                </div>
+            </div>
+            <div id="bar2-row" style="display:none; position:relative; width:100%; min-height:80px; align-items:center; justify-content:space-between;">
+                <div id="label2" style="width:15%; text-align:center; transition: opacity 0.5s; opacity: 1;"></div>
+                <div class="bars-column">
+                    <div id="bar2-wrap" class="bar-wrap-container"></div>
+                    <div id="bar2-nl" class="nl-wrap-container" style="display:none;"></div>
+                </div>
+                <div style="width:15%; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <button class="tool-btn" onclick="applyTool(2, 'expand')">➕ 擴分</button>
+                    <button class="tool-btn" onclick="applyTool(2, 'simplify')">➖ 約分</button>
+                </div>
+            </div>
+            
+            <div id="trash-area" style="display:none; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 120px; margin-top: 10px; border-top: 2px dashed #ccc; padding-top: 15px;">
+                <div id="trash-can" style="font-size: 4rem; position: relative; cursor: pointer; transition: 0.3s; display: inline-block;">
+                    🗑️
+                    <div id="trash-tooltip">空</div>
+                </div>
+                <div style="font-weight:bold; color:var(--dark); margin-top:5px; font-size:1.1rem;">垃圾桶</div>
+            </div>
+        `;
+        
+        renderBar(1, 'none');
+        renderBar(2, 'none');
+        document.getElementById('drag-instruction').innerHTML = `💡 點擊上方分數，顯示圖形！`;
+    }
+
+    function randomChallenge() {
+        let d1 = Math.floor(Math.random() * 5) + 3; 
+        let d2 = Math.floor(Math.random() * 5) + 3; 
+        while(d2 === d1) { d2 = Math.floor(Math.random() * 5) + 3; }
+        
+        let total1 = Math.floor(Math.random() * (d1 * 3)) + 2; 
+        let total2 = Math.floor(Math.random() * (d2 * 2)) + 1;
+        
+        // 確保被減數 >= 減數
+        if (total1/d1 < total2/d2) {
+            let temp = total1; total1 = total2; total2 = temp;
+            temp = d1; d1 = d2; d2 = temp;
+        }
+        
+        let w1 = '', n1 = total1;
+        let w2 = '', n2 = total2;
+
+        const showWhole = document.getElementById('show-whole-cb').checked;
+        if (showWhole) {
+            w1 = Math.floor(total1/d1); 
+            n1 = total1 % d1; 
+            if (n1 === 0 && w1 > 0) { w1--; n1 = d1; } 
+            
+            w2 = Math.floor(total2/d2); 
+            n2 = total2 % d2; 
+            if (n2 === 0 && w2 > 0) { w2--; n2 = d2; }
+            
+            if(w1 === 0) w1 = '';
+            if(w2 === 0) w2 = '';
+        }
+
+        document.getElementById('w1').value = w1; 
+        document.getElementById('n1').value = n1; 
+        document.getElementById('d1').value = d1;
+        document.getElementById('w2').value = w2; 
+        document.getElementById('n2').value = n2; 
+        document.getElementById('d2').value = d2;
+        
+        currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
+        updateUI();
+    }
+
+    function autoCheck() {
+        const vals = getSafeValues();
+        const ansWStr = document.getElementById('ans-w').value;
+        const ansNStr = document.getElementById('ans-num').value;
+        const ansDStr = document.getElementById('ans-den').value;
+
+        const ansW = parseInt(ansWStr) || 0;
+        let ansN = parseInt(ansNStr);
+        let ansD = parseInt(ansDStr);
+
+        if (ansNStr === "" && ansDStr === "") {
+            ansN = 0;
+            ansD = 1;
+        }
+
+        const fb = document.getElementById('feedback');
+
+        if (!isNaN(ansN) && !isNaN(ansD) && ansD !== 0) {
+            const userTotalN = ansW * ansD + ansN;
+            const userVal = userTotalN / ansD;
+
+            const exactN = (vals.total_n1 * vals.d2) - (vals.total_n2 * vals.d1);
+            const exactD = vals.d1 * vals.d2;
+            const exactVal = exactN / exactD;
+
+            const divisor = exactN === 0 ? 1 : gcd(Math.abs(exactN), exactD);
+            const simpleImproperN = exactN / divisor;
+            const simpleD = exactD / divisor;
+
+            const simpleW = Math.floor(simpleImproperN / simpleD);
+            const simpleMixedN = simpleImproperN % simpleD;
+
+            let currentD = vals.d1 * s1;
+            let LcmD = lcm(vals.d1, vals.d2);
+
+            if (Math.abs(userVal - exactVal) < 0.0001) {
+                let msg = "";
+                let isSimplest = false;
+
+                if (exactN === 0 && ansW === 0 && ansN === 0) isSimplest = true;
+                else if (ansW === 0 && ansN === simpleImproperN && ansD === simpleD) isSimplest = true;
+                else if (ansW === simpleW && ansN === simpleMixedN && ansD === simpleD) isSimplest = true;
+                else if (ansN === 0 && ansW === simpleW && simpleMixedN === 0) isSimplest = true;
+
+                if (isSimplest) {
+                    msg = '🎉 完全正確！而且已經是最簡化的答案了！';
+                } else {
+                    msg = '🌟 答對了數值！但試試看，這個答案可以再「約分」或「轉成帶分數」喔！';
+                }
+                
+                if (currentD !== LcmD && exactN !== 0) {
+                    msg += '<br><span style="color:var(--orange); font-size:1rem; font-weight:normal;">（提示：你通分時使用的分母不是最小公倍數喔！雖然算得對，但數字會比較大。）</span>';
+                }
+
+                fb.style.opacity = '1'; fb.style.color = 'var(--success)'; 
+                fb.innerHTML = msg;
+            } else { 
+                fb.style.opacity = '1'; fb.style.color = 'var(--red)'; 
+                fb.innerText = '👀 答案不對喔，再檢查一下整數和分子相減的結果！'; 
+            }
+        } else { fb.style.opacity = '0'; }
+    }
+
+    function applyUrlParams() {
+        const p = new URLSearchParams(window.location.search);
+        const setVal = (id, key) => {
+            const v = p.get(key);
+            if (v !== null && v !== '') {
+                const el = document.getElementById(id);
+                if (el) el.value = v;
+            }
+        };
+        setVal('n1', 'num1'); setVal('d1', 'den1'); setVal('w1', 'whole1');
+        setVal('n2', 'num2'); setVal('d2', 'den2'); setVal('w2', 'whole2');
+        const ctx = p.get('context');
+        if (ctx) {
+            const wp = document.getElementById('word-problem');
+            if (wp) { wp.innerText = ctx; wp.style.display = 'block'; }
+        }
+    }
+
+    window.onload = () => {
+        applyUrlParams();
+        updateSpeed(); 
+        toggleWholeNumber(); 
+        updateUI();
+    };
+</script>
+
+</body>
+</html>

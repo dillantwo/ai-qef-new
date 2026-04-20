@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUp,
@@ -16,6 +16,8 @@ import {
   Box,
   X,
   Loader2,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -53,10 +55,62 @@ export default function MathPage() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const canSend = !!(input.trim() || files) && !isClassifying;
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'zh-HK';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
 
   async function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve) => {
@@ -68,6 +122,7 @@ export default function MathPage() {
 
   async function doSend() {
     if (!canSend) return;
+    stopListening();
     setIsClassifying(true);
 
     try {
@@ -249,16 +304,42 @@ export default function MathPage() {
               />
 
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isClassifying}
-                  className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:translate-x-[2px] hover:border-[#898989] hover:bg-white hover:text-[#080808]"
-                >
-                  <ImagePlus className="size-4 text-[#5a5a5a]" />
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isClassifying}
+                    className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:translate-x-[2px] hover:border-[#898989] hover:bg-white hover:text-[#080808]"
+                  >
+                    <ImagePlus className="size-4 text-[#5a5a5a]" />
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={toggleVoice}
+                    disabled={isClassifying}
+                    className={`rounded-[4px] border bg-white transition-all hover:translate-x-[2px] hover:bg-white ${
+                      isListening
+                        ? 'border-red-400 text-red-500 hover:border-red-500 hover:text-red-600'
+                        : 'border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]'
+                    }`}
+                  >
+                    {isListening ? (
+                      <MicOff className="size-4" />
+                    ) : (
+                      <Mic className="size-4 text-[#5a5a5a]" />
+                    )}
+                  </Button>
+                  {isListening && (
+                    <span className="text-[12px] font-medium text-red-500 animate-pulse">
+                      聆聽中…
+                    </span>
+                  )}
+                </div>
 
                 <Button
                   type="submit"
