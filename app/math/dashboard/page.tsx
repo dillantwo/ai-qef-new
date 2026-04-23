@@ -855,7 +855,7 @@ function MathDashboardContent() {
 
       {/* Right panel: AI Chat (narrower) */}
       {chatVisible && (selectedTool === "volume-cubes" ? (
-        <VolumeChatPanel />
+        <VolumeChatPanel onHide={() => setChatVisible(false)} />
       ) : (
         <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">
         <div className="border-b border-[#d8d8d8] px-4 py-3">

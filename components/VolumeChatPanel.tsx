@@ -6,8 +6,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { ArrowUp, Bot, ImagePlus, MessageSquare, Mic, MicOff, Square, User, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowUp, Bot, ImagePlus, MessageSquare, Mic, MicOff, PanelRight, Square, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { basePath } from "@/lib/utils";
 
@@ -66,7 +65,7 @@ function fileToDataURL(file: File): Promise<string> {
   });
 }
 
-export function VolumeChatPanel() {
+export function VolumeChatPanel({ onHide }: { onHide?: () => void } = {}) {
   const [input, setInput] = useState("");
   const [chatFiles, setChatFiles] = useState<File[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -227,9 +226,17 @@ export function VolumeChatPanel() {
               <p className="text-sm font-semibold text-[#080808]">立體積木 AI 助教</p>
             </div>
           </div>
-          <Badge className="rounded-[4px] border-0 bg-[#146ef5]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
-            Live
-          </Badge>
+          {onHide && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onHide}
+              className="rounded-[4px]"
+              title="隱藏 AI 助手"
+            >
+              <PanelRight className="size-4" />
+            </Button>
+          )}
         </div>
         <p className="mt-1.5 text-[11px] text-[#6b7280]">場景中有 {cubeCount} 個方塊</p>
       </div>
