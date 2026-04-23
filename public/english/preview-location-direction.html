@@ -29,7 +29,7 @@
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    background-image: url('/aitools/english/facingNorth.png');
+    background-image: url('./facingNorth.png');
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -82,7 +82,7 @@
 </head>
 <body>
 <div id="map-container">
-  <img id="map" src="/aitools/english/map2.png" alt="Map of a specific location">
+  <img id="map" src="./map2.png" alt="Map of a specific location">
   <div id="sprite"></div>
   
   <!-- Touch Controls positioned at bottom-right of map -->
@@ -141,19 +141,19 @@
     switch (direction) {
       case 'up':
         spriteY = Math.max(5, spriteY - 5);
-        sprite.style.backgroundImage = "url('/aitools/english/facingNorth.png')";
+        sprite.style.backgroundImage = "url('./facingNorth.png')";
         break;
       case 'down':
         spriteY = Math.min(95, spriteY + 5);
-        sprite.style.backgroundImage = "url('/aitools/english/facingSouth.png')";
+        sprite.style.backgroundImage = "url('./facingSouth.png')";
         break;
       case 'left':
         spriteX = Math.max(5, spriteX - 5);
-        sprite.style.backgroundImage = "url('/aitools/english/facingWest.png')";
+        sprite.style.backgroundImage = "url('./facingWest.png')";
         break;
       case 'right':
         spriteX = Math.min(95, spriteX + 5);
-        sprite.style.backgroundImage = "url('/aitools/english/facingEast.png')";
+        sprite.style.backgroundImage = "url('./facingEast.png')";
         break;
     }
     sprite.style.top = `${spriteY}%`;

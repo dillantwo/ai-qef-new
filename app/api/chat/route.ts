@@ -46,11 +46,12 @@ function uiMessagesToModelMessages(messages: UIMessage[]): ModelMessage[] {
 
 export async function POST(req: Request) {
   try {
-    const { messages } = (await req.json()) as { messages: UIMessage[] };
+    const { messages, systemPrompt } = (await req.json()) as {
+      messages: UIMessage[];
+      systemPrompt?: string;
+    };
 
-    const result = streamText({
-      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
-      system: `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
+    const defaultSystem = `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
 
 你的職責：
 1. 當學生第一次輸入題目時，只需要簡短告訴學生這是什麼題型即可，例如：「這是一道**分數除法**的應用題。」不要開始解題。
@@ -74,7 +75,11 @@ export async function POST(req: Request) {
 回答格式建議：
 - 使用 Markdown 格式（標題用 ##、粗體用 **、列表用 -）
 - 第一次回答只說題型，保持簡短（1-2句話）
-- 後續回答才分步驟引導解題`,
+- 後續回答才分步驟引導解題`;
+
+    const result = streamText({
+      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
+      system: systemPrompt && systemPrompt.trim().length > 0 ? systemPrompt : defaultSystem,
     messages: uiMessagesToModelMessages(messages),
   });
 

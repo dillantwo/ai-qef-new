@@ -16,19 +16,19 @@ const topics = [
     available: true,
   },
   {
-    id: "daily-routines",
-    label: "Daily Routines",
-    subtitle: "Sequence and Time Expressions",
-    description: "Build fluency with present simple sentence flow, connectors, and routine storytelling frames.",
+    id: "thank-you-letter",
+    label: "Thank-You Letter",
+    subtitle: "Writing Practice",
+    description: "Learn to draft sincere thank-you letters with proper structure, tone, and polite expressions.",
     icon: Landmark,
     color: "#00d722",
     available: false,
   },
   {
-    id: "travel-conversations",
-    label: "Travel Conversations",
-    subtitle: "Functional Speaking",
-    description: "Train quick response patterns for asking, confirming, and clarifying in real-world scenarios.",
+    id: "reading-comprehension",
+    label: "Reading Comprehension",
+    subtitle: "Reading Skills",
+    description: "Strengthen reading skills through guided passages, key idea spotting, and inference practice.",
     icon: Compass,
     color: "#ff6b00",
     available: false,
@@ -37,7 +37,6 @@ const topics = [
 
 export default function EnglishPage() {
   const router = useRouter();
-  const readyCount = topics.filter((topic) => topic.available).length;
 
   function navigateToTopic(topicId: string, available: boolean) {
     if (!available) return;
@@ -55,43 +54,6 @@ export default function EnglishPage() {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="flex w-full flex-col gap-10 py-2">
-            <section className="grid gap-8 border-b border-[#d8d8d8] px-2 pb-8 pt-4 sm:px-0 lg:grid-cols-[minmax(0,1.2fr)_320px] lg:items-end">
-              <div className="space-y-5">
-                <p className="text-[12px] font-semibold uppercase tracking-[1.5px] text-[#146ef5]">
-                  English topic studio
-                </p>
-                <div className="space-y-3">
-                  <h1 className="max-w-4xl text-[42px] leading-[1.02] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[54px] lg:text-[68px]">
-                    Choose your English
-                    <br className="hidden sm:block" />
-                    learning track
-                  </h1>
-                  <p className="max-w-2xl text-base leading-7 text-[#4f4f4f] sm:text-lg">
-                    This page is your English-only topic gateway. Start from map language now, and unlock more communication modules as they are released.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <span className="inline-flex items-center rounded-[4px] bg-[#146ef5]/10 px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
-                    English only
-                  </span>
-                  <span className="inline-flex items-center rounded-[4px] border border-[#d8d8d8] bg-white px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#080808]">
-                    {readyCount} topic ready
-                  </span>
-                </div>
-              </div>
-
-              <aside className="rounded-[8px] border border-[#d8d8d8] bg-white/90 p-5 shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
-                  Session guide
-                </p>
-                <div className="mt-4 space-y-4 text-sm leading-6 text-[#4f4f4f]">
-                  <p>Begin with map navigation language and directional phrases.</p>
-                  <p>Use the dashboard tasks to practice describing routes with precision.</p>
-                  <p>Coming modules will expand into routines and travel communication.</p>
-                </div>
-              </aside>
-            </section>
-
             <section className="grid gap-4 px-2 sm:px-0 md:grid-cols-2 xl:grid-cols-3">
               {topics.map(({ id, label, subtitle, description, icon: Icon, color, available }) => (
                 <button

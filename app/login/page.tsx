@@ -93,38 +93,38 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-[#080808]">
+    <div className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-white text-[#080808]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(20,110,245,0.1),_transparent_30%),radial-gradient(circle_at_85%_15%,_rgba(237,82,203,0.14),_transparent_24%),linear-gradient(180deg,_#ffffff_0%,_#f7f8fb_100%)]" />
       <div className="absolute left-0 top-0 h-40 w-40 -translate-x-1/3 -translate-y-1/4 rounded-full bg-[#146ef5]/10 blur-3xl" />
       <div className="absolute bottom-0 right-0 h-52 w-52 translate-x-1/4 translate-y-1/4 rounded-full bg-[#7a3dff]/10 blur-3xl" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="relative flex flex-col border-b border-[#d8d8d8] bg-[linear-gradient(135deg,_#ffffff_0%,_#f5f8ff_55%,_#ffffff_100%)] px-6 py-8 sm:px-8 sm:py-10 lg:min-h-[720px] lg:border-b-0 lg:border-r lg:px-12 lg:py-12">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col items-stretch px-4 py-6 sm:px-6 sm:py-10 xl:items-center xl:px-8">
+        <div className="grid w-full overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] xl:grid-cols-[1.15fr_0.85fr]">
+          <section className="relative order-1 flex flex-col border-b border-[#d8d8d8] bg-[linear-gradient(135deg,_#ffffff_0%,_#f5f8ff_55%,_#ffffff_100%)] px-5 py-6 sm:px-8 sm:py-10 xl:border-b-0 xl:min-h-[720px] xl:border-r xl:px-12 xl:py-12">
             <div className="flex items-center gap-4">
-              <div className="inline-flex items-center gap-3">
+              <div className="inline-flex items-center gap-2 sm:gap-3">
                 <img
                   src={logoSrc}
                   alt="AI Learning Platform logo"
-                  className="h-11 w-auto object-contain"
+                  className="h-9 w-auto object-contain sm:h-11"
                 />
-                <p className="text-lg font-semibold tracking-[-0.02em] text-[#080808]">
+                <p className="text-sm font-semibold tracking-[-0.02em] text-[#080808] sm:text-lg">
                   AI and Coding for Subject Learning
                 </p>
               </div>
             </div>
 
-            <div className="mt-16 flex flex-1 flex-col justify-center">
+            <div className="flex flex-1 flex-col justify-center xl:mt-16">
               <div className="max-w-xl">
-                <h1 className="text-[44px] leading-[0.98] font-semibold tracking-[-0.05em] text-[#080808] sm:text-[56px] lg:text-[72px]">
+                <h1 className="mt-6 text-[32px] leading-[1.02] font-semibold tracking-[-0.04em] text-[#080808] sm:mt-8 sm:text-[44px] sm:leading-[0.98] sm:tracking-[-0.05em] md:text-[56px] xl:mt-0 xl:text-[72px]">
                   進入你的 AI 學習平台
                 </h1>
-                <p className="mt-5 max-w-lg text-base leading-7 text-[#4d4d4d] sm:text-lg">
+                <p className="mt-3 hidden max-w-lg text-sm leading-6 text-[#4d4d4d] sm:text-base sm:leading-7 md:text-lg xl:mt-5 xl:block">
                   從課堂內容、互動練習到 AI 工具建議，使用AI 工具提升學習效果。
                 </p>
               </div>
 
-              <div className="mt-10 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 hidden gap-3 sm:mt-10 sm:grid-cols-2 xl:grid">
                 {subjectHighlights.map((subject) => {
                   const Icon = subject.icon;
 
@@ -153,14 +153,14 @@ function LoginForm() {
             </div>
           </section>
 
-          <section className="flex items-center bg-white px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+          <section className="order-2 flex items-center bg-white px-5 py-6 sm:px-8 sm:py-10 xl:px-10">
             <div className="mx-auto w-full max-w-md">
-              <div className="rounded-[8px] border border-[#d8d8d8] bg-white p-6 shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] sm:p-8">
-                <div className="space-y-3">
+              <div className="rounded-[8px] border border-[#d8d8d8] bg-white p-5 shadow-[0px_84px_24px_rgba(0,0,0,0),0px_54px_22px_rgba(0,0,0,0.01),0px_30px_18px_rgba(0,0,0,0.04),0px_13px_13px_rgba(0,0,0,0.08),0px_3px_7px_rgba(0,0,0,0.09)] sm:p-8">
+                <div className="space-y-2 sm:space-y-3">
                   <p className="text-[12px] font-semibold uppercase tracking-[1.5px] text-[#146ef5]">
                     Member login
                   </p>
-                  <h2 className="text-[32px] leading-[1.04] font-semibold tracking-[-0.04em] text-[#080808]">
+                  <h2 className="text-[26px] leading-[1.04] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[32px]">
                     登錄並繼續使用
                   </h2>
                   <p className="text-sm leading-6 text-[#5a5a5a]">
@@ -168,7 +168,7 @@ function LoginForm() {
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                <form onSubmit={handleSubmit} className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
                   <div className="space-y-2.5">
                     <label
                       htmlFor="username"

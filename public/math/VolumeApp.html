@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>體積學習 — Volume Explorer</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f7fbff;
+    --border: #d8d8d8;
+    --text: #080808;
+    --muted: #6b7280;
+    --primary: #146ef5;
+    --primary-soft: rgba(20, 110, 245, 0.10);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+  }
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-rows: 40px 1fr;
+    height: 100vh;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+  }
+  .tab {
+    cursor: pointer;
+    text-align: center;
+    line-height: 40px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    user-select: none;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .body {
+    display: grid;
+    grid-template-columns: 220px 1fr 240px;
+    min-height: 0;
+  }
+  .left, .right {
+    border-right: 1px solid var(--border);
+    background: #fff;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .right { border-right: none; border-left: 1px solid var(--border); }
+  .center { position: relative; background: #fff; min-width: 0; }
+  canvas { display: block; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin: 12px 0 6px;
+  }
+  .section-title:first-child { margin-top: 0; }
+  /* Tools grid */
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .tool-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    transition: all .15s;
+  }
+  .tool-btn:hover { background: #f3f6fb; border-color: #b9d3fb; }
+  .tool-btn.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+  .tool-btn .icon { font-size: 16px; line-height: 1; }
+  /* Color palette */
+  .colors {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .swatch.active { border-color: var(--primary); transform: scale(1.05); }
+  /* Action button */
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .btn:hover { background: #f3f6fb; }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  /* Right panel */
+  .info-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    margin-bottom: 10px;
+  }
+  .info-card h3 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .stat { display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px; }
+  .stat .label { color: var(--muted); }
+  .stat .value { font-weight: 700; color: var(--primary); }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .switch {
+    position: relative; width: 32px; height: 18px;
+    background: #d8d8d8; border-radius: 999px; cursor: pointer;
+    transition: background .15s;
+  }
+  .switch::after {
+    content: ""; position: absolute; left: 2px; top: 2px;
+    width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    transition: left .15s;
+  }
+  .switch.on { background: var(--primary); }
+  .switch.on::after { left: 16px; }
+  /* Mini status bar */
+  .status {
+    position: absolute; left: 12px; bottom: 12px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; font-size: 11px; color: var(--muted);
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Mode tabs -->
+  <div class="tabs">
+    <div class="tab active" data-mode="build">手動構建</div>
+    <div class="tab" data-mode="inspect">觀察模式</div>
+  </div>
+
+  <div class="body">
+    <!-- LEFT: tools -->
+    <div class="left" id="left-panel">
+      <div class="section-title" id="mode-title">手動構建</div>
+
+      <div class="section-title">Tools</div>
+      <div class="tools" id="tools">
+        <button class="tool-btn active" data-tool="place"><span class="icon">📦</span><span>放置方塊</span></button>
+        <button class="tool-btn" data-tool="erase"><span class="icon">⬜</span><span>刪除方塊</span></button>
+        <button class="tool-btn" data-tool="paint"><span class="icon">🎨</span><span>上色 / 改色</span></button>
+        <button class="tool-btn" data-tool="xray"><span class="icon">👁️</span><span>透視模式</span></button>
+        <button class="tool-btn" data-tool="measure"><span class="icon">📏</span><span>度量</span></button>
+        <button class="tool-btn" data-tool="rotateView"><span class="icon">🔄</span><span>旋轉視圖</span></button>
+        <button class="tool-btn" data-tool="container"><span class="icon">🗃️</span><span>顯示容器</span></button>
+      </div>
+
+      <div class="section-title">Colors</div>
+      <div class="colors" id="colors"></div>
+
+      <div class="section-title">View</div>
+      <button class="btn" id="rot-left">⟲ 向左旋轉</button>
+      <button class="btn" id="rot-right">⟳ 向右旋轉</button>
+
+      <div class="section-title">Workspace</div>
+      <button class="btn" id="clear">🗑 清除全部</button>
+      <button class="btn" id="undo">↩ 復原</button>
+    </div>
+
+    <!-- CENTER: 3D canvas -->
+    <div class="center">
+      <div id="canvas-wrap" style="width:100%;height:100%;"></div>
+      <div class="status" id="status">點擊網格放置方塊 · 拖曳右鍵旋轉視角</div>
+    </div>
+
+    <!-- RIGHT: measurements -->
+    <div class="right">
+      <div class="info-card">
+        <h3>度量資訊</h3>
+        <div class="stat"><span class="label">方塊數量</span><span class="value" id="stat-count">0</span></div>
+        <div class="stat"><span class="label">體積</span><span class="value"><span id="stat-volume">0</span> 立方單位</span></div>
+        <div class="stat"><span class="label">表面積</span><span class="value"><span id="stat-area">0</span> 平方單位</span></div>
+        <div class="toggle">
+          <span>顯示度量標籤</span>
+          <div class="switch" id="toggle-labels"></div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>三視圖投影</h3>
+        <div class="stat"><span class="label">頂視圖（俯視）</span><span class="value" id="stat-top">0</span></div>
+        <div class="stat"><span class="label">前視圖</span><span class="value" id="stat-front">0</span></div>
+        <div class="stat"><span class="label">側視圖</span><span class="value" id="stat-side">0</span></div>
+      </div>
+
+      <div class="info-card">
+        <h3>提示</h3>
+        <p class="hint" id="mode-hint">
+          選擇「放置方塊」工具，點擊網格或既有方塊的面來疊加；選「刪除方塊」可移除；「上色」可變更顏色。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// ========== State ==========
+const PALETTE = [
+  "#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#a855f7", "#06b6d4",
+  "#f97316", "#0ea5e9",
+  "#ec4899", "#84cc16", "#dc2626", "#14b8a6", "#fb923c", "#facc15",
+  "#475569", "#94a3b8",
+];
+const state = {
+  mode: "build",         // "build" | "inspect"
+  tool: "place",         // place | erase | paint | xray | measure | rotateView | container
+  color: PALETTE[0],
+  cubes: new Map(),      // key "x,y,z" -> { x,y,z,color }
+  history: [],           // snapshots of cubes
+  showLabels: false,
+  showContainer: false,
+  xray: false,
+  containerSize: { w: 5, h: 5, d: 5 },
+};
+
+// ========== Three.js scene ==========
+const wrap = document.getElementById("canvas-wrap");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.setClearColor(0xffffff, 1);
+wrap.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+camera.position.set(8, 8, 8);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+dir.position.set(8, 12, 6);
+scene.add(dir);
+
+// Ground grid (snap plane at y=0)
+const gridSize = 10;
+const gridDiv = 10;
+const grid = new THREE.GridHelper(gridSize, gridDiv, 0xc7d2e0, 0xe5ecf5);
+grid.position.set(0, 0, 0);
+scene.add(grid);
+
+// Invisible ground plane for raycasting (covers grid area)
+const groundGeo = new THREE.PlaneGeometry(gridSize, gridSize);
+const groundMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = 0;
+ground.userData.isGround = true;
+scene.add(ground);
+
+// Container outline (toggle)
+let containerHelper = null;
+function rebuildContainer() {
+  if (containerHelper) { scene.remove(containerHelper); containerHelper.geometry.dispose(); containerHelper.material.dispose(); containerHelper = null; }
+  if (!state.showContainer) return;
+  const { w, h, d } = state.containerSize;
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const edges = new THREE.EdgesGeometry(geo);
+  containerHelper = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x146ef5, transparent: true, opacity: 0.5 }));
+  containerHelper.position.set(0, h / 2, 0);
+  scene.add(containerHelper);
+}
+
+// ========== Cube management ==========
+const cubeGroup = new THREE.Group();
+scene.add(cubeGroup);
+const sharedGeo = new THREE.BoxGeometry(1, 1, 1);
+const sharedEdgeGeo = new THREE.EdgesGeometry(sharedGeo);
+
+function keyOf(x, y, z) { return `${x},${y},${z}`; }
+
+function snapshot() {
+  state.history.push(JSON.stringify(Array.from(state.cubes.values())));
+  if (state.history.length > 50) state.history.shift();
+}
+
+function rebuildCubes() {
+  // Clear existing meshes
+  while (cubeGroup.children.length) {
+    const m = cubeGroup.children.pop();
+    if (m.material) m.material.dispose();
+  }
+  for (const c of state.cubes.values()) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: c.color,
+      transparent: state.xray,
+      opacity: state.xray ? 0.45 : 1,
+      roughness: 0.6,
+      metalness: 0.05,
+    });
+    const mesh = new THREE.Mesh(sharedGeo, mat);
+    // Cubes occupy integer grid cells. Cube at (x,y,z) means cell with min-corner at (x,y,z).
+    mesh.position.set(c.x + 0.5, c.y + 0.5, c.z + 0.5);
+    mesh.userData.cubeKey = keyOf(c.x, c.y, c.z);
+    cubeGroup.add(mesh);
+
+    // edges
+    const line = new THREE.LineSegments(sharedEdgeGeo, new THREE.LineBasicMaterial({ color: 0x111827, transparent: true, opacity: state.xray ? 0.6 : 0.85 }));
+    line.position.copy(mesh.position);
+    line.userData.isEdge = true;
+    cubeGroup.add(line);
+  }
+  updateStats();
+}
+
+function addCube(x, y, z, color = state.color) {
+  const k = keyOf(x, y, z);
+  if (state.cubes.has(k)) return false;
+  // Bounds: keep inside reasonable area
+  const half = gridSize / 2;
+  if (x < -half || x >= half || z < -half || z >= half || y < 0 || y > 20) return false;
+  snapshot();
+  state.cubes.set(k, { x, y, z, color });
+  rebuildCubes();
+  return true;
+}
+
+function removeCube(x, y, z) {
+  const k = keyOf(x, y, z);
+  if (!state.cubes.has(k)) return false;
+  snapshot();
+  state.cubes.delete(k);
+  rebuildCubes();
+  return true;
+}
+
+function paintCube(x, y, z, color) {
+  const k = keyOf(x, y, z);
+  const c = state.cubes.get(k);
+  if (!c) return false;
+  snapshot();
+  c.color = color;
+  rebuildCubes();
+  return true;
+}
+
+function clearAll() {
+  if (state.cubes.size === 0) return;
+  snapshot();
+  state.cubes.clear();
+  rebuildCubes();
+}
+
+function undo() {
+  const prev = state.history.pop();
+  if (!prev) return;
+  const arr = JSON.parse(prev);
+  state.cubes = new Map(arr.map((c) => [keyOf(c.x, c.y, c.z), c]));
+  rebuildCubes();
+}
+
+// ========== Stats ==========
+function computeSurfaceArea() {
+  // Surface area of a polycube: count exposed faces
+  let exposed = 0;
+  const dirs = [
+    [1, 0, 0], [-1, 0, 0],
+    [0, 1, 0], [0, -1, 0],
+    [0, 0, 1], [0, 0, -1],
+  ];
+  for (const c of state.cubes.values()) {
+    for (const [dx, dy, dz] of dirs) {
+      if (!state.cubes.has(keyOf(c.x + dx, c.y + dy, c.z + dz))) exposed++;
+    }
+  }
+  return exposed;
+}
+
+function projectViews() {
+  const top = new Set();   // (x,z)
+  const front = new Set(); // (x,y)
+  const side = new Set();  // (z,y)
+  for (const c of state.cubes.values()) {
+    top.add(`${c.x},${c.z}`);
+    front.add(`${c.x},${c.y}`);
+    side.add(`${c.z},${c.y}`);
+  }
+  return { top: top.size, front: front.size, side: side.size };
+}
+
+function updateStats() {
+  document.getElementById("stat-count").textContent = state.cubes.size;
+  document.getElementById("stat-volume").textContent = state.cubes.size;
+  document.getElementById("stat-area").textContent = computeSurfaceArea();
+  const v = projectViews();
+  document.getElementById("stat-top").textContent = v.top;
+  document.getElementById("stat-front").textContent = v.front;
+  document.getElementById("stat-side").textContent = v.side;
+}
+
+// ========== Picking ==========
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function pickAt(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  // Test cubes first, then ground
+  const cubeMeshes = cubeGroup.children.filter((c) => !c.userData.isEdge);
+  const hits = raycaster.intersectObjects(cubeMeshes, false);
+  if (hits.length) return { type: "cube", hit: hits[0] };
+  const groundHits = raycaster.intersectObject(ground, false);
+  if (groundHits.length) return { type: "ground", hit: groundHits[0] };
+  return null;
+}
+
+function handleCanvasClick(ev) {
+  if (state.mode !== "build") return;
+  if (state.tool === "rotateView") return;
+
+  const result = pickAt(ev.clientX, ev.clientY);
+  if (!result) return;
+
+  if (result.type === "ground") {
+    if (state.tool === "place") {
+      const p = result.hit.point;
+      const x = Math.floor(p.x);
+      const z = Math.floor(p.z);
+      addCube(x, 0, z);
+    }
+    return;
+  }
+
+  // type === "cube"
+  const mesh = result.hit.object;
+  const key = mesh.userData.cubeKey;
+  if (!key) return;
+  const [cx, cy, cz] = key.split(",").map(Number);
+
+  if (state.tool === "erase") {
+    removeCube(cx, cy, cz);
+    return;
+  }
+  if (state.tool === "paint") {
+    paintCube(cx, cy, cz, state.color);
+    return;
+  }
+  if (state.tool === "place") {
+    // Determine which face was hit using normal
+    const normal = result.hit.face.normal.clone();
+    normal.transformDirection(mesh.matrixWorld);
+    const nx = Math.round(normal.x);
+    const ny = Math.round(normal.y);
+    const nz = Math.round(normal.z);
+    addCube(cx + nx, cy + ny, cz + nz);
+    return;
+  }
+}
+
+renderer.domElement.addEventListener("pointerdown", (ev) => {
+  // Only handle primary button as a click tool action; skip if user is dragging-rotate (right button)
+  if (ev.button !== 0) return;
+  // Use pointerup with movement tracking to distinguish click vs drag
+  const startX = ev.clientX, startY = ev.clientY;
+  const onUp = (up) => {
+    renderer.domElement.removeEventListener("pointerup", onUp);
+    const dx = up.clientX - startX;
+    const dy = up.clientY - startY;
+    if (Math.hypot(dx, dy) < 4) handleCanvasClick(up);
+  };
+  renderer.domElement.addEventListener("pointerup", onUp);
+});
+
+// ========== UI wiring ==========
+const tabs = document.querySelectorAll(".tab");
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    state.mode = tab.dataset.mode;
+    document.getElementById("mode-title").textContent = state.mode === "build" ? "手動構建" : "觀察模式";
+    document.getElementById("mode-hint").textContent =
+      state.mode === "build"
+        ? "選擇「放置方塊」工具，點擊網格或既有方塊的面來疊加；選「刪除方塊」可移除；「上色」可變更顏色。"
+        : "觀察模式：拖曳視角檢視整體形狀，右側面板會顯示體積、表面積與三視圖。";
+    document.getElementById("status").textContent =
+      state.mode === "build"
+        ? "點擊網格放置方塊 · 拖曳右鍵旋轉視角"
+        : "拖曳旋轉、滾輪縮放，觀察立體形狀";
+  });
+});
+
+const toolBtns = document.querySelectorAll(".tool-btn");
+toolBtns.forEach((b) => {
+  b.addEventListener("click", () => {
+    const t = b.dataset.tool;
+    if (t === "xray") {
+      state.xray = !state.xray;
+      b.classList.toggle("active", state.xray);
+      rebuildCubes();
+      return;
+    }
+    if (t === "container") {
+      state.showContainer = !state.showContainer;
+      b.classList.toggle("active", state.showContainer);
+      rebuildContainer();
+      return;
+    }
+    if (t === "measure") {
+      state.showLabels = !state.showLabels;
+      b.classList.toggle("active", state.showLabels);
+      document.getElementById("toggle-labels").classList.toggle("on", state.showLabels);
+      return;
+    }
+    // mutually-exclusive interaction tools
+    toolBtns.forEach((x) => {
+      const tt = x.dataset.tool;
+      if (["place", "erase", "paint", "rotateView"].includes(tt)) x.classList.remove("active");
+    });
+    b.classList.add("active");
+    state.tool = t;
+    controls.enableRotate = true; // OrbitControls always allowed; tool just affects click behaviour
+  });
+});
+
+// Color palette
+const colorsEl = document.getElementById("colors");
+PALETTE.forEach((hex, i) => {
+  const sw = document.createElement("div");
+  sw.className = "swatch" + (i === 0 ? " active" : "");
+  sw.style.background = hex;
+  sw.addEventListener("click", () => {
+    state.color = hex;
+    document.querySelectorAll(".swatch").forEach((s) => s.classList.remove("active"));
+    sw.classList.add("active");
+  });
+  colorsEl.appendChild(sw);
+});
+
+// View rotation buttons (snap 30°)
+function rotateView(deltaRad) {
+  const offset = new THREE.Vector3().subVectors(camera.position, controls.target);
+  const r = Math.hypot(offset.x, offset.z);
+  const theta = Math.atan2(offset.z, offset.x) + deltaRad;
+  offset.x = r * Math.cos(theta);
+  offset.z = r * Math.sin(theta);
+  camera.position.copy(controls.target).add(offset);
+  camera.lookAt(controls.target);
+}
+document.getElementById("rot-left").addEventListener("click", () => rotateView(-Math.PI / 8));
+document.getElementById("rot-right").addEventListener("click", () => rotateView(Math.PI / 8));
+
+// Workspace actions
+document.getElementById("clear").addEventListener("click", () => {
+  if (state.cubes.size && !confirm("確定要清除全部方塊嗎？")) return;
+  clearAll();
+});
+document.getElementById("undo").addEventListener("click", undo);
+
+document.getElementById("toggle-labels").addEventListener("click", (e) => {
+  state.showLabels = !state.showLabels;
+  e.currentTarget.classList.toggle("on", state.showLabels);
+  // toggle "measure" tool button highlight too
+  document.querySelector('.tool-btn[data-tool="measure"]').classList.toggle("active", state.showLabels);
+});
+
+// ========== Resize ==========
+function resize() {
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+new ResizeObserver(resize).observe(wrap);
+
+// ========== URL params (initial cubes) ==========
+// Optional: ?cubes=0,0,0;1,0,0;0,1,0  to seed an initial figure
+try {
+  const url = new URL(window.location.href);
+  const seed = url.searchParams.get("cubes");
+  if (seed) {
+    seed.split(";").forEach((tok) => {
+      const [x, y, z] = tok.split(",").map(Number);
+      if ([x, y, z].every((n) => Number.isFinite(n))) {
+        state.cubes.set(keyOf(x, y, z), { x, y, z, color: state.color });
+      }
+    });
+    // Don't push history for the seed
+  } else {
+    // Default: a single cube so the canvas isn't empty (matches reference image)
+    state.cubes.set(keyOf(0, 0, 0), { x: 0, y: 0, z: 0, color: state.color });
+  }
+} catch {
+  state.cubes.set(keyOf(0, 0, 0), { x: 0, y: 0, z: 0, color: state.color });
+}
+rebuildCubes();
+
+// ========== Animate ==========
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

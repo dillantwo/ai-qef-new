@@ -104,6 +104,25 @@ const seedData = [
     ],
   },
   {
+    type: "volume",
+    label: "體積 Volume",
+    description: "3D 體積學習：堆疊立方體、計算體積／表面積、觀察三視圖",
+    isActive: true,
+    tools: [
+      {
+        key: "volume-cubes",
+        label: "體積探索",
+        sub: "Volume Explorer (3D)",
+        icon: "Box",
+        bg: "bg-indigo-100",
+        iconBg: "bg-indigo-500",
+        border: "border-indigo-200",
+        hover: "hover:bg-indigo-200 hover:border-indigo-300",
+        text: "text-indigo-700",
+      },
+    ],
+  },
+  {
     type: "english",
     label: "英文科 English",
     description: "English Language interactive tools",

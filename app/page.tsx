@@ -81,22 +81,22 @@ export default function Home() {
     <>
       <Header />
 
-      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+      <main className="relative flex flex-1 overflow-x-hidden overflow-y-auto bg-white text-[#080808]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(20,110,245,0.1),_transparent_26%),radial-gradient(circle_at_100%_10%,_rgba(237,82,203,0.1),_transparent_20%),linear-gradient(180deg,_#ffffff_0%,_#f7f8fb_100%)]" />
         <div className="absolute left-0 top-0 h-44 w-44 -translate-x-1/3 -translate-y-1/4 rounded-full bg-[#146ef5]/10 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-56 w-56 translate-x-1/4 translate-y-1/4 rounded-full bg-[#7a3dff]/10 blur-3xl" />
 
-        <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           <div className="flex w-full flex-col">
-            <section className="px-2 py-4 sm:px-0 sm:py-6 lg:py-8">
-              <h1 className="max-w-3xl text-[40px] leading-[0.98] font-semibold tracking-[-0.05em] text-[#080808] sm:text-[52px] lg:text-[64px]">
+            <section className="px-1 py-3 sm:px-0 sm:py-6 lg:py-8">
+              <h1 className="max-w-3xl text-[28px] leading-[1.05] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[40px] sm:leading-[0.98] sm:tracking-[-0.05em] md:text-[52px] lg:text-[64px]">
                 選擇你要進入的學習科目
               </h1>
             </section>
 
-            <section className="px-2 py-4 sm:px-0 sm:py-6 lg:py-8">
+            <section className="px-1 py-3 sm:px-0 sm:py-6 lg:py-8">
               {loading ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {subjects.map(({ id }) => (
                     <div
                       key={id}
@@ -116,7 +116,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {subjects.map(
                     ({ id, label, labelEn, description, icon: Icon, href, available, accent }) => {
                       const hasAccess = userSubjects.includes(
@@ -140,15 +140,15 @@ export default function Home() {
                           onClick={() => enabled && router.push(href)}
                           disabled={!enabled}
                           className={[
-                            "group relative flex min-h-[280px] flex-col rounded-[8px] border p-6 text-left transition duration-200",
+                            "group relative flex min-h-[220px] flex-col rounded-[8px] border p-5 text-left transition duration-200 sm:min-h-[280px] sm:p-6",
                             enabled
                               ? "cursor-pointer border-[#d8d8d8] bg-white hover:translate-x-[6px] hover:border-[#080808]"
                               : "cursor-not-allowed border-[#d8d8d8] bg-[#f7f8fb]",
                           ].join(" ")}
                         >
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-3">
                             <div
-                              className="flex h-12 w-12 items-center justify-center rounded-[4px] text-white shadow-[6px_6px_0px_#080808]"
+                              className="flex h-11 w-11 items-center justify-center rounded-[4px] text-white shadow-[6px_6px_0px_#080808] sm:h-12 sm:w-12"
                               style={{ backgroundColor: accent }}
                             >
                               <Icon className="size-5" />
@@ -163,12 +163,12 @@ export default function Home() {
                             </span>
                           </div>
 
-                          <div className="mt-10 space-y-3">
+                          <div className="mt-6 space-y-2 sm:mt-10 sm:space-y-3">
                             <div>
                               <p className="text-[12px] font-semibold uppercase tracking-[1.4px] text-[#ababab]">
                                 {labelEn}
                               </p>
-                              <h2 className="mt-2 text-[28px] leading-[1.05] font-semibold tracking-[-0.04em] text-[#080808]">
+                              <h2 className="mt-2 text-[24px] leading-[1.05] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[28px]">
                                 {label}
                               </h2>
                             </div>
@@ -177,7 +177,7 @@ export default function Home() {
                             </p>
                           </div>
 
-                          <div className="mt-auto flex items-center justify-between border-t border-[#d8d8d8] pt-5 text-sm">
+                          <div className="mt-auto flex items-center justify-between border-t border-[#d8d8d8] pt-4 text-sm sm:pt-5">
                             <span className="font-medium text-[#363636]">
                               {enabled
                                 ? "進入科目學習"

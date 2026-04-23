@@ -66,10 +66,22 @@ function ToolItem({
           <SidebarMenuSubButton
             onClick={onClick}
             isActive={isActive}
-            className="gap-2.5"
+            className={`relative gap-2.5 ${
+              isActive
+                ? "bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-300 pl-3 hover:bg-blue-100 hover:text-blue-700 data-active:bg-blue-50 data-active:text-blue-700"
+                : ""
+            }`}
           >
+            {isActive && (
+              <span
+                aria-hidden
+                className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r bg-blue-600"
+              />
+            )}
             <span
-              className={`inline-flex items-center justify-center size-5 rounded-md ${iconBg} text-white shrink-0`}
+              className={`inline-flex items-center justify-center size-5 rounded-md ${iconBg} text-white shrink-0 ${
+                isActive ? "ring-2 ring-blue-400" : ""
+              }`}
             >
               <Icon className="size-3" strokeWidth={2.5} />
             </span>
@@ -127,6 +139,12 @@ export function AppSidebar() {
         </Link>
         <Button className="mt-4 w-full" size="lg" onClick={() => {
           const subject = pathname.split('/')[1] || 'math';
+          // On the math dashboard, just signal "new question" instead of navigating
+          // (the dashboard will clear state and show the input form).
+          if (subject === 'math' && pathname.startsWith('/math/dashboard')) {
+            window.dispatchEvent(new CustomEvent('dashboard:new-question'));
+            return;
+          }
           router.push(`/${subject}`);
         }}>
           + Add New Question
@@ -134,8 +152,8 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2">
-        {/* AI Recommended Tools */}
-        {tools.length > 0 && (
+        {/* AI Recommended Tools — only after a question is submitted */}
+        {tools.length > 0 && question && (
           <SidebarGroup>
             <SidebarGroupLabel className="flex items-center gap-1.5">
               <Sparkles className="size-3.5" />

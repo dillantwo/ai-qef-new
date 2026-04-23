@@ -17,6 +17,7 @@ import {
   Timer,
   Layers,
   ArrowLeftRight,
+  Box,
   type LucideIcon,
 } from "lucide-react";
 
@@ -42,6 +43,7 @@ export const toolIconMap: Record<string, LucideIcon> = {
   Timer,
   Layers,
   ArrowLeftRight,
+  Box,
 };
 
 export interface ToolGroup {
