@@ -21,8 +21,8 @@ if (typeof window !== "undefined") {
 }
 
 function CubeMesh({
-  x, y, z, color,
-}: { x: number; y: number; z: number; color: string }) {
+  x, y, z, color, offset,
+}: { x: number; y: number; z: number; color: string; offset?: [number, number, number] }) {
   const xray = useCubeStore((s) => s.xray);
   const tool = useCubeStore((s) => s.tool);
   const mode = useCubeStore((s) => s.mode);
@@ -37,7 +37,6 @@ function CubeMesh({
     if (tool === "paint") { paintCube(x, y, z); return; }
     if (tool === "place" && e.face) {
       const n = e.face.normal.clone();
-      // face.normal is in object space; cube has identity rotation so it's world-aligned
       const nx = Math.round(n.x);
       const ny = Math.round(n.y);
       const nz = Math.round(n.z);
@@ -45,8 +44,12 @@ function CubeMesh({
     }
   }
 
+  const ox = offset?.[0] ?? 0;
+  const oy = offset?.[1] ?? 0;
+  const oz = offset?.[2] ?? 0;
+
   return (
-    <group position={[x + 0.5, y + 0.5, z + 0.5]}>
+    <group position={[x + 0.5 + ox, y + 0.5 + oy, z + 0.5 + oz]}>
       <mesh onClick={onClick}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial
@@ -92,23 +95,38 @@ function Container() {
   const { w, h, d } = useCubeStore((s) => s.containerSize);
   if (!show) return null;
   return (
-    <lineSegments position={[0, h / 2, 0]}>
+    <lineSegments position={[w / 2, h / 2, d / 2]}>
       <edgesGeometry args={[new THREE.BoxGeometry(w, h, d)]} />
       <lineBasicMaterial color="#146ef5" transparent opacity={0.5} />
     </lineSegments>
   );
 }
 
-function CameraRotator() {
+function CameraRotator({ controllable = true }: { controllable?: boolean }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const nonce = useCubeStore((s) => s.rotateNonce);
   const dir = useCubeStore((s) => s.rotateDir);
+  const setViewYaw = useCubeStore((s) => s.setViewYaw);
+  const setCamera = useCubeStore((s) => s.setCamera);
   const lastNonce = useRef(0);
+
+  // Restore persisted camera state on mount.
+  useEffect(() => {
+    const { cameraPos, cameraTarget } = useCubeStore.getState();
+    camera.position.set(cameraPos[0], cameraPos[1], cameraPos[2]);
+    if (controlsRef.current?.target) {
+      controlsRef.current.target.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+      controlsRef.current.update?.();
+    }
+    camera.lookAt(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (nonce === lastNonce.current) return;
     lastNonce.current = nonce;
+    if (!controllable) return;
     const target = controlsRef.current?.target ?? new THREE.Vector3();
     const offset = new THREE.Vector3().subVectors(camera.position, target);
     const r = Math.hypot(offset.x, offset.z);
@@ -117,7 +135,23 @@ function CameraRotator() {
     offset.z = r * Math.sin(theta);
     camera.position.copy(target).add(offset);
     camera.lookAt(target);
-  }, [nonce, dir, camera]);
+    setViewYaw(Math.atan2(offset.x, offset.z));
+    setCamera(
+      [camera.position.x, camera.position.y, camera.position.z],
+      [target.x, target.y, target.z]
+    );
+  }, [nonce, dir, camera, controllable, setViewYaw, setCamera]);
+
+  function handleChange() {
+    const target = controlsRef.current?.target ?? new THREE.Vector3();
+    const dx = camera.position.x - target.x;
+    const dz = camera.position.z - target.z;
+    setViewYaw(Math.atan2(dx, dz));
+    setCamera(
+      [camera.position.x, camera.position.y, camera.position.z],
+      [target.x, target.y, target.z]
+    );
+  }
 
   return (
     <OrbitControls
@@ -125,12 +159,19 @@ function CameraRotator() {
       enableDamping
       dampingFactor={0.1}
       target={[0, 0, 0]}
+      enabled={controllable}
+      onChange={controllable ? handleChange : undefined}
     />
   );
 }
 
-export function VolumeScene() {
+export function VolumeScene({
+  explode = 0,
+  showGround = true,
+  interactive = true,
+}: { explode?: number; showGround?: boolean; interactive?: boolean } = {}) {
   const cubes = useCubeStore((s) => s.cubes);
+  const arr = Object.values(cubes);
 
   return (
     <Canvas
@@ -140,20 +181,30 @@ export function VolumeScene() {
     >
       <ambientLight intensity={0.65} />
       <directionalLight position={[8, 12, 6]} intensity={0.8} />
-      <Grid
-        args={[20, 20]}
-        cellColor="#e5ecf5"
-        sectionColor="#c7d2e0"
-        sectionSize={1}
-        fadeDistance={50}
-        infiniteGrid={false}
-      />
-      <Ground />
+      {showGround && (
+        <Grid
+          args={[20, 20]}
+          cellColor="#e5ecf5"
+          sectionColor="#c7d2e0"
+          sectionSize={1}
+          fadeDistance={50}
+          infiniteGrid={false}
+        />
+      )}
+      {interactive && <Ground />}
       <Container />
-      {Object.values(cubes).map((c) => (
-        <CubeMesh key={`${c.x},${c.y},${c.z}`} {...c} />
+      {arr.map((c) => (
+        <CubeMesh
+          key={`${c.x},${c.y},${c.z}`}
+          {...c}
+          offset={
+            explode
+              ? [c.x * explode, c.y * explode, c.z * explode]
+              : undefined
+          }
+        />
       ))}
-      <CameraRotator />
+      <CameraRotator controllable={interactive} />
     </Canvas>
   );
 }

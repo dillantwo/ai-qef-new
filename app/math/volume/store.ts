@@ -4,6 +4,7 @@ import { immer } from "zustand/middleware/immer";
 export type Cube = { x: number; y: number; z: number; color: string };
 export type Mode = "build" | "inspect";
 export type Tool = "place" | "erase" | "paint" | "rotateView";
+export type ContainerSize = { w: number; h: number; d: number };
 
 export const PALETTE = [
   "#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#a855f7", "#06b6d4",
@@ -13,6 +14,15 @@ export const PALETTE = [
 ];
 
 const keyOf = (x: number, y: number, z: number) => `${x},${y},${z}`;
+
+export function isWithinContainerBounds(
+  x: number,
+  y: number,
+  z: number,
+  size: ContainerSize
+) {
+  return x >= 0 && x < size.w && y >= 0 && y < size.h && z >= 0 && z < size.d;
+}
 
 // Use a plain object as a dictionary instead of Map<>. Immer works on plain
 // objects out of the box; supporting Map/Set would require `enableMapSet()`.
@@ -27,18 +37,24 @@ interface CubeState {
   showLabels: boolean;
   showContainer: boolean;
   xray: boolean;
-  containerSize: { w: number; h: number; d: number };
+  containerSize: ContainerSize;
   rotateNonce: number;
   rotateDir: 0 | 1 | -1;
+  viewYaw: number;
+  cameraPos: [number, number, number];
+  cameraTarget: [number, number, number];
 
   setMode: (m: Mode) => void;
   setTool: (t: Tool) => void;
   setColor: (c: string) => void;
+  setContainerSize: (size: ContainerSize) => void;
   toggleLabels: () => void;
   toggleContainer: () => void;
   toggleXray: () => void;
   rotateLeft: () => void;
   rotateRight: () => void;
+  setViewYaw: (y: number) => void;
+  setCamera: (pos: [number, number, number], target: [number, number, number]) => void;
 
   addCube: (x: number, y: number, z: number) => boolean;
   removeCube: (x: number, y: number, z: number) => boolean;
@@ -63,26 +79,33 @@ export const useCubeStore = create<CubeState>()(
       color: PALETTE[0],
       cubes: { [keyOf(0, 0, 0)]: { x: 0, y: 0, z: 0, color: PALETTE[0] } },
       history: [],
-      showLabels: false,
+      showLabels: true,
       showContainer: false,
       xray: false,
-      containerSize: { w: 5, h: 5, d: 5 },
+      containerSize: { w: 2, h: 2, d: 2 },
       rotateNonce: 0,
       rotateDir: 0,
+      viewYaw: Math.PI / 4, // matches initial camera at (14,14,14)
+      cameraPos: [14, 14, 14],
+      cameraTarget: [0, 0, 0],
 
       setMode: (m) => set((s) => { s.mode = m; }),
       setTool: (t) => set((s) => { s.tool = t; }),
       setColor: (c) => set((s) => { s.color = c; }),
+      setContainerSize: (size) => set((s) => { s.containerSize = size; }),
       toggleLabels: () => set((s) => { s.showLabels = !s.showLabels; }),
       toggleContainer: () => set((s) => { s.showContainer = !s.showContainer; }),
       toggleXray: () => set((s) => { s.xray = !s.xray; }),
       rotateLeft: () => set((s) => { s.rotateDir = -1; s.rotateNonce++; }),
       rotateRight: () => set((s) => { s.rotateDir = 1; s.rotateNonce++; }),
+      setViewYaw: (y) => set((s) => { s.viewYaw = y; }),
+      setCamera: (pos, target) => set((s) => { s.cameraPos = pos; s.cameraTarget = target; }),
 
       addCube: (x, y, z) => {
         const k = keyOf(x, y, z);
         if (get().cubes[k]) return false;
         if (x < -10 || x >= 10 || z < -10 || z >= 10 || y < 0 || y > 30) return false;
+        if (get().showContainer && !isWithinContainerBounds(x, y, z, get().containerSize)) return false;
         snapshot();
         const color = get().color;
         set((s) => { s.cubes[k] = { x, y, z, color }; });
@@ -152,6 +175,67 @@ export function projectViews(cubes: Iterable<Cube>) {
     side.add(`${c.z},${c.y}`);
   }
   return { top: top.size, front: front.size, side: side.size };
+}
+
+/**
+ * 2D color projections for the inspect-mode views. For each face of the
+ * bounding box we pick the cube nearest the viewer (max value along the
+ * projection axis) so the colour you see matches what the camera would.
+ *
+ * Returned grids are indexed [row][col] where row 0 is the TOP of the image
+ * (so we can render them directly with CSS grid). Empty cells are `null`.
+ *
+ * `yaw` (radians) snaps to the nearest 90° step and rotates the cubes around
+ * the Y axis before projecting, so the Front/Right views follow the camera.
+ */
+export function projectColorViews(cubes: Iterable<Cube>, yaw = 0) {
+  // Snap yaw to nearest 90° (4 cardinal orientations).
+  const steps = ((Math.round(yaw / (Math.PI / 2)) % 4) + 4) % 4;
+  const rotated: Cube[] = [];
+  for (const c of cubes) {
+    let { x, z } = c;
+    for (let i = 0; i < steps; i++) {
+      // Rotate -90° around Y so the camera's current "front" maps to +Z.
+      const nx = z;
+      const nz = -x;
+      x = nx; z = nz;
+    }
+    rotated.push({ x, y: c.y, z, color: c.color });
+  }
+
+  const bb = computeBoundingBox(rotated);
+  const W = Math.max(1, bb.width);
+  const H = Math.max(1, bb.height);
+  const D = Math.max(1, bb.depth);
+
+  const front: (string | null)[][] = Array.from({ length: H }, () => Array(W).fill(null));
+  const frontDepth: number[][] = Array.from({ length: H }, () => Array(W).fill(-Infinity));
+  const right: (string | null)[][] = Array.from({ length: H }, () => Array(D).fill(null));
+  const rightDepth: number[][] = Array.from({ length: H }, () => Array(D).fill(-Infinity));
+  const top: (string | null)[][] = Array.from({ length: D }, () => Array(W).fill(null));
+  const topDepth: number[][] = Array.from({ length: D }, () => Array(W).fill(-Infinity));
+
+  for (const c of rotated) {
+    const cx = c.x - bb.minX;
+    const cy = c.y - bb.minY;
+    const cz = c.z - bb.minZ;
+    const fr = H - 1 - cy;
+    if (c.z > frontDepth[fr][cx]) { frontDepth[fr][cx] = c.z; front[fr][cx] = c.color; }
+    const rcol = D - 1 - cz;
+    if (c.x > rightDepth[fr][rcol]) { rightDepth[fr][rcol] = c.x; right[fr][rcol] = c.color; }
+    const trow = D - 1 - cz;
+    if (c.y > topDepth[trow][cx]) { topDepth[trow][cx] = c.y; top[trow][cx] = c.color; }
+  }
+  return { front, right, top, width: W, height: H, depth: D };
+}
+
+/** Counts of cubes by color, sorted descending. */
+export function colorCounts(cubes: Iterable<Cube>): Array<{ color: string; count: number }> {
+  const m = new Map<string, number>();
+  for (const c of cubes) m.set(c.color, (m.get(c.color) ?? 0) + 1);
+  return Array.from(m.entries())
+    .map(([color, count]) => ({ color, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 /** Axis-aligned bounding box of a cube collection (inclusive cell coords). */
