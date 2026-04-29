@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FractionApp37(Multiplication)</title>
+    <title>FractionApp45(Multiplication)</title>
     
     <script>
         // Disable right-click
@@ -62,13 +62,10 @@
         .inline-frac span { font-size: 1.1em; padding: 1px 4px; }
         .inline-frac .line { height: 2px; background-color: currentColor; width: 100%; margin: 2px 0; }
 
-        #anim-area { width: 100%; min-height: 200px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        #anim-area { width: 100%; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
         
         @keyframes fadeInSlow { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
         .fade-in-slow { animation: fadeInSlow 1.5s ease-out forwards; }
-
-        .btn-hint { background: var(--orange); color: white; border: none; padding: 10px 25px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: 0.2s; box-shadow: 0 4px 6px rgba(230,126,34,0.3); margin-top: 15px; }
-        .btn-hint:hover { background: #d35400; transform: translateY(-2px); box-shadow: 0 6px 8px rgba(230,126,34,0.4); }
 
         .bars-column { width: 70%; display: flex; flex-direction: column; }
 
@@ -121,6 +118,24 @@
         #bottom-answer-zone { width: 100%; max-width: 650px; background: #fff8e1; padding: 20px; border-radius: 15px; border: 2px dashed var(--red); margin-top: 15px; display: none; flex-direction: column; align-items: center; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: opacity 0.5s; z-index: 50; position: relative; }
         .feedback-msg { font-size: 1.2rem; font-weight: bold; min-height: 28px; margin-top: 5px; opacity: 0; transition: opacity 0.3s, color 0.3s; text-align: center;}
 
+        /* 教學手指動畫樣式 */
+        #tutorial-finger {
+            position: absolute;
+            font-size: 3.5rem;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+            transition: left 0.3s ease, top 0.3s ease;
+        }
+        @keyframes clickAnim {
+            0%, 100% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(0.85) translate(0, 10px); }
+        }
+        .finger-clicking {
+            animation: clickAnim 1s infinite;
+        }
+
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -137,6 +152,8 @@
     </style>
 </head>
 <body>
+
+<div id="tutorial-finger">👆</div>
 
 <div class="container">
     <div class="header">
@@ -188,7 +205,7 @@
             <div id="bar1-row" style="display:none; position:relative; width:100%; min-height:80px; align-items:center; justify-content:space-between;">
                 <div id="label1" style="width:15%; text-align:center; font-size:1.3rem; transition: opacity 0.5s; opacity: 1; font-weight:bold;"></div>
                 <div class="bars-column">
-                    <div id="main-bar-wrap" class="bar-wrap-container"></div>
+                    <div id="main-bar-wrap" class="bar-wrap-container" onclick="toggleRearrange()"></div>
                     <div id="bar1-nl" class="nl-wrap-container" style="display:none;"></div>
                 </div>
                 <div style="width:15%;"></div>
@@ -211,7 +228,6 @@
                 </div>
             </div>
             <div id="feedback" class="feedback-msg"></div>
-            <button id="rearrange-btn" class="btn-hint" style="display: none;" onclick="toggleRearrange()">💡 提示：重新排列</button>
         </div>
     </div>
 </div>
@@ -221,10 +237,16 @@
     let currentSpeed = 1.0; 
     let isRearranged = false; 
     let isAnimating = false;
+    let isRearranging = false;
     let animBlocks = []; 
     let preRearrangePositions = [];
     let currentNL_D = 1; 
     let isPhase1OrLater = false; 
+
+    // 教學引導變數
+    let idleTimer = null;
+    let hoverTimer = null;
+    let currentTutorialStep = 0; // 0: frac1, 1: frac2, 2: rearrange, 3: answer, 4: done
 
     const wordProblemTemplates = [
         "一盒巧克力重 [FRAC1] 公斤，小明買了 [FRAC2] 盒。請問總共重多少公斤？",
@@ -233,6 +255,74 @@
         "水桶容量為 [FRAC1] 公升，目前裝了 [FRAC2] 桶水。請問總共有多少公升的水？",
         "紅彩帶長 [FRAC1] 公尺，藍彩帶長度是紅彩帶的 [FRAC2] 倍。請問藍彩帶長多少公尺？"
     ];
+
+    // --- 教學引導相關函數 ---
+    function pointAtTarget(element) {
+        const finger = document.getElementById('tutorial-finger');
+        if (!finger || !element) return;
+        const rect = element.getBoundingClientRect();
+        finger.style.display = 'block';
+        
+        let targetX = rect.left + rect.width / 2 + window.scrollX;
+        let targetY = rect.top + rect.height / 2 + window.scrollY;
+        
+        // 微調讓手指尖端指向目標中心
+        finger.style.left = (targetX - 25) + 'px'; 
+        finger.style.top = (targetY - 10) + 'px'; 
+        finger.className = 'finger-clicking';
+    }
+
+    function hideFinger() {
+        const finger = document.getElementById('tutorial-finger');
+        if (finger) {
+            finger.style.display = 'none';
+            finger.className = '';
+        }
+    }
+
+    function showIdleHint() {
+        if (isAnimating) return;
+        let target = null;
+        if (currentTutorialStep === 0) target = document.getElementById('frac1-group');
+        else if (currentTutorialStep === 1) target = document.getElementById('frac2-group');
+        else if (currentTutorialStep === 2) target = document.getElementById('main-bar-wrap');
+        else if (currentTutorialStep === 3) target = document.getElementById('ans-num');
+        
+        if (target && target.style.display !== 'none' && target.getBoundingClientRect().width > 0) {
+            pointAtTarget(target);
+        }
+    }
+
+    function setupHoverHints() {
+        const triggers = [
+            { id: 'frac1-group', step: 0 },
+            { id: 'frac2-group', step: 1 },
+            { id: 'main-bar-wrap', step: 2 },
+            { id: 'bottom-answer-zone', step: 3 }
+        ];
+        
+        triggers.forEach(t => {
+            const el = document.getElementById(t.id);
+            if (!el) return;
+            el.addEventListener('mouseenter', () => {
+                if (currentTutorialStep === t.step && !isAnimating) {
+                    clearTimeout(hoverTimer);
+                    hoverTimer = setTimeout(() => {
+                        pointAtTarget(el);
+                    }, 1000); // 懸停 1 秒觸發
+                }
+            });
+            el.addEventListener('mouseleave', () => {
+                clearTimeout(hoverTimer);
+                hideFinger();
+                if (!isAnimating) {
+                    clearTimeout(idleTimer);
+                    idleTimer = setTimeout(showIdleHint, 3000);
+                }
+            });
+        });
+    }
+    // ------------------------
 
     function toggleWholeNumber() {
         const showWhole = document.getElementById('show-whole-cb').checked;
@@ -380,6 +470,7 @@
     function onFrac1Click() {
         if (isAnimating) return;
         isPhase1OrLater = false; 
+        currentTutorialStep = 1; // 進入下一步驟：提示點擊乘數
         
         const vals = getSafeValues();
         let A = vals.total_n1;
@@ -394,6 +485,8 @@
         
         let wrap = document.getElementById('main-bar-wrap');
         wrap.innerHTML = '';
+        wrap.style.cursor = 'default';
+        wrap.title = '';
         
         for (let i = 0; i < maxW; i++) {
             let unit = document.createElement('div');
@@ -439,6 +532,8 @@
 
         isAnimating = true;
         isPhase1OrLater = true; 
+        currentTutorialStep = 2; // 更新狀態避免干擾動畫
+        hideFinger();
         
         document.getElementById('label1').style.opacity = '0';
         document.getElementById('bar1-nl').style.display = 'none';
@@ -448,12 +543,8 @@
         let C = vals.total_n2, D = vals.d2;
         let maxW = updateMaxWholes();
         
-        // 此處移除了「動畫播放中...」的字眼
         document.getElementById('drag-instruction').innerHTML = 
-            `<span id="anim-step-text" style="color:var(--blue); font-weight:bold;">準備中...</span>
-             <div style="width:100%; height:8px; background:#ddd; border-radius:4px; margin-top:8px; overflow:hidden;">
-                 <div id="anim-progress-bar" style="width:0%; height:100%; background:var(--blue);"></div>
-             </div>`;
+            `<span id="anim-step-text" style="color:var(--blue); font-weight:bold;">準備中...</span>`;
              
         let wrap = document.getElementById('main-bar-wrap');
         wrap.innerHTML = '';
@@ -527,7 +618,6 @@
             let p = t / totalDuration;
             if (p > 1) p = 1;
             
-            document.getElementById('anim-progress-bar').style.width = `${p * 100}%`;
             let stepText = "";
             
             if (p <= 0.5) {
@@ -564,8 +654,11 @@
 
     function finishAnimation() {
         isAnimating = false;
+        currentTutorialStep = 2; // 動畫結束，進入下一步驟：提示點擊長條圖
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(showIdleHint, 3000);
         
-        document.getElementById('drag-instruction').innerHTML = `💡 現在，根據最終顯示的紅色方塊填寫答案吧！`;
+        document.getElementById('drag-instruction').innerHTML = `💡 現在，根據最終顯示的紅色方塊填寫答案吧！（可點擊長條圖重新排列方塊）`;
         
         const vals = getSafeValues();
         let A = vals.total_n1, B = vals.d1, C = vals.total_n2, D = vals.d2;
@@ -589,9 +682,9 @@
         document.getElementById('ans-den').value = '';
         document.getElementById('feedback').style.opacity = '0';
         
-        let btn = document.getElementById('rearrange-btn');
-        btn.style.display = 'block';
-        btn.innerHTML = '💡 提示：重新排列';
+        let wrap = document.getElementById('main-bar-wrap');
+        wrap.style.cursor = 'pointer';
+        wrap.title = '點擊方塊重新排列';
         isRearranged = false;
         
         animBlocks = animBlocks.filter(b => {
@@ -601,24 +694,17 @@
             }
             return true;
         });
-
-        // 完成後自動將頁面捲動到底部，確保最終答案輸入框可見
-        const scrollBottom = () => {
-            const doc = document.scrollingElement || document.documentElement;
-            if (doc) {
-                try { window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }); }
-                catch (e) { window.scrollTo(0, doc.scrollHeight); }
-            }
-        };
-        setTimeout(scrollBottom, 100);
-        setTimeout(scrollBottom, 400);
-        setTimeout(scrollBottom, 800);
     }
 
     function toggleRearrange() {
-        let btn = document.getElementById('rearrange-btn');
-        if (btn.disabled) return;
-        btn.disabled = true;
+        if (document.getElementById('bottom-answer-zone').style.display !== 'flex') return;
+        if (isRearranging) return;
+        
+        isRearranging = true;
+        
+        if (!isRearranged) {
+            currentTutorialStep = 3; // 重新排列後，進入最後步驟：提示作答
+        }
         
         const vals = getSafeValues();
         let B = vals.d1, D = vals.d2;
@@ -678,9 +764,8 @@
                 });
                 
                 ghosts.forEach(g => g.remove());
-                btn.innerHTML = '🔙 復原排列';
                 isRearranged = true;
-                btn.disabled = false;
+                isRearranging = false;
             }, 650);
             
         } else {
@@ -718,14 +803,16 @@
             setTimeout(() => {
                 animBlocks.forEach(b => b.el.style.visibility = 'visible');
                 ghosts.forEach(g => g.remove());
-                btn.innerHTML = '💡 提示：重新排列';
                 isRearranged = false;
-                btn.disabled = false;
+                isRearranging = false;
             }, 650);
         }
     }
 
     function autoCheck() {
+        currentTutorialStep = 4; // 開始輸入後停止提示
+        hideFinger();
+        
         const vals = getSafeValues();
         const ansWStr = document.getElementById('ans-w').value;
         const ansNStr = document.getElementById('ans-num').value;
@@ -769,6 +856,12 @@
     function randomChallenge() {
         if (isAnimating) return;
         isPhase1OrLater = false; 
+        
+        currentTutorialStep = 0; // 重置提示步驟
+        hideFinger();
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(showIdleHint, 3000);
+        
         let showWhole = document.getElementById('show-whole-cb').checked;
         let w1=0, w2=0;
         
@@ -802,9 +895,6 @@
 
     function applyUrlParams() {
         const p = new URLSearchParams(window.location.search);
-        if (![...p.keys()].some(k => ['num1','den1','num2','den2','whole1','whole2','context'].includes(k))) {
-            return false;
-        }
         const setVal = (id, key) => {
             const v = p.get(key);
             if (v !== null && v !== '') {
@@ -812,22 +902,88 @@
                 if (el) el.value = v;
             }
         };
+
+        const hasAny = ['num1','den1','whole1','num2','den2','whole2','context']
+            .some(k => {
+                const v = p.get(k);
+                return v !== null && v !== '';
+            });
+
+        if (!hasAny) return false;
+
+        // 若傳入帶分數整數部分，自動勾選顯示帶分數
+        const w1 = p.get('whole1');
+        const w2 = p.get('whole2');
+        if ((w1 && w1 !== '0') || (w2 && w2 !== '0')) {
+            const cb = document.getElementById('show-whole-cb');
+            if (cb && !cb.checked) {
+                cb.checked = true;
+                toggleWholeNumber();
+            }
+        }
+
         setVal('n1', 'num1'); setVal('d1', 'den1'); setVal('w1', 'whole1');
         setVal('n2', 'num2'); setVal('d2', 'den2'); setVal('w2', 'whole2');
+
         const ctx = p.get('context');
         if (ctx) {
-            const wp = document.getElementById('word-problem');
-            if (wp) { wp.innerText = ctx; wp.style.display = 'block'; }
+            currentWordProblemTemplate = ctx;
         }
-        if (typeof updateUI === 'function') updateUI();
+
+        updateUI();
+
+        // 若沒提供 context，但有提供分數參數，仍顯示題目區（使用預設模板）
+        if (!ctx) {
+            currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
+            updateUI();
+        }
+
+        document.getElementById('bar1-row').style.display = 'none';
+        document.getElementById('drag-instruction').innerHTML = `💡 準備中...請先點擊上方的「被乘數」`;
+        document.getElementById('bottom-answer-zone').style.display = 'none';
+        document.getElementById('word-problem').style.display = 'block';
+
         return true;
     }
 
-    // 初始化
+    // 初始化與事件綁定
     window.onload = () => {
-        if (!applyUrlParams()) {
+        const usedParams = applyUrlParams();
+        if (!usedParams) {
             randomChallenge();
+        } else {
+            currentTutorialStep = 0;
+            hideFinger();
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(showIdleHint, 3000);
         }
+        setupHoverHints();
+        
+        // 全局事件監聽，用於重置閒置計時器並隱藏手指
+        document.addEventListener('click', () => {
+            hideFinger();
+            if (!isAnimating) {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(showIdleHint, 3000);
+            }
+        });
+        
+        document.addEventListener('mousemove', () => {
+            const finger = document.getElementById('tutorial-finger');
+            // 如果手指未顯示，才因應滑鼠移動重置計時（避免干擾已出現的提示）
+            if (finger && finger.style.display !== 'block' && !isAnimating) {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(showIdleHint, 3000);
+            }
+        });
+        
+        document.addEventListener('keydown', () => {
+            hideFinger();
+            if (!isAnimating) {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(showIdleHint, 3000);
+            }
+        });
     };
 </script>
 

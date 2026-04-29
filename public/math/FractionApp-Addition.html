@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FractionApp35(Addition)</title>
+    <title>FractionApp44(Addition)</title>
     
     <script>
         // Disable right-click
@@ -64,7 +64,7 @@
         .inline-frac span { font-size: 1.1em; padding: 1px 4px; }
         .inline-frac .line { height: 2px; background-color: currentColor; width: 100%; margin: 2px 0; }
 
-        #anim-area { width: 100%; min-height: 200px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; gap: 20px; }
+        #anim-area { width: 100%; min-height: 100px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; gap: 20px; }
         
         @keyframes fadeInSlow { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
         .fade-in-slow { animation: fadeInSlow 1s ease-out forwards; }
@@ -133,6 +133,31 @@
         .drag-block { transition: transform 0.1s, opacity 0.2s; touch-action: manipulation; }
         .drag-block:active { transform: scale(0.95); }
 
+        /* --- 教學動畫專屬手勢 --- */
+        #tutorial-hand {
+            position: absolute;
+            font-size: 3.5rem;
+            z-index: 100000;
+            pointer-events: none; /* 確保不會阻擋學生的真實點擊 */
+            opacity: 0;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+            margin-top: 0;
+            margin-left: 0;
+        }
+
+        #drag-instruction {
+            /* 設定固定高度或最小高度 */
+            min-height: 5em; /* 約兩行文字的高度 */
+            display: flex;
+            align-items: center;    /* 垂直置中 */
+            justify-content: center; /* 水平置中 */
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #fff4e6; /* 選擇性：加一點背景色 */
+            border-radius: 8px;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -150,6 +175,8 @@
     </style>
 </head>
 <body>
+
+<div id="tutorial-hand">👆</div>
 
 <div class="container">
     <div class="header">
@@ -178,9 +205,9 @@
             <div class="mixed-frac" id="frac1-group" onclick="onFrac1Click()" title="點擊重置並顯示被加數圖形">
                 <input type="number" class="whole-input" id="w1" placeholder=" " min="0" max="10" oninput="updateUI()" onchange="updateUI()">
                 <div class="frac">
-                    <input type="number" class="frac-input" id="n1" value="2" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                    <input type="number" class="frac-input" id="n1" value="1" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
                     <div class="frac-line"></div>
-                    <input type="number" class="frac-input" id="d1" value="3" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                    <input type="number" class="frac-input" id="d1" value="2" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
                 </div>
             </div>
             <span>+</span>
@@ -189,7 +216,7 @@
                 <div class="frac">
                     <input type="number" class="frac-input" id="n2" value="1" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
                     <div class="frac-line"></div>
-                    <input type="number" class="frac-input" id="d2" value="2" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
+                    <input type="number" class="frac-input" id="d2" value="3" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
                 </div>
             </div>
         </div>
@@ -228,9 +255,169 @@
     let bar1Visible = false;
     let bar2Visible = false;
     let currentSpeed = 1.0; 
-    let bar3BlocksCount = 0; // 用於追蹤合併區域的拖拉數量
+    
+    // 全域變數管控
+    let bar3BlocksCount = 0; // 用於追蹤合併區域的總格數
     let isCommonDenomReady = false; // 追蹤是否已通分母
-    let bar3WrongModeValue = 0; // 追蹤錯誤模式下的數值比例
+    let barErrorModeValue = 0; // 追蹤錯誤模式下的數值比例
+    let moved1 = 0; // 追蹤 frac1 被移到 bar3 的片段數
+    let moved2 = 0; // 追蹤 frac2 被移到 bar3 的片段數
+    
+    // 紀錄色塊拖曳的歷史順序與大小
+    let mergedBlocks = []; 
+
+    // --- 教學動畫邏輯 ---
+    let inactivityTimer = null;
+    let hoverTimer = null;
+    let tutorialInterval = null;
+    let isTutorialRunning = false;
+    let animationTimeouts = []; // 儲存動畫排程，確保能乾淨中斷
+
+    // 動畫排程小幫手
+    const delay = (fn, ms) => animationTimeouts.push(setTimeout(fn, ms));
+
+    function stopTutorial() {
+        clearInterval(tutorialInterval);
+        // 清除所有尚未執行的動畫排程，防止小手亂飄
+        animationTimeouts.forEach(t => clearTimeout(t));
+        animationTimeouts = [];
+        isTutorialRunning = false;
+        
+        let hand = document.getElementById('tutorial-hand');
+        if (hand) {
+            hand.style.transition = 'opacity 0.2s';
+            hand.style.opacity = '0';
+        }
+    }
+
+    function resetInactivityTimer(e) {
+        stopTutorial(); // 只要有動作就中斷正在播放的動畫
+        clearTimeout(inactivityTimer);
+        clearTimeout(hoverTimer);
+
+        // 1. 全域待機 1 秒觸發
+        inactivityTimer = setTimeout(startTutorialAnimation, 1000);
+
+        // 2. 指住不動 (Hover still) 3 秒觸發：若鼠標停在互動元素上
+        if (e && e.type === 'mousemove' && e.target && e.target.closest) {
+            if (e.target.closest('.tool-btn, .mixed-frac, .drag-block, .bar-wrap-container, #bottom-answer-zone')) {
+                hoverTimer = setTimeout(startTutorialAnimation, 3000);
+            }
+        }
+    }
+
+    // 監聽全域事件，只要滑鼠或鍵盤有動靜就重置
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'dragstart', 'input', 'change'].forEach(evt => {
+        document.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    function startTutorialAnimation() {
+        if (isTutorialRunning) return;
+        isTutorialRunning = true;
+        runTutorialStep();
+        // 每 4.5 秒循環一次 (給 3 秒的動畫留足夠的緩衝空間)
+        tutorialInterval = setInterval(runTutorialStep, 4500);
+    }
+
+    function runTutorialStep() {
+        // 如果學生已經答對且顯示綠色正確訊息，不再顯示手指
+        let fb = document.getElementById('feedback');
+        if (fb && fb.style.opacity === '1' && fb.style.color === 'var(--success)') return; 
+
+        const vals = getSafeValues();
+        let hand = document.getElementById('tutorial-hand');
+        if (!hand) return;
+
+        let startEl = null;
+        let endEl = null;
+        let action = 'click'; 
+
+        let totalNeeded = (vals.total_n1 * s1) + (vals.total_n2 * s2);
+        
+        // 判斷當前邏輯階段來決定提示哪裡
+        if (!bar1Visible) {
+            startEl = document.getElementById('frac1-group');
+        } else if (!bar2Visible) {
+            startEl = document.getElementById('frac2-group');
+        } else if (!isCommonDenomReady) {
+            let errorRow = document.getElementById('bar-error-row');
+            if (errorRow && errorRow.style.display === 'flex') {
+                // 已出現錯誤列 -> 提示擴分
+                let cd1 = vals.d1 * s1;
+                let cd2 = vals.d2 * s2;
+                if (cd1 < cd2) {
+                    let btns = document.querySelectorAll('#bar1-row .tool-btn');
+                    if(btns.length > 0) startEl = btns[0]; 
+                } else {
+                    let btns = document.querySelectorAll('#bar2-row .tool-btn');
+                    if(btns.length > 0) startEl = btns[0];
+                }
+            } else {
+                // 還沒出現錯誤列 -> 提示互相拖拉 (由 bar2 往 bar1 端點拖動)
+                // 首先嘗試選取 bar2 的色塊，如果沒有才選 bar1
+                startEl = document.querySelector('#bar2-wrap .drag-block');
+                if (startEl) {
+                    // 如果起點在 bar2，終點就設為 bar1；反之亦然
+                    endEl = startEl.closest('#bar2-wrap') ? document.getElementById('bar1-wrap') : document.getElementById('bar2-wrap');
+                    action = 'drag';
+                }
+            }
+        } else if (isCommonDenomReady && bar3BlocksCount < totalNeeded) {
+            // 已通分 -> 提示拖拉小格到下方
+            startEl = document.querySelector('#bar1-wrap .drag-block') || document.querySelector('#bar2-wrap .drag-block');
+            endEl = document.getElementById('bar3-wrap');
+            action = 'drag';
+        } else if (isCommonDenomReady && bar3BlocksCount === totalNeeded) {
+            // 合併完成 -> 提示點擊輸入答案
+            startEl = document.getElementById('ans-num');
+            if (!startEl || startEl.style.display === 'none') return;
+        }
+
+        if (!startEl) return;
+
+        let startRect = startEl.getBoundingClientRect();
+        let startX = startRect.left + startRect.width / 2 + window.scrollX;
+        let startY = startRect.top + startRect.height / 2 + window.scrollY;
+
+        // 瞬間把手勢擺到起點
+        hand.style.transition = 'none';
+        hand.style.left = `${startX}px`;
+        hand.style.top = `${startY}px`;
+        hand.style.transform = 'translate(-20%, -10%) scale(1)'; 
+        hand.style.opacity = '1';
+
+        void hand.offsetWidth; // 觸發重繪
+
+        // --- 將動畫拉長為 ~3秒，讓學生能慢慢看清楚 ---
+        if (action === 'click') {
+            hand.style.transition = 'transform 0.5s ease';
+            delay(() => { hand.style.transform = 'translate(-20%, -10%) scale(0.8)'; }, 1000); // 1秒：手指壓下
+            delay(() => { hand.style.transform = 'translate(-20%, -10%) scale(1)'; }, 1500);   // 1.5秒：手指抬起
+            delay(() => { hand.style.opacity = '0'; }, 3000);                                  // 3秒：動畫結束隱藏
+        } else if (action === 'drag' && endEl) {
+            let endRect = endEl.getBoundingClientRect();
+            let endX = endRect.left + endRect.width / 2 + window.scrollX;
+            let endY = endRect.top + endRect.height / 2 + window.scrollY;
+
+            delay(() => {
+                hand.style.transition = 'transform 0.4s ease';
+                hand.style.transform = 'translate(-20%, -10%) scale(0.8)'; // 1秒：手指壓下 (抓取)
+                
+                delay(() => {
+                    // 1.4秒開始移動，花費 1.2秒 抵達目的地
+                    hand.style.transition = 'left 1.2s cubic-bezier(0.25, 1, 0.5, 1), top 1.2s cubic-bezier(0.25, 1, 0.5, 1), transform 0.4s';
+                    hand.style.left = `${endX}px`;
+                    hand.style.top = `${endY}px`;
+                    
+                    delay(() => {
+                        hand.style.transform = 'translate(-20%, -10%) scale(1)'; // 2.6秒：手指抬起 (放開)
+                        delay(() => { hand.style.opacity = '0'; }, 400);         // 3秒：動畫結束隱藏
+                    }, 1200);
+                }, 400);
+            }, 1000);
+        }
+    }
+    // -----------------------------------------
 
     const wordProblemTemplates = [
         "小明吃了 [FRAC1] 塊披薩，小紅吃了 [FRAC2] 塊。請問他們共吃了多少塊披薩？",
@@ -267,18 +454,29 @@
         
         const vals = getSafeValues();
         let cd1 = vals.d1 * s1;
-        let bar3Row = document.getElementById('bar3-row');
         
-        // 若第三條目前正在顯示中，直接更新樣式與數線，不重置拖拉進度
-        if (bar3Row.style.display !== 'none') {
+        // 更新正確合併列的數線
+        let bar3Row = document.getElementById('bar3-row');
+        if (bar3Row && bar3Row.style.display !== 'none') {
             let wrap3 = document.getElementById('bar3-wrap');
             const showNL = document.getElementById('show-nl-cb').checked;
             if (showNL) wrap3.classList.add('continuous');
             else wrap3.classList.remove('continuous');
             
-            // 只有正確通分模式下才重新繪製第三條數線
             if (isCommonDenomReady) {
                 renderBar3NumberLine(cd1);
+            }
+        }
+
+        // 更新錯誤合併列的數線
+        let errorRow = document.getElementById('bar-error-row');
+        if (errorRow && errorRow.style.display !== 'none') {
+            let errorNl = document.getElementById('bar-error-nl');
+            const showNL = document.getElementById('show-nl-cb').checked;
+            if (showNL) {
+                errorNl.style.display = 'flex';
+            } else {
+                errorNl.style.display = 'none';
             }
         }
     }
@@ -350,6 +548,15 @@
         let row = document.getElementById('bar1-row');
         row.style.display = 'flex';
         s1 = 1;
+        
+        moved1 = 0; moved2 = 0; bar3BlocksCount = 0; mergedBlocks = [];
+        isCommonDenomReady = false;
+        let bar3Row = document.getElementById('bar3-row');
+        if (bar3Row) bar3Row.style.display = 'none';
+        let botZone = document.getElementById('bottom-answer-zone');
+        if (botZone) { botZone.style.display = 'none'; botZone.style.opacity = '0'; }
+        if (bar2Visible) renderBar(2, 'none'); 
+
         renderBar(1, 'none');
         row.classList.remove('fade-in-slow');
         void row.offsetWidth;
@@ -362,6 +569,15 @@
         let row = document.getElementById('bar2-row');
         row.style.display = 'flex';
         s2 = 1;
+        
+        moved1 = 0; moved2 = 0; bar3BlocksCount = 0; mergedBlocks = [];
+        isCommonDenomReady = false;
+        let bar3Row = document.getElementById('bar3-row');
+        if (bar3Row) bar3Row.style.display = 'none';
+        let botZone = document.getElementById('bottom-answer-zone');
+        if (botZone) { botZone.style.display = 'none'; botZone.style.opacity = '0'; }
+        if (bar1Visible) renderBar(1, 'none'); 
+
         renderBar(2, 'none');
         row.classList.remove('fade-in-slow');
         void row.offsetWidth;
@@ -383,6 +599,22 @@
         }
 
         if (changed) {
+            moved1 = 0;
+            moved2 = 0;
+            bar3BlocksCount = 0;
+            mergedBlocks = [];
+            isCommonDenomReady = false; 
+
+            let bar3Row = document.getElementById('bar3-row');
+            if (bar3Row) bar3Row.style.display = 'none';
+            let botZone = document.getElementById('bottom-answer-zone');
+            if (botZone) { botZone.style.display = 'none'; botZone.style.opacity = '0'; }
+
+            let other_num = num === 1 ? 2 : 1;
+            if ((num === 1 && bar2Visible) || (num === 2 && bar1Visible)) {
+                renderBar(other_num, 'none');
+            }
+
             renderBar(num, action, old_s);
             setTimeout(checkCommonDenom, 650 / currentSpeed);
         }
@@ -638,7 +870,13 @@
         }
     }
 
-    function convertBarToDraggable(num, cd, color) {
+    function updateDragDropState(cd) {
+        convertBarToDraggable(1, cd, 'var(--red)', moved1);
+        convertBarToDraggable(2, cd, 'var(--blue)', moved2);
+        renderBar3Draggable(cd);
+    }
+
+    function convertBarToDraggable(num, cd, color, movedPieces = 0) {
         let wrap = document.getElementById(`bar${num}-wrap`);
         let units = wrap.querySelectorAll('.bar-unit');
         
@@ -646,30 +884,26 @@
         let total_n = num === 1 ? vals.total_n1 : vals.total_n2;
         let s = num === 1 ? s1 : s2;
         
+        let remaining_pieces = (total_n * s) - movedPieces;
+        
         units.forEach((unit, uIdx) => {
+            let existingBlocks = unit.querySelectorAll('.drag-block');
+            existingBlocks.forEach(b => b.remove());
+
             let fill = unit.querySelector('.bar-fill');
             if (fill) fill.style.display = 'none'; 
             
-            let filled_parts = (total_n * s) - (uIdx * cd);
-            let clamped = Math.max(0, Math.min(cd, filled_parts));
-            
-            let childNodes = Array.from(unit.childNodes);
-            childNodes.forEach(child => {
-                if (!child.classList.contains('bar-grid') && !child.classList.contains('bar-fill')) {
-                    unit.removeChild(child);
-                }
-            });
-
             unit.style.display = 'flex';
             unit.style.flexDirection = 'row';
-
+            
+            let pieces_in_this_unit = Math.max(0, Math.min(cd, remaining_pieces - uIdx * cd));
             let grid = unit.querySelector('.bar-grid');
 
-            if (clamped === cd || !isCommonDenomReady) {
+            if (pieces_in_this_unit === cd || !isCommonDenomReady) {
                 let block = document.createElement('div');
                 block.className = 'drag-block';
                 block.id = `drag-${num}-${uIdx}-whole`;
-                block.style.width = `${(clamped / cd) * 100}%`;
+                block.style.width = `${(pieces_in_this_unit / cd) * 100}%`;
                 block.style.height = '100%';
                 block.style.backgroundColor = color;
                 block.style.opacity = '0.85';
@@ -677,13 +911,13 @@
                 block.style.cursor = 'grab';
                 block.style.position = 'relative';
                 block.style.boxSizing = 'border-box';
-                // 未通分時隱藏單格右側邊界，呈現一坨色塊
-                block.style.borderRight = isCommonDenomReady && clamped === cd ? '1px solid rgba(255,255,255,0.4)' : 'none';
+                block.style.borderRight = isCommonDenomReady && pieces_in_this_unit === cd ? '1px solid rgba(255,255,255,0.4)' : 'none';
                 block.style.zIndex = '1';
-                block.setAttribute('data-pieces', clamped); 
+                block.setAttribute('data-pieces', pieces_in_this_unit); 
                 
                 block.ondragstart = (e) => {
-                    e.dataTransfer.setData('text/plain', block.id);
+                    let dragData = JSON.stringify({ source_num: num, pieces: pieces_in_this_unit });
+                    e.dataTransfer.setData('text/plain', dragData);
                     setTimeout(() => block.style.opacity = '0.4', 0);
                 };
                 block.ondragend = (e) => {
@@ -692,17 +926,23 @@
 
                 block.onclick = () => {
                     if (block.draggable) {
-                        if (isCommonDenomReady) moveToBar3(block, cd);
+                        if (isCommonDenomReady) {
+                            if (num === 1) moved1 += pieces_in_this_unit; else moved2 += pieces_in_this_unit;
+                            mergedBlocks.push({ num: num, pieces: pieces_in_this_unit });
+                            updateDragDropState(cd);
+                        }
                         else triggerErrorMerge();
                     }
                 };
 
-                if (grid) unit.insertBefore(block, grid);
-                else unit.appendChild(block);
+                if (pieces_in_this_unit > 0) { 
+                    if (grid) unit.insertBefore(block, grid);
+                    else unit.appendChild(block);
+                }
 
             } else {
                 let pieceWidth = 100 / cd;
-                for (let i = 0; i < clamped; i++) {
+                for (let i = 0; i < pieces_in_this_unit; i++) {
                     let block = document.createElement('div');
                     block.className = 'drag-block';
                     block.id = `drag-${num}-${uIdx}-${i}`;
@@ -714,13 +954,13 @@
                     block.style.cursor = 'grab';
                     block.style.position = 'relative';
                     block.style.boxSizing = 'border-box';
-                    // 未通分時隱藏單格右側邊界
                     block.style.borderRight = isCommonDenomReady ? '1px solid rgba(255,255,255,0.4)' : 'none';
                     block.style.zIndex = '1';
                     block.setAttribute('data-pieces', 1); 
                     
                     block.ondragstart = (e) => {
-                        e.dataTransfer.setData('text/plain', block.id);
+                        let dragData = JSON.stringify({ source_num: num, pieces: 1 });
+                        e.dataTransfer.setData('text/plain', dragData);
                         setTimeout(() => block.style.opacity = '0.4', 0);
                     };
                     block.ondragend = (e) => {
@@ -729,7 +969,11 @@
 
                     block.onclick = () => {
                         if (block.draggable) {
-                            if (isCommonDenomReady) moveToBar3(block, cd);
+                            if (isCommonDenomReady) {
+                                if (num === 1) moved1 += 1; else moved2 += 1;
+                                mergedBlocks.push({ num: num, pieces: 1 });
+                                updateDragDropState(cd);
+                            }
                             else triggerErrorMerge();
                         }
                     };
@@ -741,18 +985,86 @@
         });
     }
 
-    // 觸發錯誤合併動畫 (產生沒有格線的長條圖，但原長條圖原封不動)
-    function triggerErrorMerge() {
-        let row3 = document.getElementById('bar3-row');
-        if (row3.style.display === 'flex') return; 
-        
-        row3.style.display = 'flex';
-        
+    function renderBar3Draggable(cd) {
         let wrap3 = document.getElementById('bar3-wrap');
-        wrap3.style.outline = '3px dashed var(--red)';
-        wrap3.style.backgroundColor = '#fafafa';
-        wrap3.innerHTML = '';
-        wrap3.classList.add('continuous'); 
+        let units = wrap3.querySelectorAll('.bar-unit');
+        
+        units.forEach(unit => {
+            let existingBlocks = unit.querySelectorAll('.drag-block');
+            existingBlocks.forEach(b => b.remove());
+        });
+
+        bar3BlocksCount = moved1 + moved2;
+
+        let currentUnitIdx = 0;
+        let spaceInCurrentUnit = cd;
+
+        for (let i = 0; i < mergedBlocks.length; i++) {
+            let mBlock = mergedBlocks[i];
+            let piecesRemaining = mBlock.pieces;
+            let color = mBlock.num === 1 ? 'var(--red)' : 'var(--blue)';
+
+            while (piecesRemaining > 0) {
+                if (currentUnitIdx >= units.length) break; 
+
+                let unit = units[currentUnitIdx];
+                let grid = unit.querySelector('.bar-grid');
+
+                let piecesToPlace = Math.min(piecesRemaining, spaceInCurrentUnit);
+
+                let block = document.createElement('div');
+                block.className = 'drag-block';
+                block.style.width = `${(piecesToPlace / cd) * 100}%`;
+                block.style.height = '100%';
+                block.style.backgroundColor = color;
+                block.style.opacity = '1';
+                block.style.borderRight = '1px solid rgba(255,255,255,0.2)';
+                block.style.position = 'relative';
+                block.style.boxSizing = 'border-box';
+                block.style.zIndex = '1';
+                block.style.cursor = 'pointer';
+                block.title = '點擊退回原處'; 
+                
+                let targetIndex = i; 
+                block.onclick = () => {
+                    let removed = mergedBlocks.splice(targetIndex, 1)[0];
+                    if (removed.num === 1) moved1 -= removed.pieces;
+                    else moved2 -= removed.pieces;
+                    updateDragDropState(cd);
+                };
+
+                if (grid) unit.insertBefore(block, grid);
+                else unit.appendChild(block);
+
+                piecesRemaining -= piecesToPlace;
+                spaceInCurrentUnit -= piecesToPlace;
+
+                if (spaceInCurrentUnit === 0) {
+                    currentUnitIdx++;
+                    spaceInCurrentUnit = cd;
+                }
+            }
+        }
+
+        renderBar3NumberLine(cd);
+        
+        const vals = getSafeValues();
+        let totalNeeded = (vals.total_n1 * s1) + (vals.total_n2 * s2);
+        checkAllDropped(totalNeeded);
+    }
+
+    function triggerErrorMerge() {
+        let errorRow = document.getElementById('bar-error-row');
+        
+        errorRow.style.display = 'flex';
+        
+        errorRow.classList.remove('fade-in-slow');
+        void errorRow.offsetWidth; 
+        errorRow.classList.add('fade-in-slow');
+        
+        let wrapError = document.getElementById('bar-error-wrap');
+        wrapError.innerHTML = '';
+        wrapError.classList.add('continuous'); 
         
         const vals = getSafeValues();
         let maxW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--max-wholes')) || 1;
@@ -762,89 +1074,73 @@
             unit.className = 'bar-unit';
             unit.style.display = 'flex';
             unit.style.flexDirection = 'row';
-            wrap3.appendChild(unit);
+            wrapError.appendChild(unit);
         }
 
-        let label3 = document.getElementById('label3');
-        label3.innerHTML = `<div style="display:inline-flex; align-items:center;">${getDisplayHtml(vals.w1, vals.n1, vals.d1, 'var(--red)')}<span style="margin: 0 5px;">+</span>${getDisplayHtml(vals.w2, vals.n2, vals.d2, 'var(--blue)')}</div><span style="font-size:0.8rem; color:var(--red); margin-top:5px;">(分母不同，無格線)</span>`;
+        let labelError = document.getElementById('label-error');
+        labelError.innerHTML = `<div style="display:inline-flex; align-items:center;">${getDisplayHtml(vals.w1, vals.n1, vals.d1, 'var(--red)')}<span style="margin: 0 5px;">+</span>${getDisplayHtml(vals.w2, vals.n2, vals.d2, 'var(--blue)')}</div><span style="font-size:0.8rem; color:var(--red); margin-top:5px;">(分母不同，無格線)</span>`;
         
-        let nlWrap = document.getElementById('bar3-nl');
-        if (nlWrap) { nlWrap.style.display = 'none'; nlWrap.innerHTML = ''; }
+        let nlWrap = document.getElementById('bar-error-nl');
+        if (nlWrap) {
+            const showNL = document.getElementById('show-nl-cb').checked;
+            nlWrap.style.display = showNL ? 'flex' : 'none'; 
+            nlWrap.innerHTML = ''; 
+            
+            let val1 = (vals.w1 * vals.d1 + vals.n1) / vals.d1;
+            let val2 = (vals.w2 * vals.d2 + vals.n2) / vals.d2;
+            let sumVal = val1 + val2;
 
-        bar3WrongModeValue = 0;
+            for (let i = 0; i < maxW; i++) {
+                let nlUnit = document.createElement('div');
+                nlUnit.className = 'nl-unit';
+                let labelsHtml = '';
 
-        // 將第一列與第二列的色塊投影複製到第三列，但不隱藏原本的色塊
+                const addTick = (val, html, isMajor = false, zIndex = 10) => {
+                    let leftPct = (val - i) * 100;
+                    let tickHeight = isMajor ? '8px' : '6px';
+                    labelsHtml += `<div style="position: absolute; left: ${leftPct}%; top: 0px; transform: translateX(-50%); display: flex; align-items: center; justify-content: flex-start; flex-direction: column; z-index: ${zIndex};">
+                        <div style="width: 2px; height: ${tickHeight}; background: var(--dark); margin-bottom: 2px;"></div>
+                        ${html}
+                    </div>`;
+                };
+
+                if (i === 0) {
+                    addTick(0, `<span style="font-weight:bold; font-size:1.1rem; color:var(--dark);">0</span>`, true, 5);
+                }
+
+                addTick(i + 1, `<span style="font-weight:bold; font-size:1.1rem; color:var(--dark);">${i + 1}</span>`, true, 5);
+
+                if (val1 > i && val1 < i + 1) {
+                    let f1Html = getDisplayHtml(vals.w1, vals.n1, vals.d1, 'var(--red)');
+                    addTick(val1, f1Html, false, 10);
+                }
+
+                if (sumVal > i && sumVal < i + 1) {
+                    let f1Html = getDisplayHtml(vals.w1, vals.n1, vals.d1, 'var(--red)');
+                    let f2Html = getDisplayHtml(vals.w2, vals.n2, vals.d2, 'var(--blue)');
+                    let sumText = `<div style="display:flex; align-items:center; gap:3px; white-space:nowrap;">${f1Html} <span style="color:var(--dark);">+</span> ${f2Html}</div>`;
+                    addTick(sumVal, sumText, false, 10);
+                }
+
+                nlUnit.innerHTML = labelsHtml;
+                nlWrap.appendChild(nlUnit);
+            }
+        }
+
+        barErrorModeValue = 0;
+
         let blocks = document.querySelectorAll('.drag-block');
         blocks.forEach(block => {
-            if (block.id.startsWith('drag-1')) moveToBar3WrongMode(block);
+            if (block.id && block.id.startsWith('drag-1')) moveToBarErrorMode(block);
         });
         blocks.forEach(block => {
-            if (block.id.startsWith('drag-2')) moveToBar3WrongMode(block);
+            if (block.id && block.id.startsWith('drag-2')) moveToBarErrorMode(block);
         });
+        
+        document.getElementById('drag-instruction').innerHTML = `💡 發現了嗎？因為「分母」不相同，無法用相同的格線算出來。<br>請試著在上方的算式點擊「擴分/約分」尋找公共的分母！`;
     }
 
-    // 正確模式拖拉
-    function moveToBar3(block, cd) {
-        let wrap3 = document.getElementById('bar3-wrap');
-        let pieces = parseInt(block.getAttribute('data-pieces')) || 1;
-        
-        let placeholder = document.createElement('div');
-        placeholder.style.width = block.style.width;
-        placeholder.style.height = block.style.height;
-        block.parentNode.insertBefore(placeholder, block);
-        
-        if (pieces === cd && bar3BlocksCount % cd === 0) {
-            let targetUnitIdx = Math.floor(bar3BlocksCount / cd);
-            let targetUnit = wrap3.querySelectorAll('.bar-unit')[targetUnitIdx];
-            
-            if (targetUnit) {
-                let grid = targetUnit.querySelector('.bar-grid');
-                if (grid) targetUnit.insertBefore(block, grid);
-                else targetUnit.appendChild(block);
-                
-                block.draggable = false;
-                block.style.cursor = 'default';
-                block.style.opacity = '1';
-                block.style.borderRight = '1px solid rgba(255,255,255,0.2)'; 
-                
-                bar3BlocksCount += pieces;
-            }
-        } else {
-            block.style.display = 'none'; 
-            
-            for (let i = 0; i < pieces; i++) {
-                let targetUnitIdx = Math.floor(bar3BlocksCount / cd);
-                let targetUnit = wrap3.querySelectorAll('.bar-unit')[targetUnitIdx];
-                
-                if (targetUnit) {
-                    let pieceNode = document.createElement('div');
-                    pieceNode.style.width = `${100/cd}%`;
-                    pieceNode.style.height = '100%';
-                    pieceNode.style.backgroundColor = block.style.backgroundColor;
-                    pieceNode.style.opacity = '1';
-                    pieceNode.style.borderRight = '1px solid rgba(255,255,255,0.2)';
-                    pieceNode.style.position = 'relative';
-                    pieceNode.style.boxSizing = 'border-box';
-                    pieceNode.style.zIndex = '1';
-                    
-                    let grid = targetUnit.querySelector('.bar-grid');
-                    if (grid) targetUnit.insertBefore(pieceNode, grid);
-                    else targetUnit.appendChild(pieceNode);
-                    
-                    bar3BlocksCount++;
-                }
-            }
-        }
-        
-        const vals = getSafeValues();
-        let totalNeeded = (vals.total_n1 * s1) + (vals.total_n2 * s2);
-        
-        renderBar3NumberLine(cd); 
-        checkAllDropped(totalNeeded);
-    }
-
-    // 錯誤模式合併，只複製計算出對應的寬度，不影響原本色塊的顯示
-    function moveToBar3WrongMode(block) {
+    function moveToBarErrorMode(block) {
         let num = block.id.split('-')[1]; 
         let cd = num === '1' ? (getSafeValues().d1 * s1) : (getSafeValues().d2 * s2);
         let pieces = parseInt(block.getAttribute('data-pieces')) || 1;
@@ -853,14 +1149,14 @@
         let remainingValToPlace = blockVal;
         
         while (remainingValToPlace > 0.0001) {
-            let targetUnitIdx = Math.floor(bar3WrongModeValue);
-            let currentUnitFilled = bar3WrongModeValue - targetUnitIdx;
+            let targetUnitIdx = Math.floor(barErrorModeValue);
+            let currentUnitFilled = barErrorModeValue - targetUnitIdx;
             let spaceInUnit = 1.0 - currentUnitFilled;
 
             let valToPlaceNow = Math.min(remainingValToPlace, spaceInUnit);
             
-            let wrap3 = document.getElementById('bar3-wrap');
-            let targetUnit = wrap3.querySelectorAll('.bar-unit')[targetUnitIdx];
+            let wrapError = document.getElementById('bar-error-wrap');
+            let targetUnit = wrapError.querySelectorAll('.bar-unit')[targetUnitIdx];
             
             if (targetUnit) {
                 let pieceNode = document.createElement('div');
@@ -876,111 +1172,138 @@
                 targetUnit.appendChild(pieceNode);
             }
             
-            bar3WrongModeValue += valToPlaceNow;
+            barErrorModeValue += valToPlaceNow;
             remainingValToPlace -= valToPlaceNow;
-        }
-
-        const vals = getSafeValues();
-        let totalNeededVal = (vals.total_n1 / vals.d1) + (vals.total_n2 / vals.d2);
-        
-        if (Math.abs(bar3WrongModeValue - totalNeededVal) < 0.0001) {
-            document.getElementById('drag-instruction').innerHTML = `💡 發現了嗎？因為「分母」不相同，無法用相同的格線算出來。<br>請試著在上方的算式點擊「擴分/約分」尋找公共的分母！`;
         }
     }
 
     function setupDragAndDrop(cd1, cd2) {
-        let row3 = document.getElementById('bar3-row');
+    let wrap1 = document.getElementById('bar1-wrap');
+    let wrap2 = document.getElementById('bar2-wrap');
+    let wrapError = document.getElementById('bar-error-wrap');
+    let row3 = document.getElementById('bar3-row');
+    let errorRow = document.getElementById('bar-error-row');
+
+    if (isCommonDenomReady) {
+        row3.style.display = 'flex';
+        row3.classList.remove('fade-in-slow');
+        void row3.offsetWidth;
+        row3.classList.add('fade-in-slow');
+
         let wrap3 = document.getElementById('bar3-wrap');
+        wrap3.style.backgroundColor = '#fafafa';
+        wrap3.innerHTML = '';
         
-        const vals = getSafeValues();
-        let maxW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--max-wholes')) || 1;
+        const showNL = document.getElementById('show-nl-cb').checked;
+        if (showNL) wrap3.classList.add('continuous');
+        else wrap3.classList.remove('continuous');
 
-        if (isCommonDenomReady) {
-            row3.style.display = 'flex';
-            wrap3.style.outline = '3px dashed var(--orange)';
+        for (let i = 0; i < parseInt(document.documentElement.style.getPropertyValue('--max-wholes') || 1); i++) {
+            let unit = document.createElement('div');
+            unit.className = 'bar-unit';
+            unit.style.display = 'flex';
+            unit.style.flexDirection = 'row';
+            let grid = document.createElement('div');
+            grid.className = 'bar-grid';
+            unit.appendChild(grid);
+            wrap3.appendChild(unit);
+        }
+        
+        let label3 = document.getElementById('label3');
+        label3.innerHTML = `合併結果<span style="font-size:0.8rem; color:var(--orange); margin-top:5px;">(點擊或拖拉)</span>`;
+
+        wrap3.querySelectorAll('.bar-grid').forEach(gridContainer => {
+            applyGridAnimation(gridContainer, cd1, 1, 1, 'none');
+        });
+
+        moved1 = 0; moved2 = 0; mergedBlocks = [];
+        updateDragDropState(cd1);
+
+        wrap3.ondragover = (e) => {
+            e.preventDefault();
+            wrap3.style.backgroundColor = '#eef9f1';
+        };
+        wrap3.ondragleave = (e) => {
             wrap3.style.backgroundColor = '#fafafa';
-            wrap3.innerHTML = '';
-            
-            const showNL = document.getElementById('show-nl-cb').checked;
-            if (showNL) wrap3.classList.add('continuous');
-            else wrap3.classList.remove('continuous');
-            
-            for (let i = 0; i < maxW; i++) {
-                let unit = document.createElement('div');
-                unit.className = 'bar-unit';
-                unit.style.display = 'flex';
-                unit.style.flexDirection = 'row';
-                let grid = document.createElement('div');
-                grid.className = 'bar-grid';
-                unit.appendChild(grid);
-                wrap3.appendChild(unit);
+        };
+        wrap3.ondrop = (e) => {
+            e.preventDefault();
+            wrap3.style.backgroundColor = '#fafafa';
+            let rawData = e.dataTransfer.getData('text/plain');
+            if (!rawData) return;
+            try {
+                let data = JSON.parse(rawData);
+                let num = parseInt(data.source_num);
+                let pieces = parseInt(data.pieces);
+                if (isNaN(num) || isNaN(pieces)) return;
+
+                if (num === 1) moved1 += pieces;
+                else if (num === 2) moved2 += pieces;
+                else return;
+
+                mergedBlocks.push({ num: num, pieces: pieces });
+                updateDragDropState(cd1);
+            } catch(err) {
+                console.error("Drop Data Error:", err);
             }
-            
-            let label3 = document.getElementById('label3');
-            label3.innerHTML = `合併結果<span style="font-size:0.8rem; color:var(--orange); margin-top:5px;">(點擊或拖拉)</span>`;
-            wrap3.querySelectorAll('.bar-grid').forEach(gridContainer => {
-                applyGridAnimation(gridContainer, cd1, 1, 1, 'none'); 
-            });
-            renderBar3NumberLine(cd1);
+        };
 
-            convertBarToDraggable(1, cd1, 'var(--red)');
-            convertBarToDraggable(2, cd2, 'var(--blue)');
+        wrap1.ondragover = null; wrap1.ondrop = null; wrap1.ondragleave = null;
+        wrap2.ondragover = null; wrap2.ondrop = null; wrap2.ondragleave = null;
+        if (wrapError) {
+            wrapError.ondragover = null; wrapError.ondrop = null; wrapError.ondragleave = null;
+        }
 
-            bar3BlocksCount = 0;
-            
-            wrap3.ondragover = (e) => { 
-                e.preventDefault(); 
-                wrap3.style.backgroundColor = '#eef9f1';
-            };
-            wrap3.ondragleave = (e) => {
-                wrap3.style.backgroundColor = '#fafafa';
-            };
-            wrap3.ondrop = (e) => {
-                e.preventDefault();
-                wrap3.style.backgroundColor = '#fafafa';
-                let draggedId = e.dataTransfer.getData('text/plain');
-                if (!draggedId) return;
-                let draggedEl = document.getElementById(draggedId);
-                if (draggedEl && draggedEl.classList.contains('drag-block')) {
-                    moveToBar3(draggedEl, cd1);
-                }
-            };
-            
-            // 清除未通分時互相拖拉的監聽器
-            let wrap1 = document.getElementById('bar1-wrap');
-            let wrap2 = document.getElementById('bar2-wrap');
-            wrap1.ondragover = null; wrap1.ondrop = null; wrap1.ondragleave = null;
-            wrap2.ondragover = null; wrap2.ondrop = null; wrap2.ondragleave = null;
+    } else {
+        // ========== 尚未通分時，互相拖拉觸發錯誤提示的邏輯 ==========
+        row3.style.display = 'none';
+        
+        // 確保兩個長條圖都會被轉換為「可拖曳」狀態 (Draggable)
+        convertBarToDraggable(1, cd1, 'var(--red)', 0);
+        convertBarToDraggable(2, cd2, 'var(--blue)', 0);
 
-        } else {
-            // 錯誤模式（未通分母）：初始隱藏第三行
-            row3.style.display = 'none'; 
-            convertBarToDraggable(1, cd1, 'var(--red)');
-            convertBarToDraggable(2, cd2, 'var(--blue)');
+        // 定義滑鼠拖過與放開的共同事件
+        let dragOverHandler = (e) => {
+            e.preventDefault();
+            e.currentTarget.style.opacity = '0.7';
+        };
+        let dragLeaveHandler = (e) => {
+            e.currentTarget.style.opacity = '1';
+        };
+        let dropHandler = (e) => {
+            e.preventDefault();
+            e.currentTarget.style.opacity = '1';
+            // 觸發「發現分母不同」的合併動畫與提示
+            triggerErrorMerge();
+        };
 
-            // 設置兩條原長條圖之間的互相拖曳合併
-            let wrap1 = document.getElementById('bar1-wrap');
-            let wrap2 = document.getElementById('bar2-wrap');
-            
-            let dragOverHandler = (e) => { e.preventDefault(); e.currentTarget.style.opacity = '0.7'; };
-            let dragLeaveHandler = (e) => { e.currentTarget.style.opacity = '1'; };
-            let dropHandler = (e) => {
-                e.preventDefault();
-                e.currentTarget.style.opacity = '1';
-                triggerErrorMerge();
-            };
+        // 讓「第一個長條圖 (wrap1)」可以接受拖放
+        wrap1.ondragover = dragOverHandler;
+        wrap1.ondragleave = dragLeaveHandler;
+        wrap1.ondrop = dropHandler;
 
-            wrap1.ondragover = dragOverHandler; wrap1.ondragleave = dragLeaveHandler; wrap1.ondrop = dropHandler;
-            wrap2.ondragover = dragOverHandler; wrap2.ondragleave = dragLeaveHandler; wrap2.ondrop = dropHandler;
+        // 讓「第二個長條圖 (wrap2)」也可以接受拖放
+        wrap2.ondragover = dragOverHandler;
+        wrap2.ondragleave = dragLeaveHandler;
+        wrap2.ondrop = dropHandler;
+
+        // 如果錯誤區塊已經存在，也允許拖放在上面
+        if (wrapError) {
+            wrapError.ondragover = dragOverHandler;
+            wrapError.ondrop = dropHandler;
+            wrapError.ondragleave = dragLeaveHandler;
         }
     }
+}
 
     function checkAllDropped(totalNeeded) {
         if (!isCommonDenomReady) return;
 
-        if (bar3BlocksCount === totalNeeded || totalNeeded === 0) {
+        if (bar3BlocksCount === totalNeeded && totalNeeded !== 0) {
             const vals = getSafeValues();
             let cd1 = vals.d1 * s1;
+            document.getElementById('bar1-row').style.display='none';
+            document.getElementById('bar2-row').style.display='none';
             document.getElementById('bottom-answer-zone').style.display = 'flex';
             setTimeout(() => { document.getElementById('bottom-answer-zone').style.opacity = '1'; }, 50);
             
@@ -1003,22 +1326,15 @@
 
             document.getElementById('bot-public-unit').innerHTML = `💡 公共分數單位為： <b style="display:inline-flex; align-items:center; vertical-align:middle;">${getFracHtml(1, cd1, 'var(--dark)')}</b>`;
             document.getElementById('drag-instruction').innerHTML = `💡 太棒了！全部合併完成，請填寫下方最終答案！${hint}`;
-
-            // 合併完成後自動將頁面捲動到底部，確保最終答案輸入框可見
-            const scrollBottom = () => {
-                const doc = document.scrollingElement || document.documentElement;
-                if (doc) {
-                    try {
-                        window.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' });
-                    } catch (e) {
-                        window.scrollTo(0, doc.scrollHeight);
-                    }
+        } else {
+            document.getElementById('bar3-wrap').style.outline = '3px dashed var(--orange)';
+            document.getElementById('bottom-answer-zone').style.opacity = '0';
+            setTimeout(() => { 
+                if (bar3BlocksCount !== totalNeeded) {
+                    document.getElementById('bottom-answer-zone').style.display = 'none'; 
                 }
-            };
-            // 多次嘗試，確保 DOM/動畫更新完成後仍能滾到底
-            setTimeout(scrollBottom, 100);
-            setTimeout(scrollBottom, 400);
-            setTimeout(scrollBottom, 800);
+            }, 300);
+            document.getElementById('drag-instruction').innerHTML = `💡 分母相同了！請將上方的色塊「拖拉」或「點擊」到下方合併結果區。`;
         }
     }
 
@@ -1030,15 +1346,48 @@
 
         isCommonDenomReady = (cd1 === cd2 && cd1 > 0);
 
+        // 更新拖放邏輯
         setupDragAndDrop(cd1, cd2);
 
-        document.getElementById('bottom-answer-zone').style.opacity = '0';
-        setTimeout(() => { document.getElementById('bottom-answer-zone').style.display = 'none'; }, 300);
+        // 取得相關 DOM 元素
+        const errorRow = document.getElementById('bar-error-row');
+        const bottomZone = document.getElementById('bottom-answer-zone');
+        const dragInstruction = document.getElementById('drag-instruction');
+
+        //document.getElementById('bottom-answer-zone').style.opacity = '0';
+        //setTimeout(() => { document.getElementById('bottom-answer-zone').style.display = 'none'; }, 300);
 
         if (isCommonDenomReady) {
-            document.getElementById('drag-instruction').innerHTML = `💡 分母相同了！請將上方的色塊「拖拉」或「點擊」到合併結果區。`;
+            /// --- 情況 A：通分已完成 (擴分成功) ---
+
+            // 1. 隱藏錯誤提示列 (原本顯示「分母不同」的地方)
+            if (errorRow) {
+                errorRow.style.display = 'none';
+            }
+        
+            // 2. 顯示最下方的答案格區域
+            if (bottomZone) {
+                bottomZone.style.display = 'flex';
+                // 確保 opacity 過渡效果
+                setTimeout(() => { bottomZone.style.opacity = '1'; }, 50);
+            }
+
+            dragInstruction.innerHTML = `💡 分母相同了！請將上方的色塊直接拖拉到最下方的空格中。`;
         } else {
-            document.getElementById('drag-instruction').innerHTML = `💡 試著將兩條長條圖拖拉在一起合併，看看會發生什麼事？（或點擊「擴/約分」讓分母相同）`;
+            // --- 情況 B：尚未通分 ---
+
+            // 隱藏最下方區域，因為還不能填寫答案
+            if (bottomZone) {
+             bottomZone.style.opacity = '0';
+                setTimeout(() => { bottomZone.style.display = 'none'; }, 300);
+            }
+
+            // 檢查是否需要顯示錯誤提示 (當學生嘗試在分母不同時拖拉，通常會觸發 errorRow 顯示)
+            if (errorRow && errorRow.style.display === 'flex') {
+                dragInstruction.innerHTML = `💡 發現了嗎？因為「分母」不相同，無法用相同的格線算出來。<br>請試著在上方的算式點擊「擴分/約分」尋找公共的分母！`;
+            } else {
+                dragInstruction.innerHTML = `💡 試著將兩條長條圖拖拉在一起合併，看看會發生什麼事？（或點擊「擴/約分」讓分母相同）`;
+            }
         }
     }
 
@@ -1050,6 +1399,9 @@
         s1 = 1; s2 = 1;
         bar1Visible = false; bar2Visible = false;
         isCommonDenomReady = false;
+        moved1 = 0; 
+        moved2 = 0; 
+        mergedBlocks = [];
 
         let wpEl = document.getElementById('word-problem');
         if (currentWordProblemTemplate) {
@@ -1093,6 +1445,17 @@
                     <button class="tool-btn" onclick="applyTool(2, 'simplify')">➖ 約分</button>
                 </div>
             </div>
+
+            <div id="bar-error-row" style="display:none; position:relative; width:100%; min-height:80px; align-items:center; justify-content:space-between; margin-top: 10px; padding-top: 15px; border-top: 2px dashed #ccc;">
+                <div id="label-error" style="width:15%; text-align:center; font-weight:bold; color:var(--dark); font-size:1.1rem; display:flex; flex-direction:column; align-items:center;">
+                    未通分合併
+                </div>
+                <div class="bars-column">
+                    <div id="bar-error-wrap" class="bar-wrap-container droppable-area" style="min-height: 50px; outline: 3px dashed var(--red); background-color: #fafafa; border-radius: 4px;"></div>
+                    <div id="bar-error-nl" class="nl-wrap-container continuous" style="display:none;"></div>
+                </div>
+                <div style="width:15%;"></div>
+            </div>
             
             <div id="bar3-row" style="display:none; position:relative; width:100%; min-height:80px; align-items:center; justify-content:space-between; margin-top: 10px; padding-top: 15px; border-top: 2px dashed #ccc;">
                 <div id="label3" style="width:15%; text-align:center; font-weight:bold; color:var(--dark); font-size:1.1rem; display:flex; flex-direction:column; align-items:center;">
@@ -1110,6 +1473,7 @@
         renderBar(1, 'none');
         renderBar(2, 'none');
         document.getElementById('drag-instruction').innerHTML = `💡 點擊上方分數，顯示圖形！`;
+        resetInactivityTimer(); // 重置待機教學計時器
     }
 
     function randomChallenge() {
@@ -1212,20 +1576,44 @@
                 if (el) el.value = v;
             }
         };
+
+        const hasAny = ['num1','den1','whole1','num2','den2','whole2','context']
+            .some(k => {
+                const v = p.get(k);
+                return v !== null && v !== '';
+            });
+
+        if (!hasAny) return false;
+
+        const w1 = p.get('whole1');
+        const w2 = p.get('whole2');
+        if ((w1 && w1 !== '0') || (w2 && w2 !== '0')) {
+            const cb = document.getElementById('show-whole-cb');
+            if (cb && !cb.checked) {
+                cb.checked = true;
+                toggleWholeNumber();
+            }
+        }
+
         setVal('n1', 'num1'); setVal('d1', 'den1'); setVal('w1', 'whole1');
         setVal('n2', 'num2'); setVal('d2', 'den2'); setVal('w2', 'whole2');
+
         const ctx = p.get('context');
         if (ctx) {
-            const wp = document.getElementById('word-problem');
-            if (wp) { wp.innerText = ctx; wp.style.display = 'block'; }
+            currentWordProblemTemplate = ctx;
+        } else {
+            currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
         }
+
+        return true;
     }
 
     window.onload = () => {
-        applyUrlParams();
         updateSpeed(); 
         toggleWholeNumber(); 
+        applyUrlParams();
         updateUI();
+        resetInactivityTimer(); // 啟動待機偵測
     };
 </script>
 
