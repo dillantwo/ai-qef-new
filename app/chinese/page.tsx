@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PenTool, FileText, MessageSquare, ArrowRight } from "lucide-react";
+import { PenTool, BookOpen, MessageSquare, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 
 const topics: {
@@ -32,11 +32,11 @@ const topics: {
     available: true,
   },
   {
-    id: "classical-chinese",
-    label: "文言文閱讀",
-    labelEn: "Classical Chinese",
-    description: "利用 AI 標註虛詞與語義關係，快速理解文言文句式與用法。",
-    icon: FileText,
+    id: "lin-zexu",
+    label: "學習林則徐",
+    labelEn: "Learning Lin Zexu",
+    description: "透過林則徐的生平與事跡，認識歷史人物的精神與時代背景。",
+    icon: BookOpen,
     accent: "#7a3dff",
     available: true,
   },
@@ -44,15 +44,11 @@ const topics: {
 
 export default function ChinesePage() {
   const router = useRouter();
-  const featuredTopic = topics.find((topic) => topic.id === "classical-chinese");
-  const writingTopics = topics.filter((topic) => topic.id !== "classical-chinese");
+  const featuredTopic = topics.find((topic) => topic.id === "lin-zexu");
+  const writingTopics = topics.filter((topic) => topic.id !== "lin-zexu");
 
   function navigateToTopic(topicId: string, available: boolean) {
     if (!available) return;
-    if (topicId === "classical-chinese") {
-      router.push("/chinese/classical-chinese");
-      return;
-    }
     router.push(`/chinese/dashboard?topic=${topicId}`);
   }
 
@@ -67,41 +63,6 @@ export default function ChinesePage() {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="flex w-full flex-col gap-10 py-2">
-            <section className="grid gap-8 border-b border-[#d8d8d8] px-2 pb-8 pt-4 sm:px-0 lg:grid-cols-[minmax(0,1.2fr)_320px] lg:items-end">
-              <div className="space-y-5">
-                <p className="text-[12px] font-semibold uppercase tracking-[1.5px] text-[#a36a00]">
-                  Chinese topic studio
-                </p>
-                <div className="space-y-3">
-                  <h1 className="max-w-4xl font-serif text-[42px] leading-[1.02] font-semibold tracking-[-0.04em] text-[#080808] sm:text-[54px] lg:text-[68px]">
-                    中文科主題練習台
-                  </h1>
-                  <p className="max-w-2xl text-base leading-7 text-[#4f4f4f] sm:text-lg">
-                    這裡不是再次選科目，而是直接進入中文科內部的主題選擇。你可以按寫作類型或閱讀工具，切進不同的學習工作流。
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <span className="inline-flex items-center rounded-[4px] bg-[#ffae13]/12 px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#a36a00]">
-                    Chinese only
-                  </span>
-                  <span className="inline-flex items-center rounded-[4px] border border-[#d8d8d8] bg-white px-3 py-2 text-[12px] font-semibold uppercase tracking-[1px] text-[#080808]">
-                    {topics.length} topics ready
-                  </span>
-                </div>
-              </div>
-
-              <aside className="rounded-[8px] border border-[#d8d8d8] bg-white/90 p-5 backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
-                  Page guide
-                </p>
-                <div className="mt-4 space-y-4 text-sm leading-6 text-[#4f4f4f]">
-                  <p>寫作主題提供段落組織與描寫練習。</p>
-                  <p>文言文入口提供 AI 標註與理解輔助。</p>
-                  <p>每張卡片都會直接進入中文科對應工具，不會回到科目層級。</p>
-                </div>
-              </aside>
-            </section>
-
             <section className="grid gap-4 px-2 sm:px-0 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.92fr)]">
               <div className="grid gap-4 sm:grid-cols-2">
                 {writingTopics.map(({ id, label, labelEn, description, icon: Icon, accent, available }) => (
@@ -184,13 +145,13 @@ export default function ChinesePage() {
                   </div>
 
                   <div className="relative mt-8 grid gap-3 border-t border-[#d8d8d8] pt-5 text-sm text-[#5a5a5a]">
-                    <p>適合快速拆解虛詞、句式與上下文關係。</p>
-                    <p>進入後可直接貼上文段，讓 AI 協助標註與說明。</p>
+                    <p>從生平故事切入，理解林則徐的歷史角色。</p>
+                    <p>結合 AI 對話，深入探討禁煙運動與時代意義。</p>
                   </div>
 
                   <div className="relative mt-auto flex items-center justify-between pt-6">
                     <span className="text-sm font-medium text-[#080808]">
-                      進入文言文閱讀工具
+                      開始學習林則徐
                     </span>
                     <ArrowRight className="size-4 text-[#7a3dff] transition-transform duration-200 group-hover:translate-x-1" />
                   </div>

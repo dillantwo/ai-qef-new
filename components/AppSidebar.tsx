@@ -137,7 +137,14 @@ export function AppSidebar() {
             AI and Coding for Subject Learning
           </span>
         </Link>
-        <Button className="mt-4 w-full" size="lg" onClick={() => {
+        <Button
+          className={`mt-4 w-full ${
+            pathname.startsWith('/chinese/dashboard')
+              ? 'bg-[#146ef5] text-white hover:bg-[#0055d4]'
+              : ''
+          }`}
+          size="lg"
+          onClick={() => {
           const subject = pathname.split('/')[1] || 'math';
           // On the math dashboard, just signal "new question" instead of navigating
           // (the dashboard will clear state and show the input form).
@@ -145,9 +152,14 @@ export function AppSidebar() {
             window.dispatchEvent(new CustomEvent('dashboard:new-question'));
             return;
           }
+          // On the chinese dashboard, signal "new chat" to reset the chatbot.
+          if (subject === 'chinese' && pathname.startsWith('/chinese/dashboard')) {
+            window.dispatchEvent(new CustomEvent('dashboard:new-chat'));
+            return;
+          }
           router.push(`/${subject}`);
         }}>
-          + Add New Question
+          {pathname.startsWith('/chinese/dashboard') ? '+ New Chat' : '+ Add New Question'}
         </Button>
       </SidebarHeader>
 

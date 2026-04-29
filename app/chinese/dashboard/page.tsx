@@ -1,40 +1,33 @@
 "use client";
 
-import { Suspense, useRef, useEffect, useState } from "react";
+import { Suspense, useRef, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useChat } from "@ai-sdk/react";
 import {
   ArrowUp,
   Square,
   Bot,
   User,
-  Monitor,
-  Smartphone,
-  BookOpen,
+  MessageSquare,
+  Mic,
+  MicOff,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { basePath } from "@/lib/utils";
-import { DefaultChatTransport } from "ai";
 
-// Map topic to its preview HTML file
-const previewMap: Record<string, string> = {
-  // Add Chinese topic previews here, e.g.:
-  // "reading-comprehension": "/chinese/preview-reading.html",
+type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
+type ChatMsg = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  images?: ChatImage[];
 };
-
-const tasks: { id: number; label: string; prompt: string }[] = [
-  { id: 1, label: "Task 1", prompt: "" },
-  { id: 2, label: "Task 2", prompt: "" },
-  { id: 3, label: "Task 3", prompt: "" },
-  { id: 4, label: "Task 4", prompt: "" },
-  { id: 5, label: "Task 5", prompt: "" },
-];
 
 export default function ChineseDashboardPage() {
   return (
@@ -48,30 +41,289 @@ function ChineseDashboardContent() {
   const searchParams = useSearchParams();
   const topic = searchParams.get("topic") || "";
 
-  const { messages, sendMessage, status, stop } = useChat({
-    transport: new DefaultChatTransport({ api: `${basePath}/api/chat` }),
-  });
+  const topicLabelMap: Record<string, string> = {
+    "lin-zexu": "學習林則徐",
+    "scenery-description": "景物描寫",
+    "character-description": "人物描寫",
+  };
+  const topicLabel = topicLabelMap[topic] || "中文科";
 
+  const makeSessionId = useCallback(
+    () =>
+      `chinese-${topic || "general"}-${
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2)
+      }`,
+    [topic]
+  );
+  const [sessionId, setSessionId] = useState<string>(() => makeSessionId());
+  // Reset session whenever topic changes.
+  useEffect(() => {
+    setSessionId(makeSessionId());
+  }, [makeSessionId]);
+
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [status, setStatus] = useState<"idle" | "submitted" | "streaming">("idle");
   const [input, setInput] = useState("");
-  const [selectedTask, setSelectedTask] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
-  const [taskPrompt, setTaskPrompt] = useState<string | null>(null);
+  const [chatFiles, setChatFiles] = useState<File[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = input.trim() && !isLoading;
+  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
 
-  const previewSrc = previewMap[topic] || "";
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStatus("idle");
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function doSend() {
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+      return;
+    }
+    if (isListening) { stopListening(); return; }
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'zh-HK';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop(); };
+  }, []);
+
+  // Listen for "+ New Chat" trigger from sidebar — reset the chat session.
+  useEffect(() => {
+    function handleNewChat() {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setMessages([]);
+      setInput("");
+      setChatFiles([]);
+      setStatus("idle");
+      setSessionId(makeSessionId());
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+    window.addEventListener("dashboard:new-chat", handleNewChat);
+    return () => window.removeEventListener("dashboard:new-chat", handleNewChat);
+  }, [makeSessionId]);
+
+  function fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function doSend() {
     if (!canSend) return;
-    sendMessage({ text: input.trim() });
+    if (isListening) stopListening();
+
+    const images: ChatImage[] = await Promise.all(
+      chatFiles.map(async (file) => ({
+        mediaType: file.type,
+        dataUrl: await fileToDataURL(file),
+        filename: file.name,
+      }))
+    );
+
+    const userText = input.trim() || "（見圖片）";
+    const userMsg: ChatMsg = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      text: userText,
+      ...(images.length > 0 ? { images } : {}),
+    };
+    const assistantMsg: ChatMsg = {
+      id: `a-${Date.now()}`,
+      role: "assistant",
+      text: "",
+    };
+
+    const nextMessages = [...messages, userMsg];
+    setMessages([...nextMessages, assistantMsg]);
     setInput("");
+    setChatFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setStatus("submitted");
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const payloadMessages = nextMessages.map((m) => ({
+      role: m.role,
+      text: m.text,
+      ...(m.images && m.images.length > 0
+        ? {
+            images: m.images.map((img) => ({
+              mediaType: img.mediaType,
+              data: img.dataUrl,
+            })),
+          }
+        : {}),
+    }));
+
+    try {
+      const res = await fetch(`${basePath}/api/chinese-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: payloadMessages, sessionId }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => "");
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id
+              ? { ...m, text: `（出錯了）${errText || res.statusText}` }
+              : m
+          )
+        );
+        setStatus("idle");
+        abortRef.current = null;
+        return;
+      }
+
+      setStatus("streaming");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      // Smooth typewriter effect: tokens may arrive in bursts; reveal them
+      // at a steady cadence for a more natural reading flow.
+      let target = "";
+      let displayed = "";
+      let streamDone = false;
+      let rafId: number | null = null;
+      const CHARS_PER_TICK = 2; // tune for speed vs smoothness
+
+      const tick = () => {
+        if (displayed.length < target.length) {
+          const remaining = target.length - displayed.length;
+          // Catch up faster if we are far behind so we never lag too much.
+          const step = Math.max(
+            CHARS_PER_TICK,
+            Math.ceil(remaining / 30)
+          );
+          displayed = target.slice(0, displayed.length + step);
+          const snapshot = displayed;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsg.id ? { ...m, text: snapshot } : m
+            )
+          );
+        }
+        if (displayed.length < target.length || !streamDone) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          rafId = null;
+        }
+      };
+      rafId = requestAnimationFrame(tick);
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk) target += chunk;
+        }
+      } finally {
+        streamDone = true;
+        // Wait for the typewriter to catch up before releasing control.
+        await new Promise<void>((resolve) => {
+          const waitForCatchUp = () => {
+            if (displayed.length >= target.length) {
+              if (rafId !== null) cancelAnimationFrame(rafId);
+              // Ensure final snapshot is rendered.
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsg.id ? { ...m, text: target } : m
+                )
+              );
+              resolve();
+            } else {
+              requestAnimationFrame(waitForCatchUp);
+            }
+          };
+          waitForCatchUp();
+        });
+      }
+    } catch (err) {
+      if ((err as { name?: string })?.name !== "AbortError") {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id
+              ? {
+                  ...m,
+                  text: `（出錯了）${
+                    err instanceof Error ? err.message : String(err)
+                  }`,
+                }
+              : m
+          )
+        );
+      }
+    } finally {
+      setStatus("idle");
+      abortRef.current = null;
+    }
+  }
+
+  function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  }
+
+  function removeChatFile(index: number) {
+    setChatFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    setChatFiles((prev) => [...prev, ...imageFiles]);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -87,189 +339,190 @@ function ChineseDashboardContent() {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Left panel: Tasks + HTML Preview */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className="size-4 text-primary" />
-            <span className="text-sm font-semibold">
-              {topic.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "中文科"}
-            </span>
+    <div className="flex flex-1 flex-col min-w-0 overflow-hidden bg-white">
+      {/* Header */}
+      <div className="border-b border-[#d8d8d8] px-4 py-3 bg-white">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#146ef5] text-white">
+            <MessageSquare className="size-4" />
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant={viewMode === "desktop" ? "outline" : "ghost"}
-              size="icon-sm"
-              onClick={() => setViewMode("desktop")}
-            >
-              <Monitor className="size-4" />
-            </Button>
-            <Button
-              variant={viewMode === "mobile" ? "outline" : "ghost"}
-              size="icon-sm"
-              onClick={() => setViewMode("mobile")}
-            >
-              <Smartphone className="size-4" />
-            </Button>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">Chinese assistant</p>
+            <p className="text-sm font-semibold text-[#080808]">{topicLabel}</p>
           </div>
-        </div>
-
-        {/* Task bar + prompt */}
-        <div className="px-4 py-3 border-b border-border space-y-3">
-          {/* Task pills */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Tasks
-            </span>
-            <Separator orientation="vertical" className="h-4" />
-            <div className="flex gap-1.5">
-              {tasks.map(({ id, label, prompt }) => (
-                <Button
-                  key={id}
-                  variant={selectedTask === id ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 px-3 text-xs"
-                  onClick={() => {
-                    setSelectedTask(id);
-                    setTaskPrompt(prompt || null);
-                  }}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Task prompt card */}
-          {taskPrompt && (
-            <Card size="sm" className="border-2 border-orange-400 bg-orange-50 ring-0 shadow-md dark:bg-orange-950/40 dark:border-orange-500">
-              <CardContent className="flex items-start gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-orange-500 mt-0.5 shadow-sm">
-                  <BookOpen className="size-4 text-white" />
-                </div>
-                <p className="text-sm font-medium leading-relaxed text-orange-900 dark:text-orange-100">
-                  {taskPrompt}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* HTML Preview */}
-        <div className="flex-1 overflow-auto p-4 bg-muted/30">
-          {previewSrc ? (
-            <div
-              className={`h-full mx-auto rounded-xl border border-border bg-white transition-all ${
-                viewMode === "mobile" ? "max-w-[390px]" : "w-full"
-              }`}
-            >
-              <iframe
-                src={previewSrc}
-                className="h-full w-full rounded-xl"
-                sandbox="allow-scripts"
-                title="HTML Preview"
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              請選擇一個任務開始學習
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Right panel: AI Chat */}
-      <div className="flex w-80 shrink-0 flex-col border-l border-border min-h-0">
+      {/* AI Chat */}
+      <div className="flex flex-1 flex-col min-h-0 w-full">
         {/* Chat messages */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
+          {messages.length === 0 && (
+            <div className="flex h-full items-center justify-center text-sm text-[#5a5a5a]">
+              開始與 AI 對話，學習{topicLabel}。
+            </div>
+          )}
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-2 ${
+              className={`flex items-start gap-2 ${
                 message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
               {message.role === "assistant" && (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <Bot className="size-3" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
+                  <Bot className="size-4" strokeWidth={2} />
                 </div>
               )}
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm leading-relaxed prose prose-sm max-w-none ${
+                className={`prose prose-sm max-w-none max-w-[85%] rounded-[8px] border px-3 py-2 text-sm leading-relaxed ${
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground prose-invert"
-                    : "bg-muted prose-neutral dark:prose-invert"
+                    ? "border-[#146ef5] bg-[#146ef5] text-white prose-invert"
+                    : "border-[#d8d8d8] bg-white text-[#080808] prose-neutral"
                 }`}
               >
-                {message.parts.some((p) => p.type === "file") && (
+                {message.images && message.images.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
-                    {message.parts
-                      .filter((p): p is { type: "file"; mediaType: string; url: string; filename?: string } => p.type === "file" && p.mediaType.startsWith("image/"))
-                      .map((filePart, i) => (
-                        <img
-                          key={i}
-                          src={filePart.url}
-                          alt={filePart.filename ?? "uploaded image"}
-                          className="max-w-[200px] max-h-[200px] rounded object-contain"
-                        />
-                      ))}
+                    {message.images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img.dataUrl}
+                        alt={img.filename ?? "uploaded image"}
+                        className="max-w-[200px] max-h-[200px] rounded-[4px] border border-white/30 object-contain"
+                      />
+                    ))}
                   </div>
                 )}
-                {message.parts
-                  .filter((part): part is { type: "text"; text: string } => part.type === "text")
-                  .map((part, i) => (
-                    <ReactMarkdown
-                      key={i}
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[[rehypeKatex, { strict: false }]]}
-                    >
-                      {part.text}
-                    </ReactMarkdown>
-                  ))}
+                {message.text ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                    components={{
+                      a: ({ href, children, ...props }) => (
+                        <a
+                          {...props}
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            message.role === "user"
+                              ? "underline text-white hover:text-white/80"
+                              : "text-[#146ef5] underline hover:text-[#0055d4]"
+                          }
+                        >
+                          {children}
+                        </a>
+                      ),
+                    }}
+                  >
+                    {message.text}
+                  </ReactMarkdown>
+                ) : message.role === "assistant" ? (
+                  <span className="animate-pulse text-[#5a5a5a]">思考中...</span>
+                ) : null}
               </div>
               {message.role === "user" && (
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <User className="size-3" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-[#d8d8d8] bg-[#f7f7f7] text-[#4f4f4f]">
+                  <User className="size-4" strokeWidth={2} />
                 </div>
               )}
             </div>
           ))}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-            <div className="flex gap-2 justify-start">
-              <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Bot className="size-3" />
+            <div className="flex items-start gap-2 justify-start">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
+                <Bot className="size-4" strokeWidth={2} />
               </div>
-              <div className="bg-muted rounded-lg px-3 py-2 text-sm">
+              <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
                 <span className="animate-pulse">思考中...</span>
               </div>
             </div>
           )}
 
-          <div ref={messagesEndRef} />
-        </div>
+          <div ref={messagesEndRef} />        </div>
 
         {/* Chat input */}
-        <div className="border-t border-border px-3 py-3">
+        <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
           <form onSubmit={handleSubmit}>
-            <div className="relative w-full rounded-xl border border-border bg-background shadow-sm">
+            <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
+              {/* Image preview thumbnails */}
+              {chatFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-3 pt-2">
+                  {chatFiles.map((file, i) => (
+                    <div key={i} className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="size-12 rounded-[4px] border border-[#d8d8d8] object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeChatFile(i)}
+                        className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#080808] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <Textarea
                 ref={textareaRef}
-                placeholder="請輸入問題..."
+                placeholder="繼續提問...（可直接粘貼圖片）"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="min-h-[50px] resize-none border-0 bg-transparent px-3 pt-2.5 pb-9 text-sm shadow-none focus-visible:ring-0"
+                onPaste={handlePaste}
+                className="min-h-[58px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-3 pt-3 pb-10 text-sm shadow-none focus-visible:ring-0"
               />
-              <div className="absolute bottom-1.5 right-1.5">
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleChatFileChange}
+                className="hidden"
+              />
+
+              <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:border-[#898989] hover:bg-white"
+                    title="上傳圖片"
+                  >
+                    <ImagePlus className="size-3.5 text-[#5a5a5a]" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={toggleVoice}
+                    className={`rounded-[4px] border bg-white transition-all hover:bg-white ${
+                      isListening
+                        ? 'border-red-400 text-red-500 hover:border-red-500 hover:text-red-600'
+                        : 'border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]'
+                    }`}
+                    title={isListening ? '停止語音輸入' : '語音輸入'}
+                  >
+                    {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-[#5a5a5a]" />}
+                  </Button>
+                  {isListening && (
+                    <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>
+                  )}
+                </div>
                 {isLoading ? (
                   <Button
                     type="button"
                     size="icon-sm"
                     variant="outline"
-                    className="rounded-lg"
+                    className="rounded-[4px]"
                     onClick={stop}
                   >
                     <Square className="size-3" />
@@ -278,7 +531,7 @@ function ChineseDashboardContent() {
                   <Button
                     type="submit"
                     size="icon-sm"
-                    className="rounded-lg"
+                    className="rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
                     disabled={!canSend}
                   >
                     <ArrowUp className="size-3.5" />
