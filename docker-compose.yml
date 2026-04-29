@@ -29,6 +29,8 @@ services:
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
       AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
       SESSION_SECRET: ${SESSION_SECRET}
+      FLOWISE_API_URL: ${FLOWISE_API_URL}
+      FLOWISE_API_KEY: ${FLOWISE_API_KEY}
     # Not exposed to host; NGINX proxies traffic.
     # Uncomment to access directly for debugging:
     # ports:
