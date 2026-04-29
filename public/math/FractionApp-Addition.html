@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FractionApp44(Addition)</title>
+    <title>FractionApp42(Addition)</title>
     
     <script>
         // Disable right-click
@@ -64,7 +64,7 @@
         .inline-frac span { font-size: 1.1em; padding: 1px 4px; }
         .inline-frac .line { height: 2px; background-color: currentColor; width: 100%; margin: 2px 0; }
 
-        #anim-area { width: 100%; min-height: 100px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; gap: 20px; }
+        #anim-area { width: 100%; min-height: 200px; position: relative; overflow: visible; margin-top: 5px; display: flex; flex-direction: column; gap: 20px; }
         
         @keyframes fadeInSlow { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
         .fade-in-slow { animation: fadeInSlow 1s ease-out forwards; }
@@ -145,19 +145,6 @@
             margin-left: 0;
         }
 
-        #drag-instruction {
-            /* 設定固定高度或最小高度 */
-            min-height: 5em; /* 約兩行文字的高度 */
-            display: flex;
-            align-items: center;    /* 垂直置中 */
-            justify-content: center; /* 水平置中 */
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #fff4e6; /* 選擇性：加一點背景色 */
-            border-radius: 8px;
-            text-align: center;
-        }
-
         @media (max-width: 768px) {
             .container { padding: 15px; }
             .header { flex-direction: column; align-items: stretch; text-align: center; }
@@ -191,7 +178,7 @@
                     <input type="checkbox" id="show-nl-cb" onchange="toggleNumberLine()"> 顯示數線
                 </label>
                 <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
-                <label for="speed-slider" title="調整擴分/約分的動畫速度">動畫速度: <span id="speed-val" style="color: var(--blue);">1.0</span>x</label>
+                <label for="speed-slider">動畫速度: <span id="speed-val" style="color: var(--blue);">1.0</span>x</label>
                 <input type="range" id="speed-slider" min="0.5" max="3" step="0.1" value="1.0" oninput="updateSpeed()">
             </div>
             <button class="btn-random" onclick="randomChallenge()">🎲 隨機出題</button>
@@ -202,7 +189,7 @@
 
     <div class="answer-zone">
         <div class="formula">
-            <div class="mixed-frac" id="frac1-group" onclick="onFrac1Click()" title="點擊重置並顯示被加數圖形">
+            <div class="mixed-frac" id="frac1-group" onclick="onFrac1Click()">
                 <input type="number" class="whole-input" id="w1" placeholder=" " min="0" max="10" oninput="updateUI()" onchange="updateUI()">
                 <div class="frac">
                     <input type="number" class="frac-input" id="n1" value="1" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
@@ -211,7 +198,7 @@
                 </div>
             </div>
             <span>+</span>
-            <div class="mixed-frac" id="frac2-group" onclick="onFrac2Click()" title="點擊重置並顯示加數圖形">
+            <div class="mixed-frac" id="frac2-group" onclick="onFrac2Click()">
                 <input type="number" class="whole-input" id="w2" placeholder=" " min="0" max="10" oninput="updateUI()" onchange="updateUI()">
                 <div class="frac">
                     <input type="number" class="frac-input" id="n2" value="1" min="1" max="100" oninput="updateUI()" onchange="updateUI()">
@@ -295,13 +282,13 @@
         clearTimeout(inactivityTimer);
         clearTimeout(hoverTimer);
 
-        // 1. 全域待機 1 秒觸發
-        inactivityTimer = setTimeout(startTutorialAnimation, 1000);
+        // 1. 全域待機 3 秒觸發
+        inactivityTimer = setTimeout(startTutorialAnimation, 3000);
 
-        // 2. 指住不動 (Hover still) 3 秒觸發：若鼠標停在互動元素上
+        // 2. 指住不動 (Hover still) 1 秒觸發：若鼠標停在互動元素上
         if (e && e.type === 'mousemove' && e.target && e.target.closest) {
             if (e.target.closest('.tool-btn, .mixed-frac, .drag-block, .bar-wrap-container, #bottom-answer-zone')) {
-                hoverTimer = setTimeout(startTutorialAnimation, 3000);
+                hoverTimer = setTimeout(startTutorialAnimation, 1000);
             }
         }
     }
@@ -353,12 +340,10 @@
                     if(btns.length > 0) startEl = btns[0];
                 }
             } else {
-                // 還沒出現錯誤列 -> 提示互相拖拉 (由 bar2 往 bar1 端點拖動)
-                // 首先嘗試選取 bar2 的色塊，如果沒有才選 bar1
-                startEl = document.querySelector('#bar2-wrap .drag-block');
+                // 還沒出現錯誤列 -> 提示互相拖拉
+                startEl = document.querySelector('#bar1-wrap .drag-block') || document.querySelector('#bar2-wrap .drag-block');
                 if (startEl) {
-                    // 如果起點在 bar2，終點就設為 bar1；反之亦然
-                    endEl = startEl.closest('#bar2-wrap') ? document.getElementById('bar1-wrap') : document.getElementById('bar2-wrap');
+                    endEl = startEl.closest('#bar1-wrap') ? document.getElementById('bar2-wrap') : document.getElementById('bar1-wrap');
                     action = 'drag';
                 }
             }
@@ -1023,7 +1008,7 @@
                 block.style.boxSizing = 'border-box';
                 block.style.zIndex = '1';
                 block.style.cursor = 'pointer';
-                block.title = '點擊退回原處'; 
+                // block.title = '點擊退回原處'; // 移除 title 防止懸停顯示預設文字
                 
                 let targetIndex = i; 
                 block.onclick = () => {
@@ -1178,123 +1163,116 @@
     }
 
     function setupDragAndDrop(cd1, cd2) {
-    let wrap1 = document.getElementById('bar1-wrap');
-    let wrap2 = document.getElementById('bar2-wrap');
-    let wrapError = document.getElementById('bar-error-wrap');
-    let row3 = document.getElementById('bar3-row');
-    let errorRow = document.getElementById('bar-error-row');
-
-    if (isCommonDenomReady) {
-        row3.style.display = 'flex';
-        row3.classList.remove('fade-in-slow');
-        void row3.offsetWidth;
-        row3.classList.add('fade-in-slow');
-
+        let row3 = document.getElementById('bar3-row');
         let wrap3 = document.getElementById('bar3-wrap');
-        wrap3.style.backgroundColor = '#fafafa';
-        wrap3.innerHTML = '';
+        let wrap1 = document.getElementById('bar1-wrap');
+        let wrap2 = document.getElementById('bar2-wrap');
+        let wrapError = document.getElementById('bar-error-wrap');
         
-        const showNL = document.getElementById('show-nl-cb').checked;
-        if (showNL) wrap3.classList.add('continuous');
-        else wrap3.classList.remove('continuous');
+        const vals = getSafeValues();
+        let maxW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--max-wholes')) || 1;
 
-        for (let i = 0; i < parseInt(document.documentElement.style.getPropertyValue('--max-wholes') || 1); i++) {
-            let unit = document.createElement('div');
-            unit.className = 'bar-unit';
-            unit.style.display = 'flex';
-            unit.style.flexDirection = 'row';
-            let grid = document.createElement('div');
-            grid.className = 'bar-grid';
-            unit.appendChild(grid);
-            wrap3.appendChild(unit);
-        }
-        
-        let label3 = document.getElementById('label3');
-        label3.innerHTML = `合併結果<span style="font-size:0.8rem; color:var(--orange); margin-top:5px;">(點擊或拖拉)</span>`;
-
-        wrap3.querySelectorAll('.bar-grid').forEach(gridContainer => {
-            applyGridAnimation(gridContainer, cd1, 1, 1, 'none');
-        });
-
-        moved1 = 0; moved2 = 0; mergedBlocks = [];
-        updateDragDropState(cd1);
-
-        wrap3.ondragover = (e) => {
-            e.preventDefault();
-            wrap3.style.backgroundColor = '#eef9f1';
-        };
-        wrap3.ondragleave = (e) => {
-            wrap3.style.backgroundColor = '#fafafa';
-        };
-        wrap3.ondrop = (e) => {
-            e.preventDefault();
-            wrap3.style.backgroundColor = '#fafafa';
-            let rawData = e.dataTransfer.getData('text/plain');
-            if (!rawData) return;
-            try {
-                let data = JSON.parse(rawData);
-                let num = parseInt(data.source_num);
-                let pieces = parseInt(data.pieces);
-                if (isNaN(num) || isNaN(pieces)) return;
-
-                if (num === 1) moved1 += pieces;
-                else if (num === 2) moved2 += pieces;
-                else return;
-
-                mergedBlocks.push({ num: num, pieces: pieces });
-                updateDragDropState(cd1);
-            } catch(err) {
-                console.error("Drop Data Error:", err);
+        if (isCommonDenomReady) {
+            let isFirstShow = row3.style.display !== 'flex';
+            row3.style.display = 'flex';
+            if (isFirstShow) {
+                row3.classList.remove('fade-in-slow');
+                void row3.offsetWidth;
+                row3.classList.add('fade-in-slow');
             }
-        };
 
-        wrap1.ondragover = null; wrap1.ondrop = null; wrap1.ondragleave = null;
-        wrap2.ondragover = null; wrap2.ondrop = null; wrap2.ondragleave = null;
-        if (wrapError) {
-            wrapError.ondragover = null; wrapError.ondrop = null; wrapError.ondragleave = null;
-        }
+            wrap3.style.outline = '3px dashed var(--orange)';
+            wrap3.style.backgroundColor = '#fafafa';
+            wrap3.innerHTML = '';
+            
+            const showNL = document.getElementById('show-nl-cb').checked;
+            if (showNL) wrap3.classList.add('continuous');
+            else wrap3.classList.remove('continuous');
+            
+            for (let i = 0; i < maxW; i++) {
+                let unit = document.createElement('div');
+                unit.className = 'bar-unit';
+                unit.style.display = 'flex';
+                unit.style.flexDirection = 'row';
+                let grid = document.createElement('div');
+                grid.className = 'bar-grid';
+                unit.appendChild(grid);
+                wrap3.appendChild(unit);
+            }
+            
+            let label3 = document.getElementById('label3');
+            label3.innerHTML = `合併結果<span style="font-size:0.8rem; color:var(--orange); margin-top:5px;">(點擊或拖拉)</span>`;
+            wrap3.querySelectorAll('.bar-grid').forEach(gridContainer => {
+                applyGridAnimation(gridContainer, cd1, 1, 1, 'none'); 
+            });
 
-    } else {
-        // ========== 尚未通分時，互相拖拉觸發錯誤提示的邏輯 ==========
-        row3.style.display = 'none';
-        
-        // 確保兩個長條圖都會被轉換為「可拖曳」狀態 (Draggable)
-        convertBarToDraggable(1, cd1, 'var(--red)', 0);
-        convertBarToDraggable(2, cd2, 'var(--blue)', 0);
+            moved1 = 0;
+            moved2 = 0;
+            mergedBlocks = [];
+            updateDragDropState(cd1);
+            
+            wrap3.ondragover = (e) => { 
+                e.preventDefault(); 
+                wrap3.style.backgroundColor = '#eef9f1';
+            };
+            wrap3.ondragleave = (e) => {
+                wrap3.style.backgroundColor = '#fafafa';
+            };
+            
+            wrap3.ondrop = (e) => {
+                e.preventDefault();
+                wrap3.style.backgroundColor = '#fafafa';
+                
+                let rawData = e.dataTransfer.getData('text/plain');
+                if (!rawData) return;
+                
+                try {
+                    let data = JSON.parse(rawData);
+                    let num = parseInt(data.source_num);
+                    let pieces = parseInt(data.pieces);
+                    
+                    if (isNaN(num) || isNaN(pieces)) return; 
+                    
+                    if (num === 1) moved1 += pieces;
+                    else if (num === 2) moved2 += pieces;
+                    else return; 
+                    
+                    mergedBlocks.push({ num: num, pieces: pieces });
+                    updateDragDropState(cd1);
+                } catch(err) {
+                    console.error("Drop Data Error:", err);
+                }
+            };
+            
+            wrap1.ondragover = null; wrap1.ondrop = null; wrap1.ondragleave = null;
+            wrap2.ondragover = null; wrap2.ondrop = null; wrap2.ondragleave = null;
+            if (wrapError) {
+                wrapError.ondragover = null; wrapError.ondrop = null; wrapError.ondragleave = null;
+            }
 
-        // 定義滑鼠拖過與放開的共同事件
-        let dragOverHandler = (e) => {
-            e.preventDefault();
-            e.currentTarget.style.opacity = '0.7';
-        };
-        let dragLeaveHandler = (e) => {
-            e.currentTarget.style.opacity = '1';
-        };
-        let dropHandler = (e) => {
-            e.preventDefault();
-            e.currentTarget.style.opacity = '1';
-            // 觸發「發現分母不同」的合併動畫與提示
-            triggerErrorMerge();
-        };
+        } else {
+            row3.style.display = 'none'; 
+            convertBarToDraggable(1, cd1, 'var(--red)', 0);
+            convertBarToDraggable(2, cd2, 'var(--blue)', 0);
 
-        // 讓「第一個長條圖 (wrap1)」可以接受拖放
-        wrap1.ondragover = dragOverHandler;
-        wrap1.ondragleave = dragLeaveHandler;
-        wrap1.ondrop = dropHandler;
+            let dragOverHandler = (e) => { e.preventDefault(); e.currentTarget.style.opacity = '0.7'; };
+            let dragLeaveHandler = (e) => { e.currentTarget.style.opacity = '1'; };
+            let dropHandler = (e) => {
+                e.preventDefault();
+                e.currentTarget.style.opacity = '1';
+                triggerErrorMerge();
+            };
 
-        // 讓「第二個長條圖 (wrap2)」也可以接受拖放
-        wrap2.ondragover = dragOverHandler;
-        wrap2.ondragleave = dragLeaveHandler;
-        wrap2.ondrop = dropHandler;
-
-        // 如果錯誤區塊已經存在，也允許拖放在上面
-        if (wrapError) {
-            wrapError.ondragover = dragOverHandler;
-            wrapError.ondrop = dropHandler;
-            wrapError.ondragleave = dragLeaveHandler;
+            wrap1.ondragover = dragOverHandler; wrap1.ondragleave = dragLeaveHandler; wrap1.ondrop = dropHandler;
+            wrap2.ondragover = dragOverHandler; wrap2.ondragleave = dragLeaveHandler; wrap2.ondrop = dropHandler;
+            
+            if (wrapError) {
+                wrapError.ondragover = dragOverHandler; 
+                wrapError.ondragleave = dragLeaveHandler; 
+                wrapError.ondrop = dropHandler;
+            }
         }
     }
-}
 
     function checkAllDropped(totalNeeded) {
         if (!isCommonDenomReady) return;
@@ -1302,8 +1280,6 @@
         if (bar3BlocksCount === totalNeeded && totalNeeded !== 0) {
             const vals = getSafeValues();
             let cd1 = vals.d1 * s1;
-            document.getElementById('bar1-row').style.display='none';
-            document.getElementById('bar2-row').style.display='none';
             document.getElementById('bottom-answer-zone').style.display = 'flex';
             setTimeout(() => { document.getElementById('bottom-answer-zone').style.opacity = '1'; }, 50);
             
@@ -1346,47 +1322,19 @@
 
         isCommonDenomReady = (cd1 === cd2 && cd1 > 0);
 
-        // 更新拖放邏輯
         setupDragAndDrop(cd1, cd2);
 
-        // 取得相關 DOM 元素
-        const errorRow = document.getElementById('bar-error-row');
-        const bottomZone = document.getElementById('bottom-answer-zone');
-        const dragInstruction = document.getElementById('drag-instruction');
-
-        //document.getElementById('bottom-answer-zone').style.opacity = '0';
-        //setTimeout(() => { document.getElementById('bottom-answer-zone').style.display = 'none'; }, 300);
+        document.getElementById('bottom-answer-zone').style.opacity = '0';
+        setTimeout(() => { document.getElementById('bottom-answer-zone').style.display = 'none'; }, 300);
 
         if (isCommonDenomReady) {
-            /// --- 情況 A：通分已完成 (擴分成功) ---
-
-            // 1. 隱藏錯誤提示列 (原本顯示「分母不同」的地方)
-            if (errorRow) {
-                errorRow.style.display = 'none';
-            }
-        
-            // 2. 顯示最下方的答案格區域
-            if (bottomZone) {
-                bottomZone.style.display = 'flex';
-                // 確保 opacity 過渡效果
-                setTimeout(() => { bottomZone.style.opacity = '1'; }, 50);
-            }
-
-            dragInstruction.innerHTML = `💡 分母相同了！請將上方的色塊直接拖拉到最下方的空格中。`;
+            document.getElementById('drag-instruction').innerHTML = `💡 分母相同了！請將上方的色塊「拖拉」或「點擊」到下方合併結果區。`;
         } else {
-            // --- 情況 B：尚未通分 ---
-
-            // 隱藏最下方區域，因為還不能填寫答案
-            if (bottomZone) {
-             bottomZone.style.opacity = '0';
-                setTimeout(() => { bottomZone.style.display = 'none'; }, 300);
-            }
-
-            // 檢查是否需要顯示錯誤提示 (當學生嘗試在分母不同時拖拉，通常會觸發 errorRow 顯示)
+            let errorRow = document.getElementById('bar-error-row');
             if (errorRow && errorRow.style.display === 'flex') {
-                dragInstruction.innerHTML = `💡 發現了嗎？因為「分母」不相同，無法用相同的格線算出來。<br>請試著在上方的算式點擊「擴分/約分」尋找公共的分母！`;
+                document.getElementById('drag-instruction').innerHTML = `💡 發現了嗎？因為「分母」不相同，無法用相同的格線算出來。<br>請試著在上方的算式點擊「擴分/約分」尋找公共的分母！`;
             } else {
-                dragInstruction.innerHTML = `💡 試著將兩條長條圖拖拉在一起合併，看看會發生什麼事？（或點擊「擴/約分」讓分母相同）`;
+                document.getElementById('drag-instruction').innerHTML = `💡 試著將兩條長條圖拖拉在一起合併，看看會發生什麼事？（或點擊「擴/約分」讓分母相同）`;
             }
         }
     }
@@ -1585,6 +1533,7 @@
 
         if (!hasAny) return false;
 
+        // 若傳入帶分數整數部分，自動勾選顯示帶分數
         const w1 = p.get('whole1');
         const w2 = p.get('whole2');
         if ((w1 && w1 !== '0') || (w2 && w2 !== '0')) {
@@ -1602,17 +1551,21 @@
         if (ctx) {
             currentWordProblemTemplate = ctx;
         } else {
+            // 若沒提供 context，但有提供分數參數，仍顯示題目區（使用預設模板）
             currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
         }
 
+        updateUI();
         return true;
     }
 
     window.onload = () => {
         updateSpeed(); 
         toggleWholeNumber(); 
-        applyUrlParams();
-        updateUI();
+        const usedParams = applyUrlParams();
+        if (!usedParams) {
+            updateUI();
+        }
         resetInactivityTimer(); // 啟動待機偵測
     };
 </script>
