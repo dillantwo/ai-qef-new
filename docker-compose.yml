@@ -22,6 +22,10 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
+    # Run multiple replicas for higher concurrency.
+    # Override at runtime with: docker compose up -d --scale app=4
+    deploy:
+      replicas: 2
     environment:
       MONGODB_URI: mongodb://mongo:27017/ai-qef
       AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME}
