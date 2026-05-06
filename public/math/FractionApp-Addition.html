@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FractionApp42(Addition)</title>
+    <title>FractionApp47(Addition)</title>
     
     <script>
         // Disable right-click
@@ -1274,12 +1274,14 @@
         }
     }
 
-    function checkAllDropped(totalNeeded) {
+   function checkAllDropped(totalNeeded) {
         if (!isCommonDenomReady) return;
 
         if (bar3BlocksCount === totalNeeded && totalNeeded !== 0) {
             const vals = getSafeValues();
             let cd1 = vals.d1 * s1;
+            
+            // 顯示作答區
             document.getElementById('bottom-answer-zone').style.display = 'flex';
             setTimeout(() => { document.getElementById('bottom-answer-zone').style.opacity = '1'; }, 50);
             
@@ -1302,7 +1304,39 @@
 
             document.getElementById('bot-public-unit').innerHTML = `💡 公共分數單位為： <b style="display:inline-flex; align-items:center; vertical-align:middle;">${getFracHtml(1, cd1, 'var(--dark)')}</b>`;
             document.getElementById('drag-instruction').innerHTML = `💡 太棒了！全部合併完成，請填寫下方最終答案！${hint}`;
+
+            // ================================================================
+            // 👇 核心修改：漸漸消失 -> 移除空間 -> 鎖定結果不可修改 👇
+            // ================================================================
+            const bar1Row = document.getElementById('bar1-row');
+            const bar2Row = document.getElementById('bar2-row');
+            const bar3Wrap = document.getElementById('bar3-wrap');
+            const errorWrap = document.getElementById('bar-error-wrap');
+
+            // 1. 鎖定合併結果區與錯誤區，使其不可再被點擊或修改
+            if (bar3Wrap) bar3Wrap.style.pointerEvents = 'none';
+            if (errorWrap) errorWrap.style.pointerEvents = 'none';
+
+            // 2. 讓原本的分數列漸漸消失，並在 0.8 秒後釋放空間
+            [bar1Row, bar2Row].forEach(row => {
+                if (row) {
+                    row.classList.remove('fade-in-slow'); // 移除原本的 CSS 動畫限制
+                    row.style.transition = 'opacity 0.8s ease-in-out';
+                    row.style.opacity = '0';
+                    row.style.pointerEvents = 'none'; // 立即禁止操作
+
+                    // 重要：等淡出動畫跑完後，將 display 設為 none 以釋放空間
+                    setTimeout(() => {
+                        row.style.display = 'none';
+                    }, 800); 
+                }
+            });
+            // ================================================================
+            // 👆 修改結束 👆
+            // ================================================================
+
         } else {
+            // 原有的未完成邏輯
             document.getElementById('bar3-wrap').style.outline = '3px dashed var(--orange)';
             document.getElementById('bottom-answer-zone').style.opacity = '0';
             setTimeout(() => { 
@@ -1560,8 +1594,8 @@
     }
 
     window.onload = () => {
-        updateSpeed(); 
-        toggleWholeNumber(); 
+        updateSpeed();
+        toggleWholeNumber();
         const usedParams = applyUrlParams();
         if (!usedParams) {
             updateUI();

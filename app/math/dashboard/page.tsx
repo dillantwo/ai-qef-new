@@ -180,6 +180,7 @@ function MathDashboardContent() {
     // 直接連結到 Next.js route 的工具（同樣不需要 AI 提取參數）
     const staticRouteMap: Record<string, string> = {
       "volume-cubes": "/math/volume",
+      "journey-graph": "/math/journey",
     };
     const staticRoute = staticRouteMap[selectedTool];
     if (staticRoute) {

@@ -135,6 +135,7 @@ export async function POST(req: Request) {
   const fallbackDescriptions: Record<string, string> = {
     fraction: "分數相關題目（分數加減乘除、通分、約分、帶分數運算、分數應用題等）",
     algebra: "代數相關題目（方程式、未知數、代數運算等）",
+    journey: "行程圖相關題目（距離-時間圖、描述每段旅程、停留、折返、平行與相交路線等）",
   };
 
   // Merge DB types with fallback types to ensure they're always available

@@ -928,21 +928,16 @@
         const ctx = p.get('context');
         if (ctx) {
             currentWordProblemTemplate = ctx;
+        } else {
+            // 若沒提供 context，但有提供分數參數，仍顯示題目區（使用預設模板）
+            currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
         }
 
         updateUI();
-
-        // 若沒提供 context，但有提供分數參數，仍顯示題目區（使用預設模板）
-        if (!ctx) {
-            currentWordProblemTemplate = wordProblemTemplates[Math.floor(Math.random() * wordProblemTemplates.length)];
-            updateUI();
-        }
-
         document.getElementById('bar1-row').style.display = 'none';
         document.getElementById('drag-instruction').innerHTML = `💡 準備中...請先點擊上方的「被乘數」`;
         document.getElementById('bottom-answer-zone').style.display = 'none';
         document.getElementById('word-problem').style.display = 'block';
-
         return true;
     }
 
@@ -951,11 +946,6 @@
         const usedParams = applyUrlParams();
         if (!usedParams) {
             randomChallenge();
-        } else {
-            currentTutorialStep = 0;
-            hideFinger();
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(showIdleHint, 3000);
         }
         setupHoverHints();
         
