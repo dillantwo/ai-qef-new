@@ -68,9 +68,9 @@ const LEVELS: Level[] = [
     yMax: 90,
     series: [{ id: "a", label: "汽車甲", color: "#0796bd", points: [{ x: 0, y: 0 }, { x: 2, y: 40 }, { x: 5, y: 40 }, { x: 10, y: 90 }] }],
     segments: [
-      { id: "s1", label: "第一段：0 s -> 2 s", seriesId: "a", fromIndex: 0, toIndex: 1, expectedDescription: "汽車甲由原點出發，正以穩定速度遠離原點。", mustInclude: ["由原點出發", "遠離原點", "速度穩定"] },
-      { id: "s2", label: "第二段：2 s -> 5 s", seriesId: "a", fromIndex: 1, toIndex: 2, expectedDescription: "汽車甲停留在同一位置，與原點的距離保持不變。", mustInclude: ["停留", "距離不變"] },
-      { id: "s3", label: "第三段：5 s -> 10 s", seriesId: "a", fromIndex: 2, toIndex: 3, expectedDescription: "汽車甲再次遠離原點，速度穩定但比第一段慢。", mustInclude: ["再次遠離", "速度穩定", "比第一段慢"] },
+      { id: "s1", label: "第一段", seriesId: "a", fromIndex: 0, toIndex: 1, expectedDescription: "汽車甲由原點出發，正以穩定速度遠離原點。", mustInclude: ["由原點出發", "遠離原點", "速度穩定"] },
+      { id: "s2", label: "第二段", seriesId: "a", fromIndex: 1, toIndex: 2, expectedDescription: "汽車甲停留在同一位置，與原點的距離保持不變。", mustInclude: ["停留", "距離不變"] },
+      { id: "s3", label: "第三段", seriesId: "a", fromIndex: 2, toIndex: 3, expectedDescription: "汽車甲再次遠離原點，速度穩定但比第一段慢。", mustInclude: ["再次遠離", "速度穩定", "比第一段慢"] },
     ],
   },
   {
@@ -84,9 +84,9 @@ const LEVELS: Level[] = [
     yMax: 90,
     series: [{ id: "b", label: "單車乙", color: "#0796bd", points: [{ x: 0, y: 0 }, { x: 3, y: 80 }, { x: 5, y: 80 }, { x: 10, y: 0 }] }],
     segments: [
-      { id: "s1", label: "第一段：0 s -> 3 s", seriesId: "b", fromIndex: 0, toIndex: 1, expectedDescription: "單車乙由原點出發，正以穩定速度遠離原點。", mustInclude: ["由原點出發", "遠離原點", "速度穩定"] },
-      { id: "s2", label: "第二段：3 s -> 5 s", seriesId: "b", fromIndex: 1, toIndex: 2, expectedDescription: "單車乙停留在距離原點 80 公尺的位置。", mustInclude: ["停留", "距離原點80公尺"] },
-      { id: "s3", label: "第三段：5 s -> 10 s", seriesId: "b", fromIndex: 2, toIndex: 3, expectedDescription: "單車乙向原點返回，最後回到原點。", mustInclude: ["返回原點", "距離減少", "最後回到原點"] },
+      { id: "s1", label: "第一段", seriesId: "b", fromIndex: 0, toIndex: 1, expectedDescription: "單車乙由原點出發，正以穩定速度遠離原點。", mustInclude: ["由原點出發", "遠離原點", "速度穩定"] },
+      { id: "s2", label: "第二段", seriesId: "b", fromIndex: 1, toIndex: 2, expectedDescription: "單車乙停留在距離原點 80 公尺的位置。", mustInclude: ["停留", "距離原點80公尺"] },
+      { id: "s3", label: "第三段", seriesId: "b", fromIndex: 2, toIndex: 3, expectedDescription: "單車乙向原點返回，最後回到原點。", mustInclude: ["返回原點", "距離減少", "最後回到原點"] },
     ],
   },
   {
@@ -152,9 +152,9 @@ function generateOneWayLevel(template: Level, id: string): Level {
     id,
     series: [{ id: "a", label: "汽車甲", color: "#0796bd", points: [{ x: 0, y: 0 }, { x: t1, y: y1 }, { x: t2, y: y1 }, { x: 10, y: y2 }] }],
     segments: [
-      { id: "s1", label: `第一段：0 s -> ${t1} s`, seriesId: "a", fromIndex: 0, toIndex: 1, expectedDescription: `汽車甲由原點出發，在 0 至 ${t1} 秒正以穩定速度遠離原點，距離增加至 ${y1} 公尺。`, mustInclude: ["由原點出發", "遠離原點", "速度穩定", `${y1}公尺`] },
-      { id: "s2", label: `第二段：${t1} s -> ${t2} s`, seriesId: "a", fromIndex: 1, toIndex: 2, expectedDescription: `汽車甲在 ${t1} 至 ${t2} 秒停留在同一位置，與原點的距離保持 ${y1} 公尺不變。`, mustInclude: ["停留", "距離不變", `${y1}公尺`] },
-      { id: "s3", label: `第三段：${t2} s -> 10 s`, seriesId: "a", fromIndex: 2, toIndex: 3, expectedDescription: `汽車甲在 ${t2} 至 10 秒再次遠離原點，距離由 ${y1} 公尺增加至 ${y2} 公尺，速度${secondSpeed}。`, mustInclude: ["再次遠離", "距離增加", `${y2}公尺`, `速度${secondSpeed}`] },
+      { id: "s1", label: "第一段", seriesId: "a", fromIndex: 0, toIndex: 1, expectedDescription: `汽車甲由原點出發，在 0 至 ${t1} 秒正以穩定速度遠離原點，距離增加至 ${y1} 公尺。`, mustInclude: ["由原點出發", "遠離原點", "速度穩定", `${y1}公尺`] },
+      { id: "s2", label: "第二段", seriesId: "a", fromIndex: 1, toIndex: 2, expectedDescription: `汽車甲在 ${t1} 至 ${t2} 秒停留在同一位置，與原點的距離保持 ${y1} 公尺不變。`, mustInclude: ["停留", "距離不變", `${y1}公尺`] },
+      { id: "s3", label: "第三段", seriesId: "a", fromIndex: 2, toIndex: 3, expectedDescription: `汽車甲在 ${t2} 至 10 秒再次遠離原點，距離由 ${y1} 公尺增加至 ${y2} 公尺，速度${secondSpeed}。`, mustInclude: ["再次遠離", "距離增加", `${y2}公尺`, `速度${secondSpeed}`] },
     ],
   };
 }
@@ -169,9 +169,9 @@ function generateReturnTripLevel(template: Level, id: string): Level {
     id,
     series: [{ id: "b", label: "單車乙", color: "#0796bd", points: [{ x: 0, y: 0 }, { x: t1, y: yPeak }, { x: t2, y: yPeak }, { x: 10, y: 0 }] }],
     segments: [
-      { id: "s1", label: `第一段：0 s -> ${t1} s`, seriesId: "b", fromIndex: 0, toIndex: 1, expectedDescription: `單車乙由原點出發，在 0 至 ${t1} 秒以穩定速度遠離原點，距離增加至 ${yPeak} 公尺。`, mustInclude: ["由原點出發", "遠離原點", "速度穩定", `${yPeak}公尺`] },
-      { id: "s2", label: `第二段：${t1} s -> ${t2} s`, seriesId: "b", fromIndex: 1, toIndex: 2, expectedDescription: `單車乙在 ${t1} 至 ${t2} 秒停留在距離原點 ${yPeak} 公尺的位置。`, mustInclude: ["停留", `距離原點${yPeak}公尺`] },
-      { id: "s3", label: `第三段：${t2} s -> 10 s`, seriesId: "b", fromIndex: 2, toIndex: 3, expectedDescription: `單車乙在 ${t2} 至 10 秒向原點返回，距離由 ${yPeak} 公尺逐漸減少至 0 公尺，最後回到原點。`, mustInclude: ["返回原點", "距離減少", "最後回到原點"] },
+      { id: "s1", label: "第一段", seriesId: "b", fromIndex: 0, toIndex: 1, expectedDescription: `單車乙由原點出發，在 0 至 ${t1} 秒以穩定速度遠離原點，距離增加至 ${yPeak} 公尺。`, mustInclude: ["由原點出發", "遠離原點", "速度穩定", `${yPeak}公尺`] },
+      { id: "s2", label: "第二段", seriesId: "b", fromIndex: 1, toIndex: 2, expectedDescription: `單車乙在 ${t1} 至 ${t2} 秒停留在距離原點 ${yPeak} 公尺的位置。`, mustInclude: ["停留", `距離原點${yPeak}公尺`] },
+      { id: "s3", label: "第三段", seriesId: "b", fromIndex: 2, toIndex: 3, expectedDescription: `單車乙在 ${t2} 至 10 秒向原點返回，距離由 ${yPeak} 公尺逐漸減少至 0 公尺，最後回到原點。`, mustInclude: ["返回原點", "距離減少", "最後回到原點"] },
     ],
   };
 }
@@ -1008,7 +1008,7 @@ function MiniChart({ level, activeSegment, className, showAxes = false }: { leve
                   fill={series.color}
                   opacity={0.85}
                 />
-                {showAxes && (
+                {showAxes && index > 0 && (
                   <CoordinateLabel
                     point={point}
                     x={xScale(point.x)}
