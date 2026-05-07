@@ -171,6 +171,7 @@ export function VolumeScene({
   interactive = true,
 }: { explode?: number; showGround?: boolean; interactive?: boolean } = {}) {
   const cubes = useCubeStore((s) => s.cubes);
+  const showContainer = useCubeStore((s) => s.showContainer);
   const arr = Object.values(cubes);
 
   return (
@@ -181,7 +182,7 @@ export function VolumeScene({
     >
       <ambientLight intensity={0.65} />
       <directionalLight position={[8, 12, 6]} intensity={0.8} />
-      {showGround && (
+      {showGround && !showContainer && (
         <Grid
           args={[20, 20]}
           cellColor="#e5ecf5"
