@@ -103,6 +103,7 @@ function MathDashboardContent() {
   const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
 
   const selectedTool = toolbox?.selectedTool ?? null;
+  const hideChatForTool = selectedTool === "journey-graph";
   const tools = toolboxConfig?.tools ?? [];
   const typeLabel = toolboxConfig?.label ?? type;
 
@@ -304,6 +305,10 @@ function MathDashboardContent() {
     recognitionRef.current?.stop();
     setIsListening(false);
   }, []);
+
+  useEffect(() => {
+    if (hideChatForTool) stopListening();
+  }, [hideChatForTool, stopListening]);
 
   function toggleVoice() {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -601,7 +606,7 @@ function MathDashboardContent() {
               選科目
             </Link>
           </div>
-          {!chatVisible && (
+          {!chatVisible && !hideChatForTool && (
             <Button
               variant="ghost"
               size="icon-sm"
@@ -855,7 +860,7 @@ function MathDashboardContent() {
       </div>
 
       {/* Right panel: AI Chat (narrower) */}
-      {chatVisible && (selectedTool === "volume-cubes" ? (
+      {chatVisible && !hideChatForTool && (selectedTool === "volume-cubes" ? (
         <VolumeChatPanel onHide={() => setChatVisible(false)} />
       ) : (
         <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">

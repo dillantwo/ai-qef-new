@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Pause, Play, RotateCcw, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Mic, MicOff, Pause, Play, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { basePath, cn } from "@/lib/utils";
@@ -420,11 +420,67 @@ export default function JourneyGraphPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [review, setReview] = useState<ReviewResult | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const voiceAnswerKeyRef = useRef<string | null>(null);
+  const voiceBaseTextRef = useRef("");
 
   const currentSegment = level?.segments[stepIndex] ?? null;
   const currentAnswerKey = level && currentSegment ? getAnswerKey(level.id, currentSegment.id) : null;
 
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    voiceAnswerKeyRef.current = null;
+    setIsListening(false);
+  }, []);
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop(); };
+  }, []);
+
+  function toggleVoiceInput() {
+    if (!currentAnswerKey) return;
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+      return;
+    }
+    if (isListening) { stopListening(); return; }
+
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    voiceAnswerKeyRef.current = currentAnswerKey;
+    voiceBaseTextRef.current = answers[currentAnswerKey] ?? "";
+    recognition.lang = 'zh-HK';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      const answerKey = voiceAnswerKeyRef.current;
+      if (!answerKey) return;
+      const baseText = voiceBaseTextRef.current.trim();
+      const nextText = [baseText, transcript.trim()].filter(Boolean).join(baseText ? " " : "");
+      setAnswers((prev) => ({ ...prev, [answerKey]: nextText }));
+      setReview(null);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      voiceAnswerKeyRef.current = null;
+      setIsListening(false);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
   function selectLevel(nextLevel: Level) {
+    stopListening();
     setLevel(generateLevel(nextLevel.id));
     setStepIndex(0);
     setAnswers({});
@@ -440,6 +496,7 @@ export default function JourneyGraphPage() {
 
   function resetLevel() {
     if (!level) return;
+    stopListening();
     const segmentIds = new Set(level.segments.map((segment) => getAnswerKey(level.id, segment.id)));
     setAnswers((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !segmentIds.has(key))));
     setReview(null);
@@ -448,6 +505,7 @@ export default function JourneyGraphPage() {
 
   async function submitReview() {
     if (!level || isReviewing) return;
+    stopListening();
     setIsReviewing(true);
     try {
       const res = await fetch(`${basePath}/api/journey-review`, {
@@ -526,7 +584,7 @@ export default function JourneyGraphPage() {
     <main className="min-h-full overflow-y-auto bg-[#f4f8fc] bg-[radial-gradient(#dce9f4_1px,transparent_1px)] [background-size:22px_22px] px-4 py-5 text-[#102033]">
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <Button variant="ghost" className="rounded-[6px] text-[#31506c]" onClick={() => setLevel(null)}>
+          <Button variant="ghost" className="rounded-[6px] text-[#31506c]" onClick={() => { stopListening(); setLevel(null); }}>
             <ArrowLeft className="size-4" />
             關卡選擇
           </Button>
@@ -563,12 +621,35 @@ export default function JourneyGraphPage() {
               </Button>
             </div>
 
-            <Textarea
-              value={currentAnswer}
-              onChange={(event) => updateAnswer(event.target.value)}
-              placeholder="例如：這一段正在遠離原點，距離按固定速度增加......"
-              className="min-h-24 resize-y rounded-[8px] border-[#bfd3e6] bg-[#fbfdff] px-4 py-3 text-base shadow-none placeholder:text-[#94a9be] focus-visible:border-[#0796bd] focus-visible:ring-[#0796bd]/20"
-            />
+            <div className="relative">
+              <Textarea
+                value={currentAnswer}
+                onChange={(event) => updateAnswer(event.target.value)}
+                placeholder="例如：這一段正在遠離原點，距離按固定速度增加......"
+                className="min-h-24 resize-y rounded-[8px] border-[#bfd3e6] bg-[#fbfdff] px-4 py-3 pb-12 pr-14 text-base shadow-none placeholder:text-[#94a9be] focus-visible:border-[#0796bd] focus-visible:ring-[#0796bd]/20"
+              />
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                {isListening && (
+                  <span className="text-xs font-medium text-red-500 animate-pulse">聆聽中…</span>
+                )}
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={toggleVoiceInput}
+                  className={cn(
+                    "rounded-[6px] border bg-white transition-all hover:bg-white",
+                    isListening
+                      ? "border-red-400 text-red-500 hover:border-red-500 hover:text-red-600"
+                      : "border-[#bfd3e6] text-[#31506c] hover:border-[#0796bd] hover:text-[#0796bd]"
+                  )}
+                  title={isListening ? "停止語音輸入" : "語音輸入"}
+                  aria-label={isListening ? "停止語音輸入" : "語音輸入"}
+                >
+                  {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5" />}
+                </Button>
+              </div>
+            </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <Button
@@ -589,7 +670,7 @@ export default function JourneyGraphPage() {
             variant="outline"
             className="justify-self-start rounded-[6px]"
             disabled={stepIndex === 0}
-            onClick={() => setStepIndex((value) => Math.max(value - 1, 0))}
+            onClick={() => { stopListening(); setStepIndex((value) => Math.max(value - 1, 0)); }}
           >
             <ChevronLeft className="size-4" />
             上一段
@@ -599,7 +680,7 @@ export default function JourneyGraphPage() {
             variant="outline"
             className="justify-self-end rounded-[6px]"
             disabled={stepIndex === level.segments.length - 1}
-            onClick={() => setStepIndex((value) => Math.min(value + 1, level.segments.length - 1))}
+            onClick={() => { stopListening(); setStepIndex((value) => Math.min(value + 1, level.segments.length - 1)); }}
           >
             下一段
             <ChevronRight className="size-4" />

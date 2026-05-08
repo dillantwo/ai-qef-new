@@ -231,16 +231,16 @@ function MessageBubble({ message }: { message: UIMessage }) {
         {isUser ? <User size={12} /> : <Bot size={12} />}
       </div>
       <div
-        className={`max-w-[85%] rounded-lg px-2.5 py-2 text-[12.5px] leading-relaxed ${
+        className={`min-w-0 max-w-[85%] overflow-hidden rounded-lg px-2.5 py-2 text-[12.5px] leading-relaxed ${
           isUser
             ? "bg-[#146ef5] text-white"
             : "bg-[#f3f6fb] text-[#080808]"
         }`}
       >
         {isUser ? (
-          <p className="whitespace-pre-wrap">{text}</p>
+          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{text}</p>
         ) : (
-          <div className="prose prose-sm max-w-none prose-neutral [&_p]:my-1 [&_ul]:my-1 [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-sm">
+          <div className="w-full min-w-0 break-words font-sans text-[12.5px] leading-relaxed text-[#080808] [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_h2]:mb-1 [&_h2]:mt-2 [&_h2]:text-sm [&_h2]:font-semibold [&_li]:my-0.5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:my-1 [&_strong]:font-semibold [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4">
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[[rehypeKatex, { strict: false }]]}
