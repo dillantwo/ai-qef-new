@@ -5,7 +5,7 @@ const SESSION_COOKIE = "session";
 const PUBLIC_FILE = /\.[^/]+$/;
 
 // Routes that are accessible without authentication
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health"];
 
 // Subject path prefixes – keys must match Subject type values
 const SUBJECT_PREFIXES = ["/math", "/chinese", "/english", "/science", "/humanities"];
