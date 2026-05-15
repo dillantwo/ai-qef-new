@@ -5,8 +5,19 @@ services:
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db
+      - ./docker/mongo/init-user.sh:/docker-entrypoint-initdb.d/init-user.sh:ro
     environment:
-      MONGO_INITDB_DATABASE: ai-qef
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-ai-qef}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?authSource=admin", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     # Not exposed to host by default; only the app container connects.
     # Uncomment the following to access from host for debugging:
     # ports:
@@ -21,13 +32,14 @@ services:
         NEXT_PUBLIC_BASE_PATH: /aitools
     restart: unless-stopped
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     # Run multiple replicas for higher concurrency.
-    # Override at runtime with: docker compose up -d --scale app=4
-    deploy:
-      replicas: 2
+    # In Docker Compose, scale explicitly at runtime, for example:
+    # docker compose up -d --scale app=2
     environment:
-      MONGODB_URI: mongodb://mongo:27017/ai-qef
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongo:27017/${MONGO_INITDB_DATABASE:-ai-qef}?authSource=${MONGO_INITDB_DATABASE:-ai-qef}
+      NEXT_PUBLIC_BASE_PATH: /aitools
       AZURE_RESOURCE_NAME: ${AZURE_RESOURCE_NAME}
       AZURE_API_KEY: ${AZURE_API_KEY}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
@@ -35,6 +47,18 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       FLOWISE_API_URL: ${FLOWISE_API_URL}
       FLOWISE_API_KEY: ${FLOWISE_API_KEY}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const path=(process.env.NEXT_PUBLIC_BASE_PATH||'')+'/api/health';const req=http.get({host:'127.0.0.1',port:3000,path},res=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));req.setTimeout(5000,()=>{req.destroy();process.exit(1);});"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     # Not exposed to host; NGINX proxies traffic.
     # Uncomment to access directly for debugging:
     # ports:
@@ -45,7 +69,8 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
@@ -53,10 +78,17 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - certbot-www:/var/www/certbot:ro
       - certbot-certs:/etc/letsencrypt:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # ---------- Certbot (Let's Encrypt) ----------
   certbot:
     image: certbot/certbot
+    restart: unless-stopped
     volumes:
       - certbot-www:/var/www/certbot
       - certbot-certs:/etc/letsencrypt

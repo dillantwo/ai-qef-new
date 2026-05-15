@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Docker deployment
+
+1. Copy `.env.example` to `.env` and fill in the secrets.
+2. For first-time setup with a fresh database volume, start with `docker compose up -d --scale app=2`.
+3. If you are switching an existing unauthenticated Mongo volume to the new authenticated setup, reinitialize it with `docker compose down -v` or create the users manually before restart.
+
+The app container connects with the least-privileged Mongo user defined by `MONGO_APP_USERNAME` and `MONGO_APP_PASSWORD`.
+
 ## Getting Started
 
 First, run the development server:
