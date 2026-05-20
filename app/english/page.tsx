@@ -22,7 +22,7 @@ const topics = [
     description: "Learn to draft sincere thank-you letters with proper structure, tone, and polite expressions.",
     icon: Landmark,
     color: "#00d722",
-    available: false,
+    available: true,
   },
   {
     id: "reading-comprehension",
@@ -40,6 +40,11 @@ export default function EnglishPage() {
 
   function navigateToTopic(topicId: string, available: boolean) {
     if (!available) return;
+    if (topicId === "thank-you-letter") {
+      router.push("/english/thankyouletter");
+      return;
+    }
+
     router.push(`/english/dashboard?topic=${topicId}`);
   }
 

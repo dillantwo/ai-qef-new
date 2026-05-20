@@ -1,63 +1,62 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { ChatAvatar } from "@/components/ChatAvatar";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { ArrowUp, ImagePlus, MessageSquare, Mic, MicOff, PanelRight, Square, X } from "lucide-react";
+import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
 import { basePath } from "@/lib/utils";
 import { getMathChatHistoryItem, restoreUiMessages, serializeUiMessages, upsertMathChatHistory } from "@/lib/math-chat-history";
 
-interface SceneCube { x: number; y: number; z: number; color: string }
-interface VolumeSceneStateMessage {
-  tool: string;
-  cubeCount: number;
-  volume: number;
-  surfaceArea: number;
-  enclosedVolume: number;
-  poolVolume: number;
-  views: { top: number; front: number; side: number };
-  cubes: SceneCube[];
-  mode: string;
-  tool_active: string;
-}
+type Clock24HoursState = {
+  tool: "clock-24hrs";
+  currentTime: number;
+  displayTime: string;
+  periodLabel: string;
+  is24HDisplay: boolean;
+  show24Numbers: boolean;
+  snapTo5Min: boolean;
+  showAngle: boolean;
+  angleDegrees: number;
+  isDayTime: boolean;
+};
 
-const SUGGESTIONS = [
-  "現在這個立體有幾個方塊？體積是多少？",
-  "怎樣計算它的表面積？",
-  "把它當作水池，可以裝多少水？",
-  "三視圖看到的形狀有什麼不同？",
-];
+type ClockTimeDifferenceState = {
+  tool: "clock-time-difference";
+  startTime: number;
+  endTime: number;
+  startLabel: string;
+  endLabel: string;
+  is24H: boolean;
+  diffMinutes: number;
+  expectedHours: number;
+  expectedMinutes: number;
+  quizTargetDiff: number | null;
+  feedbackKind: "idle" | "correct" | "wrong";
+  showSteps: boolean;
+};
 
-function deriveBBox(cubes: SceneCube[]) {
-  if (cubes.length === 0) {
-    return {
-      minX: 0, minY: 0, minZ: 0,
-      maxX: 0, maxY: 0, maxZ: 0,
-      width: 0, height: 0, depth: 0,
-      bboxVolume: 0,
-    };
-  }
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-  for (const c of cubes) {
-    if (c.x < minX) minX = c.x; if (c.x > maxX) maxX = c.x;
-    if (c.y < minY) minY = c.y; if (c.y > maxY) maxY = c.y;
-    if (c.z < minZ) minZ = c.z; if (c.z > maxZ) maxZ = c.z;
-  }
-  const width = maxX - minX + 1;
-  const height = maxY - minY + 1;
-  const depth = maxZ - minZ + 1;
-  return {
-    minX, minY, minZ, maxX, maxY, maxZ,
-    width, height, depth,
-    bboxVolume: width * height * depth,
-  };
-}
+type ClockToolState = Clock24HoursState | ClockTimeDifferenceState;
+type ClockToolKey = ClockToolState["tool"];
+
+const SUGGESTIONS: Record<ClockToolState["tool"], string[]> = {
+  "clock-24hrs": [
+    "現在時鐘顯示的是什麼時間？你可以提示我怎樣看。",
+    "為什麼時針不是剛好指著某個數字？",
+    "AM/PM 和 24 小時制可以怎樣互相轉換？",
+    "這個角度可以怎樣一步步判斷？",
+  ],
+  "clock-time-difference": [
+    "我應該先看哪一個時間，再算相差多久？",
+    "如果分鐘不夠減，應該怎樣想借位？",
+    "這題要怎樣判斷是不是隔天？",
+    "你可以先檢查我的思路，不要直接告訴我答案嗎？",
+  ],
+};
 
 function fileToDataURL(file: File): Promise<string> {
   return new Promise((resolve) => {
@@ -67,7 +66,8 @@ function fileToDataURL(file: File): Promise<string> {
   });
 }
 
-export function VolumeChatPanel({
+export function ClockChatPanel({
+  selectedTool,
   sessionId,
   hasUserQuestion,
   question,
@@ -76,6 +76,7 @@ export function VolumeChatPanel({
   onNewChat,
   onHide,
 }: {
+  selectedTool: ClockToolKey;
   sessionId: string;
   hasUserQuestion: boolean;
   question?: string;
@@ -83,27 +84,32 @@ export function VolumeChatPanel({
   toolUrl?: string;
   onNewChat: () => void;
   onHide?: () => void;
-}) {
+} = { selectedTool: "clock-24hrs", sessionId: "clock-chat-default", hasUserQuestion: false, onNewChat: () => {} }) {
   const [input, setInput] = useState("");
   const [chatFiles, setChatFiles] = useState<File[]>([]);
+  const [clockState, setClockState] = useState<ClockToolState | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const stateRef = useRef<ClockToolState | null>(null);
+  const messageHistoryRef = useRef<Record<ClockToolKey, UIMessage[]>>({
+    "clock-24hrs": [],
+    "clock-time-difference": [],
+  });
+  const activeToolRef = useRef<ClockToolKey>(selectedTool);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const sceneRef = useRef<VolumeSceneStateMessage | null>(null);
-  const [cubeCount, setCubeCount] = useState(0);
 
-  // Listen for state updates posted from the embedded volume iframe.
   useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      const data = e.data;
+    function onMessage(event: MessageEvent) {
+      const data = event.data;
       if (!data || typeof data !== "object") return;
-      if (data.type !== "volume-app:state") return;
-      const payload = data.payload as VolumeSceneStateMessage | undefined;
+      if (data.type !== "clock-tool:state") return;
+      const payload = data.payload as ClockToolState | undefined;
       if (!payload) return;
-      sceneRef.current = payload;
-      setCubeCount(payload.cubeCount);
+      stateRef.current = payload;
+      setClockState(payload);
     }
+
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
@@ -111,32 +117,21 @@ export function VolumeChatPanel({
   const transport = useMemo(
     () =>
       new DefaultChatTransport<UIMessage>({
-        api: `${basePath}/api/volume-chat`,
-        prepareSendMessagesRequest: ({ messages, body }) => {
-          const p = sceneRef.current;
-          const sceneState = p
-            ? {
-                cubeCount: p.cubeCount,
-                volume: p.volume,
-                surfaceArea: p.surfaceArea,
-                enclosedVolume: p.enclosedVolume,
-                poolVolume: p.poolVolume,
-                views: p.views,
-                bbox: deriveBBox(p.cubes),
-                cubes: p.cubes,
-                mode: p.mode,
-                tool: p.tool_active,
-              }
-            : null;
-          return { body: { messages, sceneState, ...(body ?? {}) } };
-        },
+        api: `${basePath}/api/clock-chat`,
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: {
+            messages,
+            clockState: stateRef.current,
+            ...(body ?? {}),
+          },
+        }),
       }),
-    []
+    [],
   );
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport,
-    onError: (err) => console.error("[volume-chat] error:", err),
+    onError: (error) => console.error("[clock-chat] error:", error),
   });
 
   const isLoading = status === "submitted" || status === "streaming";
@@ -155,13 +150,19 @@ export function VolumeChatPanel({
       setMessages(saved ? restoreUiMessages(saved.messages) : []);
       setInput("");
       setChatFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     })();
 
     return () => {
       cancelled = true;
     };
   }, [sessionId, setMessages]);
+
+  useEffect(() => {
+    messageHistoryRef.current[activeToolRef.current] = messages;
+  }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0 || status === "streaming" || status === "submitted") {
@@ -175,44 +176,76 @@ export function VolumeChatPanel({
 
     void upsertMathChatHistory({
       id: sessionId,
-      kind: "volume-cubes",
-      title: firstUserText?.type === "text" ? `體積工具: ${firstUserText.text.slice(0, 30)}` : "體積工具對話",
+      kind: selectedTool,
+      title: firstUserText?.type === "text"
+        ? `${selectedTool === "clock-24hrs" ? "24小時時鐘" : "時間差時鐘"}: ${firstUserText.text.slice(0, 30)}`
+        : selectedTool === "clock-24hrs"
+          ? "24小時時鐘對話"
+          : "時間差時鐘對話",
       hasUserQuestion,
       question: hasUserQuestion ? question : undefined,
       type: hasUserQuestion ? type : undefined,
       toolUrl: hasUserQuestion ? toolUrl : undefined,
-      selectedTool: "volume-cubes",
+      selectedTool,
       entryMode: "ai-tool",
       messages: serializeUiMessages(messages),
       updatedAt: new Date().toISOString(),
     });
-  }, [hasUserQuestion, messages, question, sessionId, status, toolUrl, type]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
+  }, [hasUserQuestion, messages, question, selectedTool, sessionId, status, toolUrl, type]);
 
   useEffect(() => {
-    return () => { recognitionRef.current?.stop(); };
-  }, []);
-
-  function toggleVoice() {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+    if (selectedTool === activeToolRef.current) {
       return;
     }
-    if (isListening) { stopListening(); return; }
+
+    messageHistoryRef.current[activeToolRef.current] = messages;
+    activeToolRef.current = selectedTool;
+    setMessages(messageHistoryRef.current[selectedTool] ?? []);
+    setInput("");
+    setChatFiles([]);
+    setClockState(null);
+    stateRef.current = null;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    if (isListening) {
+      stopListening();
+    }
+  }, [isListening, messages, selectedTool, setMessages]);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }
+
+  function toggleVoice() {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      alert("您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。");
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
+
     const recognition = new SpeechRecognitionCtor();
-    recognition.lang = 'zh-HK';
+    recognition.lang = "zh-HK";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      let transcript = "";
+      for (let index = 0; index < event.results.length; index += 1) {
+        transcript += event.results[index][0].transcript;
       }
       setInput(transcript);
     };
@@ -223,28 +256,30 @@ export function VolumeChatPanel({
     setIsListening(true);
   }
 
-  function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) {
-      setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+  function handleChatFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (event.target.files) {
+      setChatFiles((prev) => [...prev, ...Array.from(event.target.files ?? [])]);
     }
   }
 
   function removeChatFile(index: number) {
-    setChatFiles((prev) => prev.filter((_, i) => i !== index));
+    setChatFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   }
 
-  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = e.clipboardData?.items;
+  function handlePaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = event.clipboardData?.items;
     if (!items) return;
+
     const imageFiles: File[] = [];
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith("image/")) {
-        const file = items[i].getAsFile();
+    for (let index = 0; index < items.length; index += 1) {
+      if (items[index].type.startsWith("image/")) {
+        const file = items[index].getAsFile();
         if (file) imageFiles.push(file);
       }
     }
+
     if (imageFiles.length === 0) return;
-    e.preventDefault();
+    event.preventDefault();
     setChatFiles((prev) => [...prev, ...imageFiles]);
   }
 
@@ -253,35 +288,45 @@ export function VolumeChatPanel({
     if (!value && chatFiles.length === 0) return;
     if (isLoading) return;
     if (isListening) stopListening();
+
     const fileParts = await Promise.all(
       chatFiles.map(async (file) => ({
         type: "file" as const,
         mediaType: file.type,
         filename: file.name,
         url: await fileToDataURL(file),
-      }))
+      })),
     );
+
     sendMessage({
       text: value || "（見圖片）",
       ...(fileParts.length > 0 ? { files: fileParts } : {}),
     });
+
     setInput("");
     setChatFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  const headerTitle = clockState?.tool === "clock-time-difference" ? "時鐘時間差 AI 助教" : "時鐘概念 AI 助教";
+  const headerMeta = !clockState
+    ? "等待時鐘工具同步目前狀態"
+    : clockState.tool === "clock-time-difference"
+      ? `目前題目：${clockState.startLabel} 到 ${clockState.endLabel}`
+      : `目前時間：${clockState.displayTime} ${clockState.periodLabel}`.trim();
+  const suggestions = clockState ? SUGGESTIONS[clockState.tool] : [];
+
   return (
-    <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">
-      {/* Header */}
+    <div className="relative flex min-h-0 w-[360px] shrink-0 flex-col bg-white/95">
       <div className="border-b border-[#d8d8d8] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ChatAvatar role="assistant" className="h-8 w-8 rounded-[4px]" />
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">
-                Volume tutor
+                Clock tutor
               </p>
-              <p className="text-sm font-semibold text-[#080808]">立體積木 AI 助教</p>
+              <p className="text-sm font-semibold text-[#080808]">{headerTitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -295,7 +340,7 @@ export function VolumeChatPanel({
             >
               New Chat
             </Button>
-            {onHide && (
+            {onHide ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -306,69 +351,107 @@ export function VolumeChatPanel({
               >
                 <PanelRight className="size-4" />
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
-        <p className="mt-1.5 text-[11px] text-[#6b7280]">場景中有 {cubeCount} 個方塊</p>
+        <p className="mt-1.5 text-[11px] text-[#6b7280]">{headerMeta}</p>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)] px-4 py-4">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-2 text-center">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-[#146ef5]/10 text-[#146ef5]">
               <MessageSquare size={20} />
             </div>
-            <p className="text-sm font-semibold text-[#080808]">問我關於這個立體的問題</p>
+            <p className="text-sm font-semibold text-[#080808]">問我關於目前時鐘的問題</p>
             <p className="text-[11px] text-[#6b7280]">
-              我會根據你目前放置的方塊，引導你思考體積、表面積或圍起來的空間。
+              我會根據你現在工具上的時間、模式和互動狀態，逐步提示你理解時鐘概念。
             </p>
             <div className="mt-2 flex w-full flex-col gap-1.5">
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((suggestion) => (
                 <button
-                  key={s}
+                  key={suggestion}
                   type="button"
-                  onClick={() => handleSend(s)}
+                  onClick={() => void handleSend(suggestion)}
                   className="rounded-md border border-[#d8d8d8] bg-white px-2.5 py-1.5 text-left text-[11px] text-[#080808] transition-colors hover:border-[#b9d3fb] hover:bg-[#f3f6fb]"
                 >
-                  {s}
+                  {suggestion}
                 </button>
               ))}
             </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))}
-            {isLoading && messages[messages.length - 1]?.role === "user" && (
-              <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                <ChatAvatar role="assistant" className="h-6 w-6 rounded-full" />
-                <span className="flex gap-0.5">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#146ef5]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#146ef5] [animation-delay:0.15s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#146ef5] [animation-delay:0.3s]" />
-                </span>
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-start gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                {message.role === "assistant" ? (
+                  <ChatAvatar role="assistant" className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]" />
+                ) : null}
+
+                <div
+                  className={`max-w-[85%] rounded-[8px] px-3 py-2 text-sm leading-relaxed shadow-[2px_2px_0px_#080808] ${
+                    message.role === "user"
+                      ? "bg-[#146ef5] text-white"
+                      : "border border-[#d8d8d8] bg-white text-[#080808]"
+                  }`}
+                >
+                  {message.parts.map((part, index) => {
+                    if (part.type === "text") {
+                      return message.role === "assistant" ? (
+                        <div
+                          key={`${message.id}-${index}`}
+                          className="prose prose-sm max-w-none prose-p:my-2 prose-li:my-1 prose-headings:my-2 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden"
+                        >
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                          >
+                            {part.text}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p key={`${message.id}-${index}`} className="whitespace-pre-wrap">
+                          {part.text}
+                        </p>
+                      );
+                    }
+
+                    if (part.type === "file" && part.mediaType?.startsWith("image/")) {
+                      return (
+                        <img
+                          key={`${message.id}-${index}`}
+                          src={part.url}
+                          alt={part.filename ?? "uploaded"}
+                          className="mt-2 max-h-48 rounded-[6px] border border-black/10 object-contain"
+                        />
+                      );
+                    }
+
+                    return null;
+                  })}
+                </div>
               </div>
-            )}
+            ))}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
-      {/* Composer */}
       <div className="border-t border-[#d8d8d8] bg-white px-3 py-3">
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSend();
           }}
         >
           <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
             {chatFiles.length > 0 && (
               <div className="flex flex-wrap gap-1.5 px-3 pt-2">
-                {chatFiles.map((file, i) => (
-                  <div key={i} className="relative group">
+                {chatFiles.map((file, index) => (
+                  <div key={`${file.name}-${index}`} className="group relative">
                     <img
                       src={URL.createObjectURL(file)}
                       alt={file.name}
@@ -376,7 +459,7 @@ export function VolumeChatPanel({
                     />
                     <button
                       type="button"
-                      onClick={() => removeChatFile(i)}
+                      onClick={() => removeChatFile(index)}
                       className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#080808] text-white opacity-0 transition-opacity group-hover:opacity-100"
                     >
                       <X className="size-2.5" />
@@ -388,11 +471,11 @@ export function VolumeChatPanel({
 
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSend();
                 }
               }}
               onPaste={handlePaste}
@@ -441,7 +524,7 @@ export function VolumeChatPanel({
                   )}
                 </Button>
                 {isListening && (
-                  <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>
+                  <span className="animate-pulse text-[11px] font-medium text-red-500">聆聽中…</span>
                 )}
               </div>
               <div className="flex items-center gap-1">
@@ -480,65 +563,6 @@ export function VolumeChatPanel({
           </div>
         </form>
       </div>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: UIMessage }) {
-  const isUser = message.role === "user";
-  const text = message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => (p as { text: string }).text)
-    .join("");
-  const imageParts = message.parts.filter(
-    (p): p is { type: "file"; mediaType: string; url: string; filename?: string } =>
-      p.type === "file" && (p as { mediaType?: string }).mediaType?.startsWith("image/") === true
-  );
-
-  return (
-    <div className={`flex items-start gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
-      {!isUser && (
-        <ChatAvatar
-          role="assistant"
-          className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
-        />
-      )}
-      <div
-        className={`prose prose-sm max-w-[85%] rounded-[8px] border px-3 py-2 text-sm leading-relaxed ${
-          isUser
-            ? "border-[#146ef5] bg-[#146ef5] text-white prose-invert"
-            : "border-[#d8d8d8] bg-white text-[#080808] prose-neutral"
-        }`}
-      >
-        {imageParts.length > 0 && (
-          <div className="not-prose mb-1.5 flex flex-wrap gap-1.5">
-            {imageParts.map((p, i) => (
-              <img
-                key={i}
-                src={p.url}
-                alt={p.filename ?? "uploaded image"}
-                className="max-h-[180px] max-w-[180px] rounded-[4px] border border-white/30 object-contain"
-              />
-            ))}
-          </div>
-        )}
-        {isUser ? (
-          <p className="whitespace-pre-wrap not-prose m-0">{text}</p>
-        ) : (
-          <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[[rehypeKatex, { strict: false }]]}
-          >
-            {text}
-          </ReactMarkdown>
-        )}
-      </div>
-      {isUser && (
-        <ChatAvatar
-          role="user"
-          className="h-8 w-8 rounded-[4px] border border-[#d8d8d8] bg-white"
-        />
-      )}
     </div>
   );
 }

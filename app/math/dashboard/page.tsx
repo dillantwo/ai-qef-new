@@ -18,12 +18,14 @@ import {
   Mic,
   MicOff,
   ImagePlus,
+  Save,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,14 @@ import { useToolbox, type ToolFromDB } from "@/contexts/ToolboxContext";
 import { basePath } from "@/lib/utils";
 import { DefaultChatTransport } from "ai";
 import { VolumeChatPanel } from "@/components/VolumeChatPanel";
+import { ClockChatPanel } from "@/components/ClockChatPanel";
+import { createMathChatId, restoreUiMessages, serializeUiMessages, type MathChatHistoryItem, upsertMathChatHistory } from "@/lib/math-chat-history";
+
+/** Strip $\text{...}$ wrappers so Chinese text renders as plain wrappable text. */
+function stripTextModeLatex(text: string): string {
+  // Replace $\text{content}$ with just content (handles one level of nested braces)
+  return text.replace(/\$\\text\{((?:[^{}]|\{[^{}]*\})*)\}\$/g, "$1");
+}
 
 interface ToolboxConfigFromDB {
   type: string;
@@ -39,6 +49,22 @@ interface ToolboxConfigFromDB {
   description: string;
   tools: ToolFromDB[];
   isActive: boolean;
+}
+
+type DashboardEntryMode = "question" | "ai-tool";
+
+interface SavedMessagePart {
+  type: "text" | "file";
+  text?: string;
+  url?: string;
+  mediaType?: string;
+  filename?: string;
+}
+
+interface SavedChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  parts: SavedMessagePart[];
 }
 
 export default function MathDashboardPage() {
@@ -55,11 +81,16 @@ function MathDashboardContent() {
   const toolbox = useToolbox();
 
   const [dashboardData, setDashboardData] = useState<{ type: string; question: string; imageData?: string } | null>(null);
+  const [entryMode, setEntryMode] = useState<DashboardEntryMode>("question");
+  const entryModeRef = useRef<DashboardEntryMode>("question");
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("dashboard-data");
-      if (raw) setDashboardData(JSON.parse(raw));
+      if (raw) {
+        setDashboardData(JSON.parse(raw));
+        setHasUserQuestion(true);
+      }
     } catch {}
   }, []);
 
@@ -68,7 +99,19 @@ function MathDashboardContent() {
   const questionImage = dashboardData?.imageData || null;
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
-    transport: new DefaultChatTransport({ api: `${basePath}/api/chat` }),
+    transport: new DefaultChatTransport({
+      api: `${basePath}/api/chat`,
+      prepareSendMessagesRequest: ({ id, messages, body, trigger, messageId }) => ({
+        body: {
+          ...body,
+          id,
+          messages,
+          trigger,
+          messageId,
+          mode: entryModeRef.current,
+        },
+      }),
+    }),
     onError: (error) => {
       console.error("[chat] Error:", error);
     },
@@ -79,6 +122,12 @@ function MathDashboardContent() {
   const [toolboxConfig, setToolboxConfig] = useState<ToolboxConfigFromDB | null>(null);
   const [allToolboxConfigs, setAllToolboxConfigs] = useState<ToolboxConfigFromDB[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [aiToolHtml, setAiToolHtml] = useState<string | null>(null);
+  const [aiToolTitle, setAiToolTitle] = useState<string | null>(null);
+  const [aiToolKey, setAiToolKey] = useState<string | null>(null);
+  const [hasSavedAiTool, setHasSavedAiTool] = useState(false);
+  const [isSavingAiTool, setIsSavingAiTool] = useState(false);
+  const [isGeneratingAiTool, setIsGeneratingAiTool] = useState(false);
   const [isExtractingParams, setIsExtractingParams] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -95,6 +144,16 @@ function MathDashboardContent() {
   const [questionPreviewSrc, setQuestionPreviewSrc] = useState<string | null>(null);
   const [isQuestionListening, setIsQuestionListening] = useState(false);
   const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [hasUserQuestion, setHasUserQuestion] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState(() => createMathChatId());
+  const [toolPreviewRefreshKey, setToolPreviewRefreshKey] = useState(0);
+  const suppressHistoryAnalysisRef = useRef(false);
+  const restoredToolUrlRef = useRef<string | null>(null);
+  const [toolChatSessionIds, setToolChatSessionIds] = useState<Record<"volume-cubes" | "clock-24hrs" | "clock-time-difference", string>>({
+    "volume-cubes": createMathChatId(),
+    "clock-24hrs": createMathChatId(),
+    "clock-time-difference": createMathChatId(),
+  });
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const questionFileInputRef = useRef<HTMLInputElement>(null);
   const questionRecognitionRef = useRef<SpeechRecognition | null>(null);
@@ -106,6 +165,56 @@ function MathDashboardContent() {
   const hideChatForTool = selectedTool === "journey-graph";
   const tools = toolboxConfig?.tools ?? [];
   const typeLabel = toolboxConfig?.label ?? type;
+
+  function isPreviewUrlForSelectedTool(url: string | null, toolKey: string | null) {
+    if (!url || !toolKey) return false;
+
+    const expectedPathByTool: Record<string, string> = {
+      "clock-24hrs": "/math/clock-24hrs",
+      "clock-time-difference": "/math/clock-time-difference",
+      "volume-cubes": "/math/volume",
+      "journey-graph": "/math/journey",
+      "fraction-addition": "/math/FractionApp-Addition.html",
+      "fraction-subtraction": "/math/FractionApp-Subtraction.html",
+      "fraction-multiplication": "/math/FractionApp-Multiplication.html",
+      "fraction-division": "/math/FractionApp-Division.html",
+      "fraction-expanding-simplifying": "/math/FractionApp-es.html",
+    };
+
+    const expectedPath = expectedPathByTool[toolKey] ?? "/math/preview.html";
+    return url.includes(expectedPath);
+  }
+
+  const handleNewChat = useCallback(() => {
+    if (
+      selectedTool === "volume-cubes" ||
+      selectedTool === "clock-24hrs" ||
+      selectedTool === "clock-time-difference"
+    ) {
+      setToolChatSessionIds((prev) => ({
+        ...prev,
+        [selectedTool]: createMathChatId(),
+      }));
+      setChatVisible(true);
+      return;
+    }
+
+    const currentStatus = statusRef.current;
+    if (currentStatus === "streaming" || currentStatus === "submitted") {
+      stopRef.current?.();
+    }
+
+    setCurrentChatId(createMathChatId());
+    setMessagesRef.current?.([]);
+    setInput("");
+    setChatFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setChatVisible(true);
+  }, [selectedTool]);
+
+  useEffect(() => {
+    entryModeRef.current = entryMode;
+  }, [entryMode]);
 
   // Fetch toolbox config from DB
   useEffect(() => {
@@ -134,7 +243,16 @@ function MathDashboardContent() {
   // Fetch AI-recommended tools
   const [recommendedToolKeys, setRecommendedToolKeys] = useState<string[]>([]);
   useEffect(() => {
-    if (!question || !toolboxConfig?.tools.length) return;
+    if (suppressHistoryAnalysisRef.current) {
+      setRecommendedToolKeys([]);
+      return;
+    }
+
+    if (!question || !toolboxConfig?.tools.length) {
+      setRecommendedToolKeys([]);
+      return;
+    }
+
     fetch(`${basePath}/api/recommend-tools`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -169,28 +287,31 @@ function MathDashboardContent() {
   // React to tool selection from sidebar
   useEffect(() => {
     if (!selectedTool) {
+      setIsExtractingParams(false);
       setPreviewUrl(null);
       return;
     }
 
-    // 直接連結到 HTML 的工具（不需要 AI 提取參數）
-    const staticHtmlMap: Record<string, string> = {
-      "clock-24hrs": "ClockApp1-24hrs.html",
-      "clock-time-difference": "ClockApp2-TimeDifference.html",
-    };
+    if (restoredToolUrlRef.current) {
+      const restoredToolUrl = restoredToolUrlRef.current;
+      restoredToolUrlRef.current = null;
+      suppressHistoryAnalysisRef.current = false;
+      setIsExtractingParams(false);
+      setPreviewUrl(restoredToolUrl);
+      return;
+    }
+
     // 直接連結到 Next.js route 的工具（同樣不需要 AI 提取參數）
     const staticRouteMap: Record<string, string> = {
+      "clock-24hrs": "/math/clock-24hrs",
+      "clock-time-difference": "/math/clock-time-difference",
       "volume-cubes": "/math/volume",
       "journey-graph": "/math/journey",
     };
     const staticRoute = staticRouteMap[selectedTool];
     if (staticRoute) {
+      setIsExtractingParams(false);
       setPreviewUrl(`${basePath}${staticRoute}`);
-      return;
-    }
-    const staticHtml = staticHtmlMap[selectedTool];
-    if (staticHtml) {
-      setPreviewUrl(`${basePath}/math/${staticHtml}`);
       return;
     }
 
@@ -202,7 +323,19 @@ function MathDashboardContent() {
     };
     const fractionOpHtml = fractionOpHtmlMap[selectedTool];
 
+    if (suppressHistoryAnalysisRef.current) {
+      setIsExtractingParams(false);
+      const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
+        ? `${basePath}/math/FractionApp-es.html`
+        : fractionOpHtml
+          ? `${basePath}/math/${fractionOpHtml}`
+          : `${basePath}/math/preview.html`;
+      setPreviewUrl(fallbackUrl);
+      return;
+    }
+
     if (!question) {
+      setIsExtractingParams(false);
       const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
         ? `${basePath}/math/FractionApp-es.html`
         : fractionOpHtml
@@ -213,6 +346,8 @@ function MathDashboardContent() {
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
     setPreviewUrl(null);
     setIsExtractingParams(true);
 
@@ -220,6 +355,7 @@ function MathDashboardContent() {
       try {
         const res = await fetch(`${basePath}/api/extract-params`, {
           method: "POST",
+          signal: controller.signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             question,
@@ -256,6 +392,7 @@ function MathDashboardContent() {
           qs.set("den2", String(params.den2 && params.den2 !== 0 ? params.den2 : 1));
           if (params.whole1 != null) qs.set("whole1", String(params.whole1));
           if (params.whole2 != null) qs.set("whole2", String(params.whole2));
+          if (params.questionTemplate) qs.set("context", params.questionTemplate);
           if (!cancelled) setPreviewUrl(`${basePath}/math/${fractionOpHtml}?${qs.toString()}`);
         } else {
           const qs = new URLSearchParams({
@@ -279,12 +416,17 @@ function MathDashboardContent() {
             : `${basePath}/math/preview.html`;
         if (!cancelled) setPreviewUrl(fallbackUrl);
       } finally {
+        window.clearTimeout(timeoutId);
         if (!cancelled) setIsExtractingParams(false);
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [selectedTool, question, questionImage]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [selectedTool, question, questionImage, toolPreviewRefreshKey]);
 
   // Auto-send the initial question to get AI response
   useEffect(() => {
@@ -340,7 +482,7 @@ function MathDashboardContent() {
     return () => { recognitionRef.current?.stop(); };
   }, []);
 
-  // Listen for "+ Add New Question" trigger from sidebar.
+  // Listen for sidebar entry actions.
   // Use refs so the deps array stays stable across renders (useChat's
   // setMessages/stop/status references can change between renders).
   const setMessagesRef = useRef(setMessages);
@@ -352,16 +494,40 @@ function MathDashboardContent() {
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { toolboxRef.current = toolbox; }, [toolbox]);
 
+  function serializeMessages(): SavedChatMessage[] {
+    return serializeUiMessages(messages);
+  }
+
+  function restoreMessages(savedMessages: SavedChatMessage[]) {
+    setMessages(restoreUiMessages(savedMessages));
+  }
+
   useEffect(() => {
-    function handleNewQuestion() {
+    function resetDashboard(mode: DashboardEntryMode) {
+      suppressHistoryAnalysisRef.current = false;
       try { sessionStorage.removeItem("dashboard-data"); } catch {}
       setDashboardData(null);
+      setHasUserQuestion(false);
+      setCurrentChatId(createMathChatId());
+      setEntryMode(mode);
+      setAiToolHtml(null);
+      setAiToolTitle(null);
+      setAiToolKey(null);
+      setHasSavedAiTool(false);
+      setIsSavingAiTool(false);
+      setIsGeneratingAiTool(false);
+      setPreviewUrl(null);
       hasSentInitial.current = false;
       setQuestionInput("");
       setQuestionFiles(null);
       if (questionFileInputRef.current) questionFileInputRef.current.value = "";
       setIsEditingQuestion(true);
-      toolboxRef.current?.setSelectedTool(null);
+      if (toolboxRef.current?.selectedTool === "volume-cubes" || toolboxRef.current?.selectedTool === "clock-24hrs" || toolboxRef.current?.selectedTool === "clock-time-difference") {
+        const specialTool = toolboxRef.current.selectedTool;
+        setToolChatSessionIds((prev) => ({ ...prev, [specialTool]: createMathChatId() }));
+      } else {
+        toolboxRef.current?.setSelectedTool(null);
+      }
       // Reset the AI chat — start a fresh session
       const s = statusRef.current;
       if (s === "streaming" || s === "submitted") stopRef.current?.();
@@ -369,9 +535,173 @@ function MathDashboardContent() {
       setInput("");
       setChatFiles([]);
     }
+    function handleNewQuestion() {
+      resetDashboard("question");
+    }
+    function handleNewAiTool() {
+      resetDashboard("ai-tool");
+    }
+    function handleLoadMathChat(event: Event) {
+      const customEvent = event as CustomEvent<{ item: MathChatHistoryItem }>;
+      const detail = customEvent.detail?.item;
+      if (!detail) return;
+
+      const s = statusRef.current;
+      if (s === "streaming" || s === "submitted") stopRef.current?.();
+
+      setChatVisible(true);
+      setIsExtractingParams(false);
+      setInput("");
+      setChatFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setQuestionInput("");
+      setQuestionFiles(null);
+      if (questionFileInputRef.current) questionFileInputRef.current.value = "";
+
+      if (detail.kind === "general") {
+        const nextType = detail.type ?? "fraction";
+        const nextQuestion = detail.question ?? detail.title;
+        const shouldRestoreQuestion = Boolean(detail.hasUserQuestion && detail.question);
+        restoredToolUrlRef.current = shouldRestoreQuestion ? detail.toolUrl ?? null : null;
+        suppressHistoryAnalysisRef.current = !shouldRestoreQuestion || Boolean(detail.toolUrl);
+        if (shouldRestoreQuestion) {
+          try {
+            sessionStorage.setItem("dashboard-data", JSON.stringify({ type: nextType, question: nextQuestion }));
+          } catch {}
+        } else {
+          try { sessionStorage.removeItem("dashboard-data"); } catch {}
+        }
+
+        setCurrentChatId(detail.id);
+        setDashboardData(shouldRestoreQuestion ? { type: nextType, question: nextQuestion } : null);
+        setHasUserQuestion(shouldRestoreQuestion);
+        setEntryMode(detail.entryMode === "ai-tool" ? "ai-tool" : "question");
+        setAiToolHtml(null);
+        setAiToolTitle(null);
+        setAiToolKey(null);
+        setPreviewUrl(null);
+        setToolPreviewRefreshKey((key) => key + 1);
+        hasSentInitial.current = true;
+        setIsEditingQuestion(false);
+        toolboxRef.current?.setSelectedTool(detail.selectedTool ?? null);
+        restoreMessages(detail.messages ?? []);
+        return;
+      }
+
+      const shouldRestoreQuestion = Boolean(detail.hasUserQuestion && detail.question);
+      restoredToolUrlRef.current = shouldRestoreQuestion ? detail.toolUrl ?? null : null;
+      suppressHistoryAnalysisRef.current = !shouldRestoreQuestion || Boolean(detail.toolUrl);
+      if (shouldRestoreQuestion) {
+        try {
+          sessionStorage.setItem("dashboard-data", JSON.stringify({ type: detail.type ?? "fraction", question: detail.question }));
+        } catch {}
+      } else {
+        try { sessionStorage.removeItem("dashboard-data"); } catch {}
+      }
+      setDashboardData(shouldRestoreQuestion ? { type: detail.type ?? "fraction", question: detail.question! } : null);
+      setHasUserQuestion(shouldRestoreQuestion);
+      setEntryMode("ai-tool");
+      setAiToolHtml(null);
+      setAiToolTitle(null);
+      setAiToolKey(null);
+      setPreviewUrl(null);
+      setToolPreviewRefreshKey((key) => key + 1);
+      hasSentInitial.current = true;
+      setIsEditingQuestion(false);
+      setMessagesRef.current?.([]);
+      toolboxRef.current?.setSelectedTool(detail.kind);
+      setToolChatSessionIds((prev) => ({ ...prev, [detail.kind]: detail.id }));
+    }
+    function handleLoadAiTool(event: Event) {
+      const customEvent = event as CustomEvent<{
+        toolKey: string;
+        title: string;
+        html: string;
+        chatMessages?: SavedChatMessage[];
+        chatMode?: DashboardEntryMode;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail) return;
+
+      try { sessionStorage.removeItem("dashboard-data"); } catch {}
+      setDashboardData(null);
+      setHasUserQuestion(false);
+      setEntryMode(detail.chatMode === "question" ? "question" : "ai-tool");
+      setAiToolHtml(detail.html);
+      setAiToolTitle(detail.title);
+      setAiToolKey(detail.toolKey);
+      setHasSavedAiTool(true);
+      setIsSavingAiTool(false);
+      setIsGeneratingAiTool(false);
+      setPreviewUrl(null);
+      hasSentInitial.current = false;
+      setQuestionInput("");
+      setQuestionFiles(null);
+      if (questionFileInputRef.current) questionFileInputRef.current.value = "";
+      setIsEditingQuestion(false);
+      toolboxRef.current?.setSelectedTool(null);
+      const s = statusRef.current;
+      if (s === "streaming" || s === "submitted") stopRef.current?.();
+      restoreMessages(detail.chatMessages ?? []);
+      setInput("");
+      setChatFiles([]);
+      setChatVisible(true);
+    }
+    function handleNewChatEvent() {
+      handleNewChat();
+    }
+    window.addEventListener("dashboard:new-chat", handleNewChatEvent);
     window.addEventListener("dashboard:new-question", handleNewQuestion);
-    return () => window.removeEventListener("dashboard:new-question", handleNewQuestion);
-  }, []);
+    window.addEventListener("dashboard:new-ai-tool", handleNewAiTool);
+    window.addEventListener("dashboard:load-math-chat", handleLoadMathChat);
+    window.addEventListener("dashboard:load-ai-tool", handleLoadAiTool);
+    return () => {
+      window.removeEventListener("dashboard:new-chat", handleNewChatEvent);
+      window.removeEventListener("dashboard:new-question", handleNewQuestion);
+      window.removeEventListener("dashboard:new-ai-tool", handleNewAiTool);
+      window.removeEventListener("dashboard:load-math-chat", handleLoadMathChat);
+      window.removeEventListener("dashboard:load-ai-tool", handleLoadAiTool);
+    };
+  }, [handleNewChat]);
+
+  useEffect(() => {
+    if (selectedTool === "volume-cubes" || selectedTool === "clock-24hrs" || selectedTool === "clock-time-difference") {
+      return;
+    }
+
+    if (!question && messages.length === 0) {
+      return;
+    }
+
+    const firstUserText = messages
+      .filter((message) => message.role === "user")
+      .flatMap((message) => message.parts)
+      .find((part) => part.type === "text" && part.text.trim().length > 0);
+
+    if (status === "streaming" || status === "submitted") {
+      return;
+    }
+
+    const canSaveToolUrl = isPreviewUrlForSelectedTool(previewUrl, selectedTool);
+
+    if (hasUserQuestion && selectedTool && !canSaveToolUrl) {
+      return;
+    }
+
+    void upsertMathChatHistory({
+      id: currentChatId,
+      kind: "general",
+      title: question || (firstUserText?.type === "text" ? firstUserText.text.slice(0, 40) : "數學對話"),
+      hasUserQuestion,
+      question: hasUserQuestion ? question : undefined,
+      type: hasUserQuestion ? type : undefined,
+      selectedTool,
+      toolUrl: hasUserQuestion && canSaveToolUrl ? previewUrl ?? undefined : undefined,
+      entryMode,
+      messages: serializeUiMessages(messages),
+      updatedAt: new Date().toISOString(),
+    });
+  }, [currentChatId, entryMode, hasUserQuestion, messages, previewUrl, question, selectedTool, status, type]);
 
   function fileToDataURL(file: File): Promise<string> {
     return new Promise((resolve) => {
@@ -379,6 +709,69 @@ function MathDashboardContent() {
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(file);
     });
+  }
+
+  async function regenerateAiTool(options: {
+    prompt: string;
+    imageData?: string;
+    currentHtml?: string | null;
+    currentTitle?: string | null;
+  }) {
+    setIsGeneratingAiTool(true);
+
+    try {
+      const res = await fetch(`${basePath}/api/generate-html`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: options.prompt,
+          imageData: options.imageData,
+          currentHtml: options.currentHtml,
+          currentTitle: options.currentTitle,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Generate HTML failed");
+
+      const json = await res.json();
+      setAiToolHtml(json.html ?? null);
+      setAiToolTitle(json.title ?? null);
+      setHasSavedAiTool(false);
+    } catch {
+      // Keep the current preview if regeneration fails.
+    } finally {
+      setIsGeneratingAiTool(false);
+    }
+  }
+
+  async function saveAiTool() {
+    if (!aiToolHtml || !aiToolTitle || isSavingAiTool) return;
+
+    setIsSavingAiTool(true);
+    try {
+      const res = await fetch(`${basePath}/api/html-content`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolKey: aiToolKey,
+          title: aiToolTitle,
+          html: aiToolHtml,
+          chatMessages: serializeMessages(),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Save failed");
+
+      const json = await res.json();
+      setAiToolKey(json.toolKey ?? null);
+      setHasSavedAiTool(true);
+      window.dispatchEvent(new CustomEvent("dashboard:ai-tool-saved"));
+      alert("工具已保存");
+    } catch {
+      alert("保存失敗，請稍後再試。");
+    } finally {
+      setIsSavingAiTool(false);
+    }
   }
 
   async function doSend() {
@@ -392,7 +785,10 @@ function MathDashboardContent() {
         url: await fileToDataURL(file),
       }))
     );
-    sendMessage({ text: input.trim() || "（見圖片）", ...(fileParts.length > 0 ? { files: fileParts } : {}) });
+    const prompt = input.trim() || "（見圖片）";
+
+    sendMessage({ text: prompt, ...(fileParts.length > 0 ? { files: fileParts } : {}) });
+
     setInput("");
     setChatFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -521,7 +917,50 @@ function MathDashboardContent() {
 
   async function submitQuestion() {
     if (!canSubmitQuestion) return;
+    suppressHistoryAnalysisRef.current = false;
     stopQuestionListening();
+
+    if (entryMode === "ai-tool") {
+      setIsClassifying(true);
+
+      try {
+        const prompt = questionInput.trim() || "（見圖片）";
+        const files = questionFiles
+          ? await Promise.all(
+              Array.from(questionFiles).map(async (file) => ({
+                type: "file" as const,
+                mediaType: file.type,
+                filename: file.name,
+                url: await questionFileToBase64(file),
+              }))
+            )
+          : [];
+        const imageData = files[0]?.url;
+
+        try { sessionStorage.removeItem("dashboard-data"); } catch {}
+        setDashboardData(null);
+        setHasUserQuestion(false);
+        setAiToolHtml(null);
+        setAiToolTitle(null);
+        toolbox?.setSelectedTool(null);
+        setMessages([]);
+        hasSentInitial.current = true;
+        setIsEditingQuestion(false);
+
+        sendMessage({ text: prompt, ...(files.length > 0 ? { files } : {}) });
+        await regenerateAiTool({ prompt, imageData });
+        setQuestionInput("");
+        setQuestionFiles(null);
+        if (questionFileInputRef.current) questionFileInputRef.current.value = "";
+      } catch {
+        setAiToolHtml(null);
+        setAiToolTitle(null);
+      } finally {
+        setIsClassifying(false);
+      }
+      return;
+    }
+
     setIsClassifying(true);
 
     try {
@@ -554,6 +993,7 @@ function MathDashboardContent() {
 
       // Allow the chat auto-send effect to fire with the new question
       hasSentInitial.current = false;
+      setHasUserQuestion(true);
       setDashboardData({ type: nextType, question: nextQuestion, imageData });
       setQuestionInput("");
       setQuestionFiles(null);
@@ -566,6 +1006,7 @@ function MathDashboardContent() {
         JSON.stringify({ type: "fraction", question: fallbackQuestion })
       );
       hasSentInitial.current = false;
+      setHasUserQuestion(true);
       setDashboardData({ type: "fraction", question: fallbackQuestion });
       setQuestionInput("");
       setQuestionFiles(null);
@@ -655,6 +1096,47 @@ function MathDashboardContent() {
               </div>
             </div>
           </>
+        ) : (isGeneratingAiTool || !!aiToolHtml) ? (
+          <div className="flex-1 overflow-auto bg-transparent p-4">
+            <div className="mx-auto flex h-full w-full flex-col rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] transition-all">
+              <div className="flex items-start justify-between gap-3 border-b border-[#d8d8d8] px-4 py-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">AI generated tool</p>
+                  <p className="text-sm font-semibold text-[#080808]">{aiToolTitle ?? "正在生成互動工具"}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={hasSavedAiTool ? "outline" : "default"}
+                  onClick={saveAiTool}
+                  disabled={!aiToolHtml || isSavingAiTool || isGeneratingAiTool}
+                  className={hasSavedAiTool
+                    ? "rounded-[4px] border-[#d8d8d8] bg-white text-[#080808] hover:bg-[#f7f7f7]"
+                    : "rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"}
+                >
+                  {isSavingAiTool ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  {hasSavedAiTool ? "已保存" : "保存"}
+                </Button>
+              </div>
+              {isGeneratingAiTool || !aiToolHtml ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[#5a5a5a]">
+                  <Loader2 className="size-8 animate-spin text-[#146ef5]" />
+                  <span className="text-sm font-medium">AI 正在根據你的要求生成 HTML 工具...</span>
+                </div>
+              ) : (
+                <iframe
+                  srcDoc={aiToolHtml}
+                  sandbox="allow-scripts"
+                  className="h-full min-h-0 w-full rounded-b-[8px]"
+                  title={aiToolTitle ?? "AI Generated HTML Tool"}
+                />
+              )}
+            </div>
+          </div>
         ) : (
           /* Placeholder when no tool selected */
           <div className="flex-1 overflow-y-auto p-6">
@@ -712,16 +1194,22 @@ function MathDashboardContent() {
                     <Sparkles className="size-7" />
                   </div>
                   <p className="text-lg font-semibold text-[#080808]">
-                    輸入題目讓 AI 為您解答，或直接從左側工具箱選擇工具開始練習
+                    {entryMode === "ai-tool"
+                      ? "輸入要求讓 AI 為你生成工具"
+                      : "輸入題目讓 AI 為您解答，或直接從左側工具箱選擇工具開始練習"}
                   </p>
                   <p className="mt-1.5 mb-7 text-sm text-[#5a5a5a]">
-                    部分工具可直接使用，無需輸入題目
+                    {entryMode === "ai-tool"
+                      ? "描述你想要的互動工具、玩法或學習目標"
+                      : "部分工具可直接使用，無需輸入題目"}
                   </p>
                 </>
               )}
               {(question || questionImage) && isEditingQuestion && (
                 <div className="mb-4 flex items-center justify-between w-full max-w-3xl">
-                  <p className="text-sm text-[#5a5a5a]">輸入新題目可重新分類</p>
+                  <p className="text-sm text-[#5a5a5a]">
+                    {entryMode === "ai-tool" ? "輸入新要求可重新生成工具" : "輸入新題目可重新分類"}
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
@@ -763,7 +1251,9 @@ function MathDashboardContent() {
 
                   <Textarea
                     ref={questionTextareaRef}
-                    placeholder="輸入數學題目，例如：3/4 + 1/2 = ?（可直接粘貼圖片）"
+                    placeholder={entryMode === "ai-tool"
+                      ? "輸入要求讓 AI 為你生成工具，例如：設計一個可以拖拉分數卡的互動練習（可直接粘貼圖片）"
+                      : "輸入數學題目，例如：3/4 + 1/2 = ?（可直接粘貼圖片）"}
                     value={questionInput}
                     onChange={(e) => setQuestionInput(e.target.value)}
                     onKeyDown={handleQuestionKeyDown}
@@ -861,7 +1351,9 @@ function MathDashboardContent() {
 
       {/* Right panel: AI Chat (narrower) */}
       {chatVisible && !hideChatForTool && (selectedTool === "volume-cubes" ? (
-        <VolumeChatPanel onHide={() => setChatVisible(false)} />
+        <VolumeChatPanel key={toolChatSessionIds["volume-cubes"]} sessionId={toolChatSessionIds["volume-cubes"]} hasUserQuestion={hasUserQuestion} question={question || undefined} type={type} toolUrl={previewUrl ?? undefined} onNewChat={handleNewChat} onHide={() => setChatVisible(false)} />
+      ) : selectedTool === "clock-24hrs" || selectedTool === "clock-time-difference" ? (
+        <ClockChatPanel key={`${selectedTool}-${toolChatSessionIds[selectedTool]}`} selectedTool={selectedTool} sessionId={toolChatSessionIds[selectedTool]} hasUserQuestion={hasUserQuestion} question={question || undefined} type={type} toolUrl={previewUrl ?? undefined} onNewChat={handleNewChat} onHide={() => setChatVisible(false)} />
       ) : (
         <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">
         <div className="border-b border-[#d8d8d8] px-4 py-3">
@@ -875,15 +1367,28 @@ function MathDashboardContent() {
                 <p className="text-sm font-semibold text-[#080808]">AI Chatbot</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setChatVisible(false)}
-              className="rounded-[4px]"
-              title="隱藏 AI 助手"
-            >
-              <PanelRight className="size-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleNewChat}
+                className="rounded-[4px] border border-transparent bg-[#146ef5] px-2.5 text-xs font-semibold text-white shadow-[0_6px_16px_rgba(20,110,245,0.28)] transition-all hover:bg-[#0055d4] hover:shadow-[0_8px_20px_rgba(0,85,212,0.34)]"
+                title="新建聊天"
+              >
+                New Chat
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setChatVisible(false)}
+                className="rounded-[4px]"
+                title="隱藏 AI 助手"
+              >
+                <PanelRight className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -897,15 +1402,16 @@ function MathDashboardContent() {
               }`}
             >
               {message.role === "assistant" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
-                  <Bot className="size-4" strokeWidth={2} />
-                </div>
+                <ChatAvatar
+                  role="assistant"
+                  className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
+                />
               )}
               <div
-                className={`prose prose-sm max-w-none max-w-[85%] rounded-[8px] border px-3 py-2 text-sm leading-relaxed ${
+                className={`min-w-0 max-w-[85%] rounded-[8px] px-3 py-2 text-sm leading-relaxed shadow-[2px_2px_0px_#080808] ${
                   message.role === "user"
-                    ? "border-[#146ef5] bg-[#146ef5] text-white prose-invert"
-                    : "border-[#d8d8d8] bg-white text-[#080808] prose-neutral"
+                    ? "bg-[#146ef5] text-white"
+                    : "border border-[#d8d8d8] bg-white text-[#080808]"
                 }`}
               >
                 {message.parts.some((p) => p.type === "file") && (
@@ -925,28 +1431,48 @@ function MathDashboardContent() {
                 {message.parts
                   .filter((part): part is { type: "text"; text: string } => part.type === "text")
                   .map((part, i) => (
-                    <ReactMarkdown
-                      key={i}
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[[rehypeKatex, { strict: false }]]}
-                    >
-                      {part.text}
-                    </ReactMarkdown>
+                    message.role === "assistant" ? (
+                      <div
+                        key={i}
+                        className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-words"
+                      >
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                        >
+                          {part.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div
+                        key={i}
+                        className="prose prose-sm w-full max-w-none break-words overflow-hidden prose-invert prose-p:my-1 [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex]:text-white [&_.katex-display]:overflow-y-hidden"
+                      >
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[[rehypeKatex, { strict: false }]]}
+                        >
+                          {stripTextModeLatex(part.text)}
+                        </ReactMarkdown>
+                      </div>
+                    )
                   ))}
               </div>
               {message.role === "user" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-[#d8d8d8] bg-[#f7f7f7] text-[#4f4f4f]">
-                  <User className="size-4" strokeWidth={2} />
-                </div>
+                <ChatAvatar
+                  role="user"
+                  className="h-8 w-8 rounded-[4px] border border-[#d8d8d8] bg-white"
+                />
               )}
             </div>
           ))}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex items-start gap-2 justify-start">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
-                <Bot className="size-4" strokeWidth={2} />
-              </div>
+              <ChatAvatar
+                role="assistant"
+                className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
+              />
               <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
                 <span className="animate-pulse">思考中...</span>
               </div>
@@ -984,7 +1510,7 @@ function MathDashboardContent() {
 
               <Textarea
                 ref={textareaRef}
-                placeholder="繼續提問...（可直接粘貼圖片）"
+                placeholder={entryMode === "ai-tool" ? "針對這個工具繼續提問...（可直接粘貼圖片）" : "繼續提問...（可直接粘貼圖片）"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}

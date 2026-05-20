@@ -76,6 +76,7 @@ const fractionOperation: Extractor = {
     operation: z.enum(["add", "sub", "mul", "div"]).describe("運算類型"),
     contextText: z.string().describe("題目情境描述（簡短）"),
     unit: z.string().describe("單位，如 L、kg、cm，沒有就留空"),
+    questionTemplate: z.string().describe("題目完整文字，將第一個分數替換為 [FRAC1]、第二個分數替換為 [FRAC2]，例如：[FRAC1] 的橙汁可以倒滿一杯，倒半杯需要多少橙汁？"),
   }),
   system: `你是一位數學題目參數提取專家。從題目中提取分數運算的參數。
 
@@ -86,6 +87,7 @@ const fractionOperation: Extractor = {
 - 如果題目是應用題，提取其中的數學運算部分
 - contextText 是題目的情境描述（例如「店員把橙汁倒進玻璃杯」），用於在練習工具中顯示
 - unit 是題目中使用的單位（例如 L、kg、cm），如果沒有單位就留空
+- questionTemplate 是題目的完整文字，但把第一個分數（含帶分數）替換成 [FRAC1]、第二個分數替換成 [FRAC2]；若題目只有一個分數，第二處用 [FRAC2] 佔位；例如原題「½ 的橙汁可以倒滿一杯，倒半杯需要多少橙汁？」→ 輸出「[FRAC1] 的橙汁可以倒滿一杯，倒半杯需要多少橙汁？」
 - 分母（den1, den2）不可為 0
 - 如果題目是圖片，請從圖片中識別題目`,
   buildUserMessage: ({ question, toolKey }) => {

@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
+import { ChatAvatar } from "@/components/ChatAvatar";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { ArrowUp, Bot, MessageSquare, Sparkles, Square, User, X } from "lucide-react";
+import { ArrowUp, MessageSquare, Sparkles, Square, X } from "lucide-react";
 import {
   computeBoundingBox,
   computeEnclosedVolume,
@@ -96,9 +97,7 @@ export function VolumeChat() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#d8d8d8] bg-[#f8fafc] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="grid h-7 w-7 place-items-center rounded-full bg-[#146ef5] text-white">
-            <Bot size={14} />
-          </div>
+          <ChatAvatar role="assistant" className="h-7 w-7 rounded-full" />
           <div>
             <div className="text-sm font-bold text-[#080808]">立體積木 AI 助教</div>
             <div className="text-[10px] text-[#6b7280]">場景中有 {cubeCount} 個方塊</div>
@@ -157,9 +156,7 @@ export function VolumeChat() {
             ))}
             {isLoading && messages[messages.length - 1]?.role === "user" && (
               <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-                <div className="grid h-6 w-6 place-items-center rounded-full bg-[#146ef5] text-white">
-                  <Bot size={12} />
-                </div>
+                <ChatAvatar role="assistant" className="h-6 w-6 rounded-full" />
                 <span className="flex gap-0.5">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#146ef5]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#146ef5] [animation-delay:0.15s]" />
@@ -223,13 +220,10 @@ function MessageBubble({ message }: { message: UIMessage }) {
 
   return (
     <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      <div
-        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${
-          isUser ? "bg-[#0f172a] text-white" : "bg-[#146ef5] text-white"
-        }`}
-      >
-        {isUser ? <User size={12} /> : <Bot size={12} />}
-      </div>
+      <ChatAvatar
+        role={isUser ? "user" : "assistant"}
+        className={`h-6 w-6 rounded-full ${isUser ? "border border-[#d8d8d8] bg-white" : ""}`}
+      />
       <div
         className={`min-w-0 max-w-[85%] overflow-hidden rounded-lg px-2.5 py-2 text-[12.5px] leading-relaxed ${
           isUser

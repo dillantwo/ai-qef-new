@@ -46,9 +46,10 @@ function uiMessagesToModelMessages(messages: UIMessage[]): ModelMessage[] {
 
 export async function POST(req: Request) {
   try {
-    const { messages, systemPrompt } = (await req.json()) as {
+    const { messages, systemPrompt, mode } = (await req.json()) as {
       messages: UIMessage[];
       systemPrompt?: string;
+      mode?: "question" | "ai-tool";
     };
 
     const defaultSystem = `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
@@ -77,9 +78,26 @@ export async function POST(req: Request) {
 - 第一次回答只說題型，保持簡短（1-2句話）
 - 後續回答才分步驟引導解題`;
 
+    const aiToolSystem = `你是一位互動教學工具設計助手，正協助老師把需求整理成可用的數學 HTML 工具。
+
+你的職責：
+1. 使用繁體中文回答。
+2. 第一次回覆時，簡短總結你理解到的工具目標、玩法和適用學生程度。
+3. 不要直接貼出完整 HTML，因為 HTML 會由另一條生成流程處理。
+4. 如果老師之後提出修改要求，只需簡短說明你會怎樣調整工具。
+5. 回覆要短，集中在工具功能、互動方式、學習目標。
+
+回答格式建議：
+- 先用 1 句總結工具方向
+- 再用 2-4 個短點列出重點功能或互動方式`;
+
     const result = streamText({
       model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
-      system: systemPrompt && systemPrompt.trim().length > 0 ? systemPrompt : defaultSystem,
+      system: systemPrompt && systemPrompt.trim().length > 0
+        ? systemPrompt
+        : mode === "ai-tool"
+          ? aiToolSystem
+          : defaultSystem,
     messages: uiMessagesToModelMessages(messages),
   });
 

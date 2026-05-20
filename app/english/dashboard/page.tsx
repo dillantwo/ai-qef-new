@@ -6,8 +6,6 @@ import { useChat } from "@ai-sdk/react";
 import {
   ArrowUp,
   Square,
-  Bot,
-  User,
   Monitor,
   Smartphone,
   BookOpen,
@@ -21,6 +19,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -310,9 +309,10 @@ function EnglishDashboardContent() {
               }`}
             >
               {message.role === "assistant" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
-                  <Bot className="size-4" strokeWidth={2} />
-                </div>
+                <ChatAvatar
+                  role="assistant"
+                  className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
+                />
               )}
               <div
                 className={`prose prose-sm max-w-none max-w-[85%] rounded-[8px] border px-3 py-2 text-sm leading-relaxed ${
@@ -348,18 +348,20 @@ function EnglishDashboardContent() {
                   ))}
               </div>
               {message.role === "user" && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-[#d8d8d8] bg-[#f7f7f7] text-[#4f4f4f]">
-                  <User className="size-4" strokeWidth={2} />
-                </div>
+                <ChatAvatar
+                  role="user"
+                  className="h-8 w-8 rounded-[4px] border border-[#d8d8d8] bg-white"
+                />
               )}
             </div>
           ))}
 
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex items-start gap-2 justify-start">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] bg-[#146ef5] text-white shadow-[2px_2px_0px_#080808]">
-                <Bot className="size-4" strokeWidth={2} />
-              </div>
+              <ChatAvatar
+                role="assistant"
+                className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
+              />
               <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
                 <span className="animate-pulse">Thinking...</span>
               </div>

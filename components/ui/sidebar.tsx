@@ -207,6 +207,7 @@ function Sidebar({
 
   return (
     <div
+      suppressHydrationWarning
       className="group peer hidden text-sidebar-foreground md:block"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
@@ -216,6 +217,7 @@ function Sidebar({
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
+        suppressHydrationWarning
         data-slot="sidebar-gap"
         className={cn(
           "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
@@ -227,6 +229,7 @@ function Sidebar({
         )}
       />
       <div
+        suppressHydrationWarning
         data-slot="sidebar-container"
         data-side={side}
         className={cn(

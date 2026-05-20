@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
   Square,
@@ -12,8 +11,8 @@ import {
   X,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
@@ -28,40 +27,21 @@ type ChatMsg = {
   images?: ChatImage[];
 };
 
-export default function ChineseDashboardPage() {
-  return (
-    <Suspense>
-      <ChineseDashboardContent />
-    </Suspense>
-  );
-}
+const TOPIC_ID = "thank-you-letter";
+const TOPIC_LABEL = "Thank-You Letter";
 
-function ChineseDashboardContent() {
-  const searchParams = useSearchParams();
-  const topic = searchParams.get("topic") || "";
-
-  const topicLabelMap: Record<string, string> = {
-    "lin-zexu": "學習林則徐",
-    "scenery-description": "景物描寫",
-    "character-description": "人物描寫",
-  };
-  const topicLabel = topicLabelMap[topic] || "中文科";
-
+export default function EnglishThankYouLetterChat() {
   const makeSessionId = useCallback(
     () =>
-      `chinese-${topic || "general"}-${
+      `english-${TOPIC_ID}-${
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : Math.random().toString(36).slice(2)
       }`,
-    [topic]
+    []
   );
-  const [sessionId, setSessionId] = useState<string>(() => makeSessionId());
-  // Reset session whenever topic changes.
-  useEffect(() => {
-    setSessionId(makeSessionId());
-  }, [makeSessionId]);
 
+  const [sessionId, setSessionId] = useState<string>(() => makeSessionId());
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [status, setStatus] = useState<"idle" | "submitted" | "streaming">("idle");
   const [input, setInput] = useState("");
@@ -75,6 +55,10 @@ function ChineseDashboardContent() {
 
   const isLoading = status === "submitted" || status === "streaming";
   const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
+
+  useEffect(() => {
+    setSessionId(makeSessionId());
+  }, [makeSessionId]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -92,19 +76,22 @@ function ChineseDashboardContent() {
   }, []);
 
   function toggleVoice() {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      alert("Your browser does not support voice input. Please use Chrome or Edge.");
       return;
     }
-    if (isListening) { stopListening(); return; }
+    if (isListening) {
+      stopListening();
+      return;
+    }
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
     const recognition = new SpeechRecognitionCtor();
-    recognition.lang = 'zh-HK';
+    recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = '';
+      let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
@@ -118,10 +105,11 @@ function ChineseDashboardContent() {
   }
 
   useEffect(() => {
-    return () => { recognitionRef.current?.stop(); };
+    return () => {
+      recognitionRef.current?.stop();
+    };
   }, []);
 
-  // Listen for "+ New Chat" trigger from sidebar — reset the chat session.
   useEffect(() => {
     function handleNewChat() {
       abortRef.current?.abort();
@@ -133,6 +121,7 @@ function ChineseDashboardContent() {
       setSessionId(makeSessionId());
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+
     window.addEventListener("dashboard:new-chat", handleNewChat);
     return () => window.removeEventListener("dashboard:new-chat", handleNewChat);
   }, [makeSessionId]);
@@ -157,7 +146,7 @@ function ChineseDashboardContent() {
       }))
     );
 
-    const userText = input.trim() || "（見圖片）";
+    const userText = input.trim() || "(see image)";
     const userMsg: ChatMsg = {
       id: `u-${Date.now()}`,
       role: "user",
@@ -180,21 +169,21 @@ function ChineseDashboardContent() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const payloadMessages = nextMessages.map((m) => ({
-      role: m.role,
-      text: m.text,
-      ...(m.images && m.images.length > 0
+    const payloadMessages = nextMessages.map((message) => ({
+      role: message.role,
+      text: message.text,
+      ...(message.images && message.images.length > 0
         ? {
-            images: m.images.map((img) => ({
-              mediaType: img.mediaType,
-              data: img.dataUrl,
+            images: message.images.map((image) => ({
+              mediaType: image.mediaType,
+              data: image.dataUrl,
             })),
           }
         : {}),
     }));
 
     try {
-      const res = await fetch(`${basePath}/api/chinese-chat`, {
+      const res = await fetch(`${basePath}/api/english-thank-you-letter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: payloadMessages, sessionId }),
@@ -204,10 +193,10 @@ function ChineseDashboardContent() {
       if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => "");
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsg.id
-              ? { ...m, text: `（出錯了）${errText || res.statusText}` }
-              : m
+          prev.map((message) =>
+            message.id === assistantMsg.id
+              ? { ...message, text: `(Error) ${errText || res.statusText}` }
+              : message
           )
         );
         setStatus("idle");
@@ -225,21 +214,17 @@ function ChineseDashboardContent() {
       let displayed = "";
       let streamDone = false;
       let rafId: number | null = null;
-      const CHARS_PER_TICK = 2; // tune for speed vs smoothness
+      const CHARS_PER_TICK = 2;
 
       const tick = () => {
         if (displayed.length < target.length) {
           const remaining = target.length - displayed.length;
-          // Catch up faster if we are far behind so we never lag too much.
-          const step = Math.max(
-            CHARS_PER_TICK,
-            Math.ceil(remaining / 30)
-          );
+          const step = Math.max(CHARS_PER_TICK, Math.ceil(remaining / 30));
           displayed = target.slice(0, displayed.length + step);
           const snapshot = displayed;
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsg.id ? { ...m, text: snapshot } : m
+            prev.map((message) =>
+              message.id === assistantMsg.id ? { ...message, text: snapshot } : message
             )
           );
         }
@@ -249,6 +234,7 @@ function ChineseDashboardContent() {
           rafId = null;
         }
       };
+
       rafId = requestAnimationFrame(tick);
 
       try {
@@ -265,10 +251,9 @@ function ChineseDashboardContent() {
           const waitForCatchUp = () => {
             if (displayed.length >= target.length) {
               if (rafId !== null) cancelAnimationFrame(rafId);
-              // Ensure final snapshot is rendered.
               setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMsg.id ? { ...m, text: target } : m
+                prev.map((message) =>
+                  message.id === assistantMsg.id ? { ...message, text: target } : message
                 )
               );
               resolve();
@@ -279,30 +264,32 @@ function ChineseDashboardContent() {
           waitForCatchUp();
         });
       }
-    } catch (err) {
-      if ((err as { name?: string })?.name !== "AbortError") {
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsg.id
+          prev.map((message) =>
+            message.id === assistantMsg.id
               ? {
-                  ...m,
-                  text: `（出錯了）${
-                    err instanceof Error ? err.message : String(err)
-                  }`,
+                  ...message,
+                  text:
+                    error instanceof Error ? `(Error) ${error.message}` : "(Error) Unknown error",
                 }
-              : m
+              : message
           )
         );
+      } else {
+        setMessages((prev) => prev.filter((message) => message.id !== assistantMsg.id || message.text));
       }
     } finally {
-      setStatus("idle");
       abortRef.current = null;
+      setStatus("idle");
     }
   }
 
   function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) {
-      setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    const files = e.target.files;
+    if (files) {
+      setChatFiles((prev) => [...prev, ...Array.from(files)]);
     }
   }
 
@@ -327,38 +314,35 @@ function ChineseDashboardContent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    doSend();
+    void doSend();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      doSend();
+      void doSend();
     }
   }
 
   return (
     <div className="flex flex-1 flex-col min-w-0 overflow-hidden bg-white">
-      {/* Header */}
       <div className="border-b border-[#d8d8d8] px-4 py-3 bg-white">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#146ef5] text-white">
             <MessageSquare className="size-4" />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">Chinese assistant</p>
-            <p className="text-sm font-semibold text-[#080808]">{topicLabel}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">English assistant</p>
+            <p className="text-sm font-semibold text-[#080808]">{TOPIC_LABEL}</p>
           </div>
         </div>
       </div>
 
-      {/* AI Chat */}
       <div className="flex flex-1 flex-col min-h-0 w-full">
-        {/* Chat messages */}
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
           {messages.length === 0 && (
             <div className="flex h-full items-center justify-center text-sm text-[#5a5a5a]">
-              開始與 AI 對話，學習{topicLabel}。
+              Start chatting with AI to practise {TOPIC_LABEL}.
             </div>
           )}
           {messages.map((message) => (
@@ -383,11 +367,11 @@ function ChineseDashboardContent() {
               >
                 {message.images && message.images.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
-                    {message.images.map((img, i) => (
+                    {message.images.map((image, index) => (
                       <img
-                        key={i}
-                        src={img.dataUrl}
-                        alt={img.filename ?? "uploaded image"}
+                        key={index}
+                        src={image.dataUrl}
+                        alt={image.filename ?? "uploaded image"}
                         className="max-w-[200px] max-h-[200px] rounded-[4px] border border-white/30 object-contain"
                       />
                     ))}
@@ -418,7 +402,7 @@ function ChineseDashboardContent() {
                     {message.text}
                   </ReactMarkdown>
                 ) : message.role === "assistant" ? (
-                  <span className="animate-pulse text-[#5a5a5a]">思考中...</span>
+                  <span className="animate-pulse text-[#5a5a5a]">Thinking...</span>
                 ) : null}
               </div>
               {message.role === "user" && (
@@ -437,22 +421,21 @@ function ChineseDashboardContent() {
                 className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
               />
               <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
-                <span className="animate-pulse">思考中...</span>
+                <span className="animate-pulse">Thinking...</span>
               </div>
             </div>
           )}
 
-          <div ref={messagesEndRef} />        </div>
+          <div ref={messagesEndRef} />
+        </div>
 
-        {/* Chat input */}
         <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
           <form onSubmit={handleSubmit}>
             <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
-              {/* Image preview thumbnails */}
               {chatFiles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 px-3 pt-2">
-                  {chatFiles.map((file, i) => (
-                    <div key={i} className="relative group">
+                  {chatFiles.map((file, index) => (
+                    <div key={index} className="relative group">
                       <img
                         src={URL.createObjectURL(file)}
                         alt={file.name}
@@ -460,7 +443,7 @@ function ChineseDashboardContent() {
                       />
                       <button
                         type="button"
-                        onClick={() => removeChatFile(i)}
+                        onClick={() => removeChatFile(index)}
                         className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#080808] text-white opacity-0 transition-opacity group-hover:opacity-100"
                       >
                         <X className="size-2.5" />
@@ -472,7 +455,7 @@ function ChineseDashboardContent() {
 
               <Textarea
                 ref={textareaRef}
-                placeholder="繼續提問...（可直接粘貼圖片）"
+                placeholder="Continue asking... (paste images directly)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -497,7 +480,7 @@ function ChineseDashboardContent() {
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
                     className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:border-[#898989] hover:bg-white"
-                    title="上傳圖片"
+                    title="Upload image"
                   >
                     <ImagePlus className="size-3.5 text-[#5a5a5a]" />
                   </Button>
@@ -508,15 +491,15 @@ function ChineseDashboardContent() {
                     onClick={toggleVoice}
                     className={`rounded-[4px] border bg-white transition-all hover:bg-white ${
                       isListening
-                        ? 'border-red-400 text-red-500 hover:border-red-500 hover:text-red-600'
-                        : 'border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]'
+                        ? "border-red-400 text-red-500 hover:border-red-500 hover:text-red-600"
+                        : "border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]"
                     }`}
-                    title={isListening ? '停止語音輸入' : '語音輸入'}
+                    title={isListening ? "Stop voice input" : "Voice input"}
                   >
                     {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-[#5a5a5a]" />}
                   </Button>
                   {isListening && (
-                    <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>
+                    <span className="text-[11px] font-medium text-red-500 animate-pulse">Listening...</span>
                   )}
                 </div>
                 {isLoading ? (
