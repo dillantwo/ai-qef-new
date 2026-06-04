@@ -49,7 +49,18 @@ export default function ChinesePage() {
 
   function navigateToTopic(topicId: string, available: boolean) {
     if (!available) return;
-    router.push(`/chinese/dashboard?topic=${topicId}`);
+    if (topicId === "scenery-description") {
+      router.push("/chinese/scenery");
+      return;
+    }
+    if (topicId === "character-description") {
+      router.push("/chinese/character");
+      return;
+    }
+    if (topicId === "lin-zexu") {
+      router.push("/chinese/lin-zexu");
+      return;
+    }
   }
 
   return (

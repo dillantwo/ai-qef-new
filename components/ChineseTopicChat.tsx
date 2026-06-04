@@ -9,13 +9,15 @@ import {
   ImagePlus,
   X,
   ChevronLeft,
-  Mail,
+  PenTool,
+  BookOpen,
   Sparkles,
   Copy,
   Check,
   Pin,
   PinOff,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,11 +28,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { basePath } from "@/lib/utils";
 import {
-  createEnglishChatId,
-  upsertEnglishChatHistory,
-  type EnglishChatHistoryItem,
+  createChineseChatId,
+  upsertChineseChatHistory,
+  type ChineseChatHistoryItem,
   type SavedChatMessage,
-} from "@/lib/english-chat-history";
+} from "@/lib/chinese-chat-history";
+
+export interface ChineseTopicConfig {
+  /** Stable identifier used for chat-history storage and load filtering. */
+  topicId: string;
+  /** Human-readable label shown in the header. */
+  topicLabel: string;
+  /** Prefix used when generating a session id. */
+  sessionPrefix: string;
+  /** API route this topic talks to (system prompt lives on the server). */
+  apiEndpoint: string;
+  /** Optional header icon name (defaults to "pen"). Passed as a string so the
+   *  config can cross the Server -> Client Component boundary. */
+  icon?: "pen" | "book";
+  /** Optional textarea placeholder. */
+  placeholder?: string;
+  /** Optional hint shown when the conversation is empty. */
+  emptyHint?: string;
+  /** Optional default title used for history entries. */
+  defaultTitle?: string;
+}
 
 type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
 type ChatMsg = {
@@ -40,23 +62,32 @@ type ChatMsg = {
   images?: ChatImage[];
 };
 
-const TOPIC_ID = "thank-you-letter";
-const TOPIC_LABEL = "Thank-You Letter";
-const SESSION_PREFIX = "english-thankyou";
-const API_ENDPOINT = "/api/english-thank-you-letter";
-const DEFAULT_TITLE = "Thank-You Letter Chat";
-const PLACEHOLDER = "Type your letter or question…";
-const EMPTY_HINT = "Start chatting with AI to practise your Thank-You Letter.";
+const ICON_MAP: Record<NonNullable<ChineseTopicConfig["icon"]>, LucideIcon> = {
+  pen: PenTool,
+  book: BookOpen,
+};
 
-export default function EnglishThankYouLetterChat() {
+export default function ChineseTopicChat({ config }: { config: ChineseTopicConfig }) {
+  const {
+    topicId,
+    topicLabel,
+    sessionPrefix,
+    apiEndpoint,
+    icon = "pen",
+    placeholder = "輸入你的作文或問題…",
+    emptyHint = `開始與 AI 對話，練習${config.topicLabel}。`,
+    defaultTitle = `${config.topicLabel}對話`,
+  } = config;
+  const HeaderIcon = ICON_MAP[icon];
+
   const makeSessionId = useCallback(
     () =>
-      `${SESSION_PREFIX}-${
+      `${sessionPrefix}-${
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : Math.random().toString(36).slice(2)
       }`,
-    []
+    [sessionPrefix]
   );
 
   const [sessionId, setSessionId] = useState<string>(() => makeSessionId());
@@ -65,7 +96,7 @@ export default function EnglishThankYouLetterChat() {
   const [input, setInput] = useState("");
   const [chatFiles, setChatFiles] = useState<File[]>([]);
   const [isListening, setIsListening] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState(() => createEnglishChatId());
+  const [currentChatId, setCurrentChatId] = useState(() => createChineseChatId());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [showPinned, setShowPinned] = useState(false);
@@ -123,7 +154,7 @@ export default function EnglishThankYouLetterChat() {
     setChatFiles([]);
     setStatus("idle");
     setSessionId(makeSessionId());
-    setCurrentChatId(createEnglishChatId());
+    setCurrentChatId(createChineseChatId());
     setPinnedIds([]);
     setShowPinned(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -137,8 +168,8 @@ export default function EnglishThankYouLetterChat() {
   // Listen for sidebar history item click
   useEffect(() => {
     function onLoadChat(event: Event) {
-      const detail = (event as CustomEvent<{ item: EnglishChatHistoryItem }>).detail?.item;
-      if (!detail || detail.topic !== TOPIC_ID) return;
+      const detail = (event as CustomEvent<{ item: ChineseChatHistoryItem }>).detail?.item;
+      if (!detail || detail.topic !== topicId) return;
       abortRef.current?.abort();
       abortRef.current = null;
       setCurrentChatId(detail.id);
@@ -158,9 +189,9 @@ export default function EnglishThankYouLetterChat() {
       setShowPinned(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-    window.addEventListener("english-chat:load", onLoadChat);
-    return () => window.removeEventListener("english-chat:load", onLoadChat);
-  }, []);
+    window.addEventListener("chinese-chat:load", onLoadChat);
+    return () => window.removeEventListener("chinese-chat:load", onLoadChat);
+  }, [topicId]);
 
   // Auto-save chat history
   useEffect(() => {
@@ -168,7 +199,7 @@ export default function EnglishThankYouLetterChat() {
     if (status === "streaming" || status === "submitted") return;
 
     const firstUserText = messages.find((m) => m.role === "user")?.text;
-    const title = firstUserText ? firstUserText.slice(0, 50) : DEFAULT_TITLE;
+    const title = firstUserText ? firstUserText.slice(0, 50) : defaultTitle;
 
     const savedMessages: SavedChatMessage[] = messages.map((m) => ({
       id: m.id,
@@ -179,14 +210,14 @@ export default function EnglishThankYouLetterChat() {
       ],
     }));
 
-    void upsertEnglishChatHistory({
+    void upsertChineseChatHistory({
       id: currentChatId,
       title,
-      topic: TOPIC_ID,
+      topic: topicId,
       messages: savedMessages,
       updatedAt: new Date().toISOString(),
     });
-  }, [currentChatId, messages, status]);
+  }, [currentChatId, messages, status, topicId, defaultTitle]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -199,14 +230,14 @@ export default function EnglishThankYouLetterChat() {
 
   function toggleVoice() {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Your browser does not support voice input. Please use Chrome or Edge.");
+      alert("您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。");
       return;
     }
     if (isListening) { stopListening(); return; }
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
     const recognition = new SpeechRecognitionCtor();
-    recognition.lang = "en-US";
+    recognition.lang = "zh-HK";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -247,7 +278,7 @@ export default function EnglishThankYouLetterChat() {
       }))
     );
 
-    const userText = input.trim() || "(see image)";
+    const userText = input.trim() || "（見圖片）";
     const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: "user", text: userText, ...(images.length > 0 ? { images } : {}) };
     const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
 
@@ -270,7 +301,7 @@ export default function EnglishThankYouLetterChat() {
     }));
 
     try {
-      const res = await fetch(`${basePath}${API_ENDPOINT}`, {
+      const res = await fetch(`${basePath}${apiEndpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: payloadMessages, sessionId }),
@@ -279,7 +310,7 @@ export default function EnglishThankYouLetterChat() {
 
       if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => "");
-        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: `(Error) ${errText || res.statusText}` } : m));
+        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: `（出錯了）${errText || res.statusText}` } : m));
         setStatus("idle");
         abortRef.current = null;
         return;
@@ -334,7 +365,7 @@ export default function EnglishThankYouLetterChat() {
       }
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
-        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: error instanceof Error ? `(Error) ${error.message}` : "(Error) Unknown error" } : m));
+        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: error instanceof Error ? `（出錯了）${error.message}` : "（出錯了）未知錯誤" } : m));
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== assistantMsg.id || m.text));
       }
@@ -375,24 +406,24 @@ export default function EnglishThankYouLetterChat() {
           <div className="flex items-center gap-1">
             <SidebarTrigger />
             <Link
-              href="/english"
+              href="/chinese"
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              返回英文科
+              返回中文科
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <Mail className="size-4 text-[#146ef5]" />
-            <span className="text-sm font-semibold text-[#080808]">{TOPIC_LABEL}</span>
+            <HeaderIcon className="size-4 text-[#146ef5]" />
+            <span className="text-sm font-semibold text-[#080808]">{topicLabel}</span>
           </div>
           <div className="flex items-center gap-2">
             {pinnedIds.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => setShowPinned((v) => !v)}
                 className={`rounded-full border-[#e5e5e5] px-3 text-xs font-medium transition-all hover:bg-[#f4f4f5] ${showPinned ? "text-[#146ef5] border-[#146ef5]/40" : "text-[#080808]"}`}
-                title={showPinned ? "Hide pinned" : "Show pinned"}>
+                title={showPinned ? "隱藏釘選" : "顯示釘選"}>
                 <Pin className="size-3.5" />
-                Pinned {pinnedIds.length}
+                釘選 {pinnedIds.length}
               </Button>
             )}
             <Button type="button" variant="outline" size="sm" onClick={handleNewChat}
@@ -408,7 +439,7 @@ export default function EnglishThankYouLetterChat() {
           <div className="w-full space-y-6">
           {messages.length === 0 && (
             <div className="flex h-full items-center justify-center text-sm text-[#9a9a9a]">
-              {EMPTY_HINT}
+              {emptyHint}
             </div>
           )}
           {messages.map((message) => (
@@ -434,7 +465,7 @@ export default function EnglishThankYouLetterChat() {
                       type="button"
                       onClick={() => handleCopy(message.id, message.text)}
                       className="group/copy relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]"
-                      aria-label="Copy message"
+                      aria-label="複製訊息"
                     >
                       {copiedId === message.id ? (
                         <Check className="size-4 text-[#16a34a]" />
@@ -442,14 +473,14 @@ export default function EnglishThankYouLetterChat() {
                         <Copy className="size-4" />
                       )}
                       <span className="pointer-events-none absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-md bg-[#080808] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover/copy:opacity-100">
-                        {copiedId === message.id ? "Copied" : "Copy message"}
+                        {copiedId === message.id ? "已複製" : "複製訊息"}
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => togglePin(message.id)}
                       className={`group/pin relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full transition-colors hover:bg-[#f4f4f5] ${pinnedIds.includes(message.id) ? "text-[#146ef5]" : "text-[#9a9a9a] hover:text-[#5a5a5a]"}`}
-                      aria-label={pinnedIds.includes(message.id) ? "Unpin" : "Pin message"}
+                      aria-label={pinnedIds.includes(message.id) ? "取消釘選" : "釘選訊息"}
                     >
                       {pinnedIds.includes(message.id) ? (
                         <PinOff className="size-4" />
@@ -457,7 +488,7 @@ export default function EnglishThankYouLetterChat() {
                         <Pin className="size-4" />
                       )}
                       <span className="pointer-events-none absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-md bg-[#080808] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover/pin:opacity-100">
-                        {pinnedIds.includes(message.id) ? "Unpin" : "Pin message"}
+                        {pinnedIds.includes(message.id) ? "取消釘選" : "釘選訊息"}
                       </span>
                     </button>
                   </div>
@@ -486,7 +517,7 @@ export default function EnglishThankYouLetterChat() {
                       type="button"
                       onClick={() => handleCopy(message.id, message.text)}
                       className="group/copy relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]"
-                      aria-label="Copy reply"
+                      aria-label="複製回覆"
                     >
                       {copiedId === message.id ? (
                         <Check className="size-4 text-[#16a34a]" />
@@ -494,7 +525,7 @@ export default function EnglishThankYouLetterChat() {
                         <Copy className="size-4" />
                       )}
                       <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#080808] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover/copy:opacity-100">
-                        {copiedId === message.id ? "Copied" : "Copy reply"}
+                        {copiedId === message.id ? "已複製" : "複製回覆"}
                       </span>
                     </button>
                   )}
@@ -503,7 +534,7 @@ export default function EnglishThankYouLetterChat() {
                       type="button"
                       onClick={() => togglePin(message.id)}
                       className={`group/pin relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full transition-colors hover:bg-[#f4f4f5] ${pinnedIds.includes(message.id) ? "text-[#146ef5]" : "text-[#9a9a9a] hover:text-[#5a5a5a]"}`}
-                      aria-label={pinnedIds.includes(message.id) ? "Unpin" : "Pin reply"}
+                      aria-label={pinnedIds.includes(message.id) ? "取消釘選" : "釘選回覆"}
                     >
                       {pinnedIds.includes(message.id) ? (
                         <PinOff className="size-4" />
@@ -511,7 +542,7 @@ export default function EnglishThankYouLetterChat() {
                         <Pin className="size-4" />
                       )}
                       <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#080808] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover/pin:opacity-100">
-                        {pinnedIds.includes(message.id) ? "Unpin" : "Pin reply"}
+                        {pinnedIds.includes(message.id) ? "取消釘選" : "釘選回覆"}
                       </span>
                     </button>
                   )}
@@ -548,21 +579,21 @@ export default function EnglishThankYouLetterChat() {
                   ))}
                 </div>
               )}
-              <Textarea ref={textareaRef} placeholder={PLACEHOLDER} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
+              <Textarea ref={textareaRef} placeholder={placeholder} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
                 className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0" />
               <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleChatFileChange} className="hidden" />
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <Button type="button" size="icon-sm" variant="ghost" onClick={() => fileInputRef.current?.click()}
-                    className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="Upload image">
+                    className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="上傳圖片">
                     <ImagePlus className="size-4" />
                   </Button>
                   <Button type="button" size="icon-sm" variant="ghost" onClick={toggleVoice}
                     className={`rounded-full transition-all ${isListening ? 'text-red-500 hover:bg-red-50' : 'text-[#5a5a5a] hover:bg-[#f4f4f5]'}`}
-                    title={isListening ? 'Stop voice input' : 'Voice input'}>
+                    title={isListening ? '停止語音輸入' : '語音輸入'}>
                     {isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
                   </Button>
-                  {isListening && <span className="text-[11px] font-medium text-red-500 animate-pulse">Listening…</span>}
+                  {isListening && <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>}
                 </div>
                 {isLoading ? (
                   <Button type="button" size="icon-sm" variant="default" className="rounded-full bg-[#146ef5] hover:bg-[#0055d4]" onClick={stop}><Square className="size-3" /></Button>
@@ -581,32 +612,32 @@ export default function EnglishThankYouLetterChat() {
           <div className="flex h-[57px] shrink-0 items-center justify-between border-b border-[#ededed] bg-white px-4">
             <div className="flex items-center gap-2">
               <Pin className="size-4 text-[#146ef5]" />
-              <span className="text-sm font-semibold text-[#080808]">Pinned messages</span>
+              <span className="text-sm font-semibold text-[#080808]">釘選的訊息</span>
             </div>
             <Button type="button" size="icon-sm" variant="ghost" onClick={() => setShowPinned(false)}
-              className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="Close">
+              className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="關閉">
               <X className="size-4" />
             </Button>
           </div>
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {pinnedMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center text-center text-xs text-[#9a9a9a]">
-                No pinned messages yet.<br />Click the pin icon below a message to add it.
+                還沒有釘選任何訊息。<br />點擊訊息下方的釘選圖示即可加入。
               </div>
             ) : (
               pinnedMessages.map((message) => (
                 <div key={message.id} className="group/pinned rounded-xl border border-[#ededed] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${message.role === "user" ? "bg-[#f4f4f5] text-[#5a5a5a]" : "bg-[#146ef5]/10 text-[#146ef5]"}`}>
-                      {message.role === "user" ? "You" : "AI"}
+                      {message.role === "user" ? "你" : "AI"}
                     </span>
                     <div className="flex items-center gap-0.5">
                       <button type="button" onClick={() => handleCopy(message.id, message.text)}
-                        className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="Copy">
+                        className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="複製">
                         {copiedId === message.id ? <Check className="size-3.5 text-[#16a34a]" /> : <Copy className="size-3.5" />}
                       </button>
                       <button type="button" onClick={() => togglePin(message.id)}
-                        className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="Unpin">
+                        className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="取消釘選">
                         <PinOff className="size-3.5" />
                       </button>
                     </div>

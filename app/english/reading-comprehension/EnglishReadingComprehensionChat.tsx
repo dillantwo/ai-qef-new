@@ -9,7 +9,7 @@ import {
   ImagePlus,
   X,
   ChevronLeft,
-  Mail,
+  BookOpen,
   Sparkles,
   Copy,
   Check,
@@ -26,6 +26,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { basePath } from "@/lib/utils";
 import {
+  READING_ROLES,
+  READING_ROLE_LABELS,
+  READING_COMPREHENSION_FULL_TEXT,
+  type ReadingRole,
+} from "@/lib/english-prompts";
+import {
   createEnglishChatId,
   upsertEnglishChatHistory,
   type EnglishChatHistoryItem,
@@ -40,15 +46,15 @@ type ChatMsg = {
   images?: ChatImage[];
 };
 
-const TOPIC_ID = "thank-you-letter";
-const TOPIC_LABEL = "Thank-You Letter";
-const SESSION_PREFIX = "english-thankyou";
-const API_ENDPOINT = "/api/english-thank-you-letter";
-const DEFAULT_TITLE = "Thank-You Letter Chat";
-const PLACEHOLDER = "Type your letter or question…";
-const EMPTY_HINT = "Start chatting with AI to practise your Thank-You Letter.";
+const TOPIC_ID = "reading-comprehension";
+const TOPIC_LABEL = "Reading Comprehension";
+const SESSION_PREFIX = "english-reading";
+const API_ENDPOINT = "/api/english-reading-comprehension";
+const DEFAULT_TITLE = "Reading Comprehension Chat";
+const PLACEHOLDER = "Type your answer or question…";
+const EMPTY_HINT = "Start chatting with AI to practise your Reading Comprehension.";
 
-export default function EnglishThankYouLetterChat() {
+export default function EnglishReadingComprehensionChat() {
   const makeSessionId = useCallback(
     () =>
       `${SESSION_PREFIX}-${
@@ -69,6 +75,7 @@ export default function EnglishThankYouLetterChat() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [showPinned, setShowPinned] = useState(false);
+  const [studentRole, setStudentRole] = useState<ReadingRole | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,6 +133,7 @@ export default function EnglishThankYouLetterChat() {
     setCurrentChatId(createEnglishChatId());
     setPinnedIds([]);
     setShowPinned(false);
+    setStudentRole(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [makeSessionId]);
 
@@ -235,6 +243,100 @@ export default function EnglishThankYouLetterChat() {
     });
   }
 
+  type PayloadMessage = {
+    role: "user" | "assistant";
+    text: string;
+    images?: { mediaType: string; data: string }[];
+  };
+
+  // Streams one assistant reply into a fresh placeholder message, given the
+  // full conversation payload to send to the API.
+  const streamAssistant = useCallback(
+    async (payloadMessages: PayloadMessage[], roleForRequest: ReadingRole | null) => {
+      const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setStatus("submitted");
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetch(`${basePath}${API_ENDPOINT}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: payloadMessages, sessionId, role: roleForRequest }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          const errText = await res.text().catch(() => "");
+          setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: `(Error) ${errText || res.statusText}` } : m));
+          setStatus("idle");
+          abortRef.current = null;
+          return;
+        }
+
+        setStatus("streaming");
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let target = "";
+        let displayed = "";
+        let streamDone = false;
+        let rafId: number | null = null;
+        const CHARS_PER_TICK = 2;
+
+        const tick = () => {
+          if (displayed.length < target.length) {
+            const remaining = target.length - displayed.length;
+            const step = Math.max(CHARS_PER_TICK, Math.ceil(remaining / 30));
+            displayed = target.slice(0, displayed.length + step);
+            const snapshot = displayed;
+            setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: snapshot } : m));
+          }
+          if (displayed.length < target.length || !streamDone) {
+            rafId = requestAnimationFrame(tick);
+          } else {
+            rafId = null;
+          }
+        };
+        rafId = requestAnimationFrame(tick);
+
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            if (chunk) target += chunk;
+          }
+        } finally {
+          streamDone = true;
+          await new Promise<void>((resolve) => {
+            const waitForCatchUp = () => {
+              if (displayed.length >= target.length) {
+                if (rafId !== null) cancelAnimationFrame(rafId);
+                setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: target } : m));
+                resolve();
+              } else {
+                requestAnimationFrame(waitForCatchUp);
+              }
+            };
+            waitForCatchUp();
+          });
+        }
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: error instanceof Error ? `(Error) ${error.message}` : "(Error) Unknown error" } : m));
+        } else {
+          setMessages((prev) => prev.filter((m) => m.id !== assistantMsg.id || m.text));
+        }
+      } finally {
+        abortRef.current = null;
+        setStatus("idle");
+      }
+    },
+    [sessionId]
+  );
+
   async function doSend() {
     if (!canSend) return;
     if (isListening) stopListening();
@@ -249,19 +351,14 @@ export default function EnglishThankYouLetterChat() {
 
     const userText = input.trim() || "(see image)";
     const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: "user", text: userText, ...(images.length > 0 ? { images } : {}) };
-    const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
 
     const nextMessages = [...messages, userMsg];
-    setMessages([...nextMessages, assistantMsg]);
+    setMessages(nextMessages);
     setInput("");
     setChatFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    setStatus("submitted");
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const payloadMessages = nextMessages.map((message) => ({
+    const payloadMessages: PayloadMessage[] = nextMessages.map((message) => ({
       role: message.role,
       text: message.text,
       ...(message.images && message.images.length > 0
@@ -269,80 +366,26 @@ export default function EnglishThankYouLetterChat() {
         : {}),
     }));
 
-    try {
-      const res = await fetch(`${basePath}${API_ENDPOINT}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: payloadMessages, sessionId }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => "");
-        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: `(Error) ${errText || res.statusText}` } : m));
-        setStatus("idle");
-        abortRef.current = null;
-        return;
-      }
-
-      setStatus("streaming");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let target = "";
-      let displayed = "";
-      let streamDone = false;
-      let rafId: number | null = null;
-      const CHARS_PER_TICK = 2;
-
-      const tick = () => {
-        if (displayed.length < target.length) {
-          const remaining = target.length - displayed.length;
-          const step = Math.max(CHARS_PER_TICK, Math.ceil(remaining / 30));
-          displayed = target.slice(0, displayed.length + step);
-          const snapshot = displayed;
-          setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: snapshot } : m));
-        }
-        if (displayed.length < target.length || !streamDone) {
-          rafId = requestAnimationFrame(tick);
-        } else {
-          rafId = null;
-        }
-      };
-      rafId = requestAnimationFrame(tick);
-
-      try {
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          if (chunk) target += chunk;
-        }
-      } finally {
-        streamDone = true;
-        await new Promise<void>((resolve) => {
-          const waitForCatchUp = () => {
-            if (displayed.length >= target.length) {
-              if (rafId !== null) cancelAnimationFrame(rafId);
-              setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: target } : m));
-              resolve();
-            } else {
-              requestAnimationFrame(waitForCatchUp);
-            }
-          };
-          waitForCatchUp();
-        });
-      }
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        setMessages((prev) => prev.map((m) => m.id === assistantMsg.id ? { ...m, text: error instanceof Error ? `(Error) ${error.message}` : "(Error) Unknown error" } : m));
-      } else {
-        setMessages((prev) => prev.filter((m) => m.id !== assistantMsg.id || m.text));
-      }
-    } finally {
-      abortRef.current = null;
-      setStatus("idle");
-    }
+    await streamAssistant(payloadMessages, studentRole);
   }
+
+  // Agent kick-off: the student picks a role, then clicks "開始對話". We first
+  // show the full reading text as a pinnable message, then the AI opens the
+  // reciprocal-reading discussion. The starter turn is sent to the API but not
+  // shown as a student bubble.
+  const handleStart = useCallback(async () => {
+    if (!studentRole || messages.length > 0 || isLoading) return;
+    const fullTextMsg: ChatMsg = {
+      id: `a-fulltext-${Date.now()}`,
+      role: "assistant",
+      text: READING_COMPREHENSION_FULL_TEXT,
+    };
+    setMessages([fullTextMsg]);
+    await streamAssistant(
+      [{ role: "user", text: "Let's begin our reading discussion." }],
+      studentRole
+    );
+  }, [studentRole, messages.length, isLoading, streamAssistant]);
 
   function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
@@ -383,7 +426,7 @@ export default function EnglishThankYouLetterChat() {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <Mail className="size-4 text-[#146ef5]" />
+            <BookOpen className="size-4 text-[#146ef5]" />
             <span className="text-sm font-semibold text-[#080808]">{TOPIC_LABEL}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -407,8 +450,21 @@ export default function EnglishThankYouLetterChat() {
         <div className={`flex-1 px-4 py-6 min-h-0 bg-white ${messages.length > 0 ? "overflow-y-auto" : "overflow-hidden"}`}>
           <div className="w-full space-y-6">
           {messages.length === 0 && (
-            <div className="flex h-full items-center justify-center text-sm text-[#9a9a9a]">
-              {EMPTY_HINT}
+            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+              <p className="max-w-sm text-sm text-[#9a9a9a]">{EMPTY_HINT}</p>
+              <Button
+                type="button"
+                onClick={() => void handleStart()}
+                disabled={!studentRole || isLoading}
+                className="rounded-full bg-[#146ef5] px-6 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,110,245,0.3)] transition-all hover:bg-[#0055d4] disabled:bg-[#d8d8d8] disabled:shadow-none"
+              >
+                開始對話
+              </Button>
+              <p className="text-xs text-[#b5b5b5]">
+                {studentRole
+                  ? `你的角色：${READING_ROLE_LABELS[studentRole]}`
+                  : "請先在下方輸入框選擇你的角色"}
+              </p>
             </div>
           )}
           {messages.map((message) => (
@@ -536,6 +592,43 @@ export default function EnglishThankYouLetterChat() {
         <div className="px-4 pb-4 bg-white">
           <form onSubmit={handleSubmit} className="w-full">
             <div className="relative w-full rounded-2xl border border-[#e5e5e5] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+              {/* Role selector: student picks one role, AI plays the other two */}
+              <div className="flex flex-wrap items-center gap-2 border-b border-[#f0f0f0] px-3 py-2">
+                <span className="text-[11px] font-medium text-[#9a9a9a]">My role:</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {READING_ROLES.map((role) => {
+                    const active = studentRole === role;
+                    const locked = messages.length > 0;
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        disabled={locked && !active}
+                        onClick={() => {
+                          if (locked) return;
+                          setStudentRole((prev) => (prev === role ? null : role));
+                        }}
+                        aria-pressed={active}
+                        title={locked ? "Start a New Chat to change your role" : undefined}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                          active
+                            ? "border-[#146ef5] bg-[#146ef5] text-white shadow-[0_2px_8px_rgba(20,110,245,0.25)]"
+                            : locked
+                            ? "cursor-not-allowed border-[#eee] bg-white text-[#cfcfcf]"
+                            : "border-[#e5e5e5] bg-white text-[#5a5a5a] hover:border-[#146ef5]/40 hover:text-[#146ef5]"
+                        }`}
+                      >
+                        {READING_ROLE_LABELS[role]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="ml-auto text-[11px] text-[#b5b5b5]">
+                  {studentRole
+                    ? `AI plays the other ${READING_ROLES.length - 1} roles`
+                    : "Pick a role to start"}
+                </span>
+              </div>
               {chatFiles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 px-3 pt-2">
                   {chatFiles.map((file, i) => (

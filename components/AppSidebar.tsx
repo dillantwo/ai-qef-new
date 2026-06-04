@@ -41,6 +41,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { basePath } from "@/lib/utils";
 import { deleteMathChatHistoryItem, getMathChatHistory, type MathChatHistoryItem } from "@/lib/math-chat-history";
+import { getEnglishChatHistory, deleteEnglishChatHistoryItem, type EnglishChatHistoryItem } from "@/lib/english-chat-history";
+import { getChineseChatHistory, deleteChineseChatHistoryItem, type ChineseChatHistoryItem } from "@/lib/chinese-chat-history";
 
 interface SavedMessagePart {
   type: "text" | "file";
@@ -129,7 +131,11 @@ export function AppSidebar() {
   const question = toolbox?.question ?? "";
   const recommendedToolKeys = toolbox?.recommendedToolKeys ?? [];
   const isMathDashboard = pathname.startsWith('/math/dashboard');
-  const isChineseDashboard = pathname.startsWith('/chinese/dashboard');
+  const isChineseScenery = pathname.startsWith('/chinese/scenery');
+  const isChineseCharacter = pathname.startsWith('/chinese/character');
+  const isChineseLinZexu = pathname.startsWith('/chinese/lin-zexu');
+  const isChineseWriting = isChineseScenery || isChineseCharacter || isChineseLinZexu;
+  const isEnglishDashboard = pathname.startsWith('/english/dashboard') || pathname.startsWith('/english/thankyouletter') || pathname.startsWith('/english/reading-comprehension');
   const isTeacher = user?.role === "teacher";
   const isStudent = user?.role === "student";
 
@@ -144,6 +150,8 @@ export function AppSidebar() {
     updatedAt?: string;
   }>>([]);
   const [mathChatHistory, setMathChatHistory] = useState<MathChatHistoryItem[]>([]);
+  const [englishChatHistory, setEnglishChatHistory] = useState<EnglishChatHistoryItem[]>([]);
+  const [chineseChatHistory, setChineseChatHistory] = useState<ChineseChatHistoryItem[]>([]);
 
   const fetchSavedAiTools = useCallback(() => {
     if (!isMathDashboard || (!isTeacher && !isStudent)) return;
@@ -207,6 +215,49 @@ export function AppSidebar() {
   }, [isMathDashboard]);
 
   useEffect(() => {
+    if (!isEnglishDashboard) return;
+
+    // Determine topic based on current path
+    const englishTopic = pathname.startsWith('/english/thankyouletter')
+      ? 'thank-you-letter'
+      : pathname.startsWith('/english/reading-comprehension')
+      ? 'reading-comprehension'
+      : 'location-direction';
+
+    async function refreshEnglishChatHistory() {
+      setEnglishChatHistory(await getEnglishChatHistory(englishTopic));
+    }
+
+    void refreshEnglishChatHistory();
+    function handleChange() {
+      void refreshEnglishChatHistory();
+    }
+    window.addEventListener("english-chat-history:changed", handleChange);
+    return () => window.removeEventListener("english-chat-history:changed", handleChange);
+  }, [isEnglishDashboard, pathname]);
+
+  useEffect(() => {
+    if (!isChineseWriting) return;
+
+    const chineseTopic = pathname.startsWith('/chinese/character')
+      ? 'character-description'
+      : pathname.startsWith('/chinese/lin-zexu')
+      ? 'lin-zexu'
+      : 'scenery-description';
+
+    async function refreshChineseChatHistory() {
+      setChineseChatHistory(await getChineseChatHistory(chineseTopic));
+    }
+
+    void refreshChineseChatHistory();
+    function handleChange() {
+      void refreshChineseChatHistory();
+    }
+    window.addEventListener("chinese-chat-history:changed", handleChange);
+    return () => window.removeEventListener("chinese-chat-history:changed", handleChange);
+  }, [isChineseWriting, pathname]);
+
+  useEffect(() => {
     function handleAiToolSaved() {
       fetchSavedAiTools();
     }
@@ -246,7 +297,7 @@ export function AppSidebar() {
         </Link>
         <Button
           className={`mt-4 w-full ${
-            isChineseDashboard
+            isChineseWriting || isEnglishDashboard
               ? 'bg-[#146ef5] text-white hover:bg-[#0055d4]'
               : ''
           }`}
@@ -258,14 +309,14 @@ export function AppSidebar() {
             window.dispatchEvent(new CustomEvent('dashboard:new-question'));
             return;
           }
-          // On the chinese dashboard, signal "new chat" to reset the chatbot.
-          if (subject === 'chinese' && isChineseDashboard) {
+          // On the chinese or english dashboard, signal "new chat" to reset the chatbot.
+          if ((subject === 'chinese' && isChineseWriting) || (subject === 'english' && isEnglishDashboard)) {
             window.dispatchEvent(new CustomEvent('dashboard:new-chat'));
             return;
           }
           router.push(`/${subject}`);
         }}>
-          {isChineseDashboard ? '+ New Chat' : '+ Add New Question'}
+          {isChineseWriting || isEnglishDashboard ? '+ New Chat' : '+ Add New Question'}
         </Button>
         {isMathDashboard && isTeacher && (
           <Button
@@ -341,6 +392,112 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {/* English Chat History — inline in sidebar */}
+        {isEnglishDashboard && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-1.5">
+              <Clock className="size-3.5" />
+              聊天記錄
+            </SidebarGroupLabel>
+            {englishChatHistory.length > 0 ? (
+              <div className="space-y-0.5 px-1">
+                {englishChatHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                  >
+                    <button
+                      className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("english-chat:load", { detail: { item } }));
+                      }}
+                    >
+                      <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium leading-snug line-clamp-2">
+                          {item.title}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {item.selectedTask ? `Task ${item.selectedTask}` : "General"}
+                          {" · "}
+                          {new Date(item.updatedAt).toLocaleString("zh-HK")}
+                        </p>
+                      </div>
+                    </button>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      className="mt-0.5 shrink-0 rounded-[4px] text-muted-foreground hover:bg-[#fee2e2] hover:text-[#b91c1c]"
+                      title="刪除記錄"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteEnglishChatHistoryItem(item.id);
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground px-3 py-2">暫無記錄</p>
+            )}
+          </SidebarGroup>
+        )}
+
+        {/* Chinese Chat History — inline in sidebar */}
+        {isChineseWriting && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center gap-1.5">
+              <Clock className="size-3.5" />
+              聊天記錄
+            </SidebarGroupLabel>
+            {chineseChatHistory.length > 0 ? (
+              <div className="space-y-0.5 px-1">
+                {chineseChatHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                  >
+                    <button
+                      className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("chinese-chat:load", { detail: { item } }));
+                      }}
+                    >
+                      <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium leading-snug line-clamp-2">
+                          {item.title}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(item.updatedAt).toLocaleString("zh-HK")}
+                        </p>
+                      </div>
+                    </button>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      className="mt-0.5 shrink-0 rounded-[4px] text-muted-foreground hover:bg-[#fee2e2] hover:text-[#b91c1c]"
+                      title="刪除記錄"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteChineseChatHistoryItem(item.id);
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground px-3 py-2">暫無記錄</p>
+            )}
           </SidebarGroup>
         )}
       </SidebarContent>
@@ -429,16 +586,16 @@ export function AppSidebar() {
             }
           >
             <Clock className="size-3.5" />
-            歷史記錄
+            {isEnglishDashboard ? "分享記錄" : "歷史記錄"}
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
             <SheetHeader className="px-4 pt-4 pb-2">
               <SheetTitle className="flex items-center gap-2 text-sm">
                 <Clock className="size-4" />
-                歷史記錄
+                {isEnglishDashboard ? "分享記錄" : "歷史記錄"}
               </SheetTitle>
               <SheetDescription className="text-xs">
-                過去的提問記錄
+                {isEnglishDashboard ? "過去的聊天分享記錄" : "過去的提問記錄"}
               </SheetDescription>
             </SheetHeader>
             <Separator />

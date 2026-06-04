@@ -31,7 +31,7 @@ const topics = [
     description: "Strengthen reading skills through guided passages, key idea spotting, and inference practice.",
     icon: Compass,
     color: "#ff6b00",
-    available: false,
+    available: true,
   },
 ];
 
@@ -42,6 +42,10 @@ export default function EnglishPage() {
     if (!available) return;
     if (topicId === "thank-you-letter") {
       router.push("/english/thankyouletter");
+      return;
+    }
+    if (topicId === "reading-comprehension") {
+      router.push("/english/reading-comprehension");
       return;
     }
 

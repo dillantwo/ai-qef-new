@@ -1,11 +1,24 @@
 import { azure } from "@ai-sdk/azure";
 import { streamText } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
-import { ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT } from "@/lib/english-prompts";
+import {
+  CHINESE_CHARACTER_DESCRIPTION_SYSTEM_PROMPT,
+  CHINESE_LIN_ZEXU_SYSTEM_PROMPT,
+  CHINESE_SCENERY_DESCRIPTION_SYSTEM_PROMPT,
+} from "@/lib/chinese-prompts";
 import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
 import { TokenUsage } from "@/models/TokenUsage";
+
+// Each Chinese writing topic shares the same Azure-backed chat pipeline and
+// only differs by its system prompt. Add a new topic by extending this map and
+// creating a matching page that points at /api/chinese-topic/<topic>.
+const TOPIC_PROMPTS: Record<string, string> = {
+  "lin-zexu": CHINESE_LIN_ZEXU_SYSTEM_PROMPT,
+  scenery: CHINESE_SCENERY_DESCRIPTION_SYSTEM_PROMPT,
+  character: CHINESE_CHARACTER_DESCRIPTION_SYSTEM_PROMPT,
+};
 
 type InputImage = {
   mediaType: string;
@@ -65,8 +78,22 @@ function toModelMessages(messages: InputMessage[]): ModelMessage[] {
   });
 }
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ topic: string }> }
+) {
+  const { topic } = await params;
+  const endpoint = `/api/chinese-topic/${topic}`;
+
   try {
+    const systemPrompt = TOPIC_PROMPTS[topic];
+    if (!systemPrompt) {
+      return new Response(
+        JSON.stringify({ error: `Unknown topic: ${topic}` }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { messages } = (await req.json()) as { messages: InputMessage[] };
 
     const session = await getSession().catch(() => null);
@@ -74,7 +101,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: azure(deploymentName),
-      system: ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: toModelMessages(messages ?? []),
     });
 
@@ -87,21 +114,21 @@ export async function POST(req: Request) {
         await TokenUsage.create({
           userId: session.userId,
           username: session.username,
-          subject: "english",
+          subject: "chinese",
           modelName: deploymentName,
           promptTokens: usage.inputTokens ?? 0,
           completionTokens: usage.outputTokens ?? 0,
           totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          endpoint: "/api/english-thank-you-letter",
+          endpoint,
         });
       } catch (err) {
-        console.error("[english-thank-you-letter] Failed to record token usage:", err);
+        console.error(`[chinese-topic:${topic}] Failed to record token usage:`, err);
       }
     });
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error("[english-thank-you-letter] Error:", error);
+    console.error(`[chinese-topic:${topic}] Error:`, error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

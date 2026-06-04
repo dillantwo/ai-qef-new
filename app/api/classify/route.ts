@@ -1,8 +1,11 @@
 import { azure } from "@ai-sdk/azure";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { ToolboxConfig } from "@/models/ToolboxConfig";
+import { getSession } from "@/lib/session";
+import { TokenUsage } from "@/models/TokenUsage";
 
 /**
  * Fix LaTeX commands broken by JSON parsing.
@@ -216,6 +219,28 @@ ${typeDescriptions}
   });
 
   const obj = result.object;
+
+  // Record token usage after response is sent
+  after(async () => {
+    try {
+      const session = await getSession().catch(() => null);
+      if (!session || !result.usage) return;
+      await connectDB();
+      await TokenUsage.create({
+        userId: session.userId,
+        username: session.username,
+        subject: "math",
+        modelName: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o",
+        promptTokens: result.usage.inputTokens ?? 0,
+        completionTokens: result.usage.outputTokens ?? 0,
+        totalTokens: result.usage.totalTokens ?? ((result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)),
+        endpoint: "/api/classify",
+      });
+    } catch (err) {
+      console.error("[classify] Failed to record token usage:", err);
+    }
+  });
+
   // 1. Fix JSON-broken escapes  2. Strip stray $ delimiters  3. Re-wrap properly
   let q = fixBrokenLatex(obj.question);
   q = q.replace(/\$\$/g, " ").replace(/\$/g, "");

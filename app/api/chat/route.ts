@@ -1,6 +1,10 @@
 import { azure } from "@ai-sdk/azure";
 import { streamText, type UIMessage } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
+import { after } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import { getSession } from "@/lib/session";
+import { TokenUsage } from "@/models/TokenUsage";
 
 function uiMessagesToModelMessages(messages: UIMessage[]): ModelMessage[] {
   return messages.map((msg) => {
@@ -52,6 +56,9 @@ export async function POST(req: Request) {
       mode?: "question" | "ai-tool";
     };
 
+    // Get session for token tracking (non-blocking — don't fail if no session)
+    const session = await getSession().catch(() => null);
+
     const defaultSystem = `你是一位專業的數學老師，專門幫助小學和初中學生學習數學。
 
 你的職責：
@@ -91,15 +98,49 @@ export async function POST(req: Request) {
 - 先用 1 句總結工具方向
 - 再用 2-4 個短點列出重點功能或互動方式`;
 
+    const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o";
+
+    // Determine subject from systemPrompt content
+    let subject = "math";
+    if (systemPrompt) {
+      if (systemPrompt.includes("English") || systemPrompt.includes("direction") || systemPrompt.includes("prepositional")) {
+        subject = "english";
+      } else if (systemPrompt.includes("中文") || systemPrompt.includes("古文") || systemPrompt.includes("文言文")) {
+        subject = "chinese";
+      }
+    }
+
     const result = streamText({
-      model: azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o"),
+      model: azure(deploymentName),
       system: systemPrompt && systemPrompt.trim().length > 0
         ? systemPrompt
         : mode === "ai-tool"
           ? aiToolSystem
           : defaultSystem,
-    messages: uiMessagesToModelMessages(messages),
-  });
+      messages: uiMessagesToModelMessages(messages),
+    });
+
+    // Record token usage after the stream completes (non-blocking)
+    after(async () => {
+      try {
+        if (!session) return;
+        const usage = await result.usage;
+        if (!usage) return;
+        await connectDB();
+        await TokenUsage.create({
+          userId: session.userId,
+          username: session.username,
+          subject,
+          modelName: deploymentName,
+          promptTokens: usage.inputTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
+          endpoint: "/api/chat",
+        });
+      } catch (err) {
+        console.error("[chat] Failed to record token usage:", err);
+      }
+    });
 
     return result.toUIMessageStreamResponse();
   } catch (error) {

@@ -1,7 +1,10 @@
 import { azure } from "@ai-sdk/azure";
 import { streamText } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
-import { ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT } from "@/lib/english-prompts";
+import {
+  getEnglishReadingComprehensionPrompt,
+  type ReadingRole,
+} from "@/lib/english-prompts";
 import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
@@ -67,14 +70,17 @@ function toModelMessages(messages: InputMessage[]): ModelMessage[] {
 
 export async function POST(req: Request) {
   try {
-    const { messages } = (await req.json()) as { messages: InputMessage[] };
+    const { messages, role } = (await req.json()) as {
+      messages: InputMessage[];
+      role?: ReadingRole | null;
+    };
 
     const session = await getSession().catch(() => null);
     const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4.1";
 
     const result = streamText({
       model: azure(deploymentName),
-      system: ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT,
+      system: getEnglishReadingComprehensionPrompt(role),
       messages: toModelMessages(messages ?? []),
     });
 
@@ -92,16 +98,16 @@ export async function POST(req: Request) {
           promptTokens: usage.inputTokens ?? 0,
           completionTokens: usage.outputTokens ?? 0,
           totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          endpoint: "/api/english-thank-you-letter",
+          endpoint: "/api/english-reading-comprehension",
         });
       } catch (err) {
-        console.error("[english-thank-you-letter] Failed to record token usage:", err);
+        console.error("[english-reading-comprehension] Failed to record token usage:", err);
       }
     });
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error("[english-thank-you-letter] Error:", error);
+    console.error("[english-reading-comprehension] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
