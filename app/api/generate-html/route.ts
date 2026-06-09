@@ -31,54 +31,71 @@ function stripCodeFences(html: string): string {
 }
 
 /**
- * Domains that are known to be compromised / unsafe and must never be loaded
- * from generated tools. polyfill.io was sold and taken over in 2024 and now
- * serves a 401 Basic-Auth challenge (the "Sign in" popup) or malicious payloads,
- * so any reference to it has to be stripped out of AI-generated HTML.
+ * Whitelist of trusted external hosts that generated tools are allowed to load
+ * scripts / styles / fonts from. Using a whitelist (rather than a blocklist of
+ * known-bad hosts) keeps the generated HTML small — the model can pull in well
+ * known libraries (KaTeX, Chart.js, MathJax, …) from a pinned CDN instead of
+ * re-implementing everything inline — while still guaranteeing that compromised
+ * hosts such as polyfill.io can never sneak in.
+ *
+ * A reference is allowed when its host exactly matches an entry below or is a
+ * subdomain of one. Relative paths, data: / blob: URLs and in-page anchors are
+ * always allowed (they are not external).
  */
-const BLOCKED_SCRIPT_HOSTS = [
-  "polyfill.io",
-  "polyfill.com",
-  "bootcss.com",
-  "bootcdn.net",
-  "staticfile.org",
+const ALLOWED_EXTERNAL_HOSTS = [
+  "cdn.jsdelivr.net",
+  "unpkg.com",
+  "cdnjs.cloudflare.com",
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
 ];
 
+/** Extract the lowercased host from an absolute or protocol-relative URL. */
+function getExternalHost(url: string): string | null {
+  const match = url.trim().match(/^(?:https?:)?\/\/([^/?#]+)/i);
+  return match ? match[1].toLowerCase() : null;
+}
+
 /**
- * Remove <script src="..."> / <link href="..."> tags that point at blocked,
- * compromised hosts. The system prompt already asks the model to inline all
- * assets, but models occasionally add an external <script> anyway (commonly
- * polyfill.io), which triggers the browser sign-in popup, so we defensively
- * scrub the output server-side.
+ * Returns true when the reference is safe to keep: either it is not an external
+ * URL at all (relative / data: / blob: / anchor) or its host is on the
+ * whitelist (exact match or subdomain).
  */
-function removeBlockedExternalAssets(html: string): string {
-  const hostPattern = BLOCKED_SCRIPT_HOSTS.map((host) =>
-    host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  ).join("|");
+function isAllowedExternalUrl(url: string): boolean {
+  const host = getExternalHost(url);
+  if (!host) return true; // not an external absolute URL
+  return ALLOWED_EXTERNAL_HOSTS.some(
+    (allowed) => host === allowed || host.endsWith(`.${allowed}`)
+  );
+}
 
-  if (!hostPattern) return html;
-
-  const blocked = new RegExp(`(?:https?:)?//(?:[\\w.-]*\\.)?(?:${hostPattern})`, "i");
-
+/**
+ * Strip any <script src="..."> / <link href="..."> that points at a host which
+ * is not on the whitelist. The system prompt already tells the model which CDNs
+ * are permitted, but we defensively enforce it server-side so a stray external
+ * reference (e.g. the compromised polyfill.io) can never reach the iframe.
+ */
+function removeDisallowedExternalAssets(html: string): string {
   return (
     html
-      // Drop full <script ...></script> blocks whose src is a blocked host.
+      // Drop full <script ...></script> blocks whose src is not whitelisted.
       .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*>[\s\S]*?<\/script>/gi, (match, _q, src) =>
-        blocked.test(src) ? "" : match
+        isAllowedExternalUrl(src) ? match : ""
       )
       // Drop self-closing / void <script src=...> tags too.
       .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (match, _q, src) =>
-        blocked.test(src) ? "" : match
+        isAllowedExternalUrl(src) ? match : ""
       )
-      // Drop <link ... href="blocked"> (e.g. preconnect/preload to the host).
+      // Drop <link ... href="..."> (stylesheets, preconnect, preload, …) that
+      // point at a non-whitelisted host.
       .replace(/<link\b[^>]*\bhref\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (match, _q, href) =>
-        blocked.test(href) ? "" : match
+        isAllowedExternalUrl(href) ? match : ""
       )
   );
 }
 
 function ensureHtmlDocument(html: string): string {
-  const cleaned = removeBlockedExternalAssets(stripCodeFences(html));
+  const cleaned = removeDisallowedExternalAssets(stripCodeFences(html));
   if (/<!doctype html>/i.test(cleaned) || /<html[\s>]/i.test(cleaned)) {
     return cleaned;
   }
@@ -164,7 +181,12 @@ export async function POST(req: Request) {
 
 硬性要求：
 1. 回傳完整 HTML，必須是單一 HTML 文件。
-2. 所有 CSS 和 JavaScript 都要內嵌，不能依賴外部 CDN、npm 套件、字體或圖片。嚴禁引用 polyfill.io、cdn.polyfill.io 或任何外部 <script src>（這些網域已被入侵，會導致瀏覽器跳出登入視窗）。
+2. 你自己撰寫的 CSS 和 JavaScript 都要內嵌在 HTML 內。如需第三方函式庫（例如 KaTeX、Chart.js、MathJax、D3 等），只能透過以下白名單 CDN 引入，並且必須鎖定明確版本號（不要用 latest）：
+   - cdn.jsdelivr.net
+   - unpkg.com
+   - cdnjs.cloudflare.com
+   - 字體可用 fonts.googleapis.com 與 fonts.gstatic.com
+   除上述白名單網域外，嚴禁任何其他外部 <script src> 或 <link href>；特別嚴禁 polyfill.io、cdn.polyfill.io（這些網域已被入侵，會導致瀏覽器跳出登入視窗）。能用內嵌就內嵌，只有體積較大的常用函式庫才從白名單 CDN 引入，以保持輸出精簡。
 3. 介面要清晰、現代、適合桌面與平板。
 4. 工具需要真的可互動，不能只是一頁靜態說明。
 5. 內容以繁體中文呈現。
