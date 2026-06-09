@@ -46,6 +46,45 @@ type ChatMsg = {
   images?: ChatImage[];
 };
 
+// Reverse lookup from the bold speaker label the AI uses to the role key.
+const ROLE_LABEL_TO_ROLE: Record<string, ReadingRole> = Object.fromEntries(
+  READING_ROLES.map((role) => [READING_ROLE_LABELS[role].toLowerCase(), role])
+) as Record<string, ReadingRole>;
+
+// Fallback for chats where the role wasn't persisted. Two signals from the AI
+// turns let us recover the student's role:
+//   1. The AI prefixes each of its own turns with a bold speaker label, e.g.
+//      "**Questioner:**" — these are the roles the AI plays.
+//   2. The AI always hands the floor back to the student by name, e.g.
+//      "Summariser, it's your turn!" — so the student's role is mentioned but
+//      never spoken as by the AI.
+// The student's role is therefore a role the AI addresses but never speaks as;
+// if that is ambiguous, fall back to "AI plays two, student is the third".
+function inferStudentRole(
+  messages: { role: "user" | "assistant"; text: string }[]
+): ReadingRole | null {
+  const speakerRegex = /\*\*\s*(Summariser|Questioner|Vocab-Builder)\s*[:：]/gi;
+  const aiSpeakers = new Set<ReadingRole>();
+  const mentioned = new Set<ReadingRole>();
+  for (const message of messages) {
+    if (message.role !== "assistant" || !message.text) continue;
+    for (const match of message.text.matchAll(speakerRegex)) {
+      const role = ROLE_LABEL_TO_ROLE[match[1].toLowerCase()];
+      if (role) aiSpeakers.add(role);
+    }
+    const lower = message.text.toLowerCase();
+    for (const role of READING_ROLES) {
+      if (lower.includes(READING_ROLE_LABELS[role].toLowerCase())) mentioned.add(role);
+    }
+  }
+  const addressedOnly = READING_ROLES.filter((r) => mentioned.has(r) && !aiSpeakers.has(r));
+  if (addressedOnly.length === 1) return addressedOnly[0];
+  if (aiSpeakers.size === READING_ROLES.length - 1) {
+    return READING_ROLES.find((r) => !aiSpeakers.has(r)) ?? null;
+  }
+  return null;
+}
+
 const TOPIC_ID = "reading-comprehension";
 const TOPIC_LABEL = "Reading Comprehension";
 const SESSION_PREFIX = "english-reading";
@@ -86,7 +125,8 @@ export default function EnglishReadingComprehensionChat() {
   const skipSaveRef = useRef(false);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
+  const hasStarted = messages.length > 0;
+  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading && hasStarted;
   const pinnedMessages = messages.filter((m) => pinnedIds.includes(m.id));
 
   // Broadcast the active chat id so the sidebar can highlight the open item.
@@ -169,6 +209,11 @@ export default function EnglishReadingComprehensionChat() {
           .filter((p) => p.type === "file")
           .map((p) => ({ mediaType: p.mediaType ?? "", dataUrl: p.url ?? "", filename: p.filename })),
       }));
+      const storedRole =
+        detail.studentRole && READING_ROLES.includes(detail.studentRole as ReadingRole)
+          ? (detail.studentRole as ReadingRole)
+          : null;
+      setStudentRole(storedRole ?? inferStudentRole(restored));
       setMessages(restored);
       setInput("");
       setChatFiles([]);
@@ -206,10 +251,11 @@ export default function EnglishReadingComprehensionChat() {
       id: currentChatId,
       title,
       topic: TOPIC_ID,
+      studentRole,
       messages: savedMessages,
       updatedAt: new Date().toISOString(),
     });
-  }, [currentChatId, messages, status]);
+  }, [currentChatId, messages, status, studentRole]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -656,17 +702,18 @@ export default function EnglishReadingComprehensionChat() {
                   ))}
                 </div>
               )}
-              <Textarea ref={textareaRef} placeholder={PLACEHOLDER} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
-                className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0" />
+              <Textarea ref={textareaRef} placeholder={hasStarted ? PLACEHOLDER : "請先選擇角色並點擊「開始對話」"} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
+                disabled={!hasStarted}
+                className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0 disabled:cursor-not-allowed" />
               <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleChatFileChange} className="hidden" />
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => fileInputRef.current?.click()}
-                    className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="Upload image">
+                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={!hasStarted}
+                    className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5] disabled:opacity-40" title="Upload image">
                     <ImagePlus className="size-4" />
                   </Button>
-                  <Button type="button" size="icon-sm" variant="ghost" onClick={toggleVoice}
-                    className={`rounded-full transition-all ${isListening ? 'text-red-500 hover:bg-red-50' : 'text-[#5a5a5a] hover:bg-[#f4f4f5]'}`}
+                  <Button type="button" size="icon-sm" variant="ghost" onClick={toggleVoice} disabled={!hasStarted}
+                    className={`rounded-full transition-all disabled:opacity-40 ${isListening ? 'text-red-500 hover:bg-red-50' : 'text-[#5a5a5a] hover:bg-[#f4f4f5]'}`}
                     title={isListening ? 'Stop voice input' : 'Voice input'}>
                     {isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
                   </Button>

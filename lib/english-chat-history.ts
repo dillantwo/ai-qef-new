@@ -20,6 +20,7 @@ export interface EnglishChatHistoryItem {
   title: string;
   topic: string;
   selectedTask?: number | null;
+  studentRole?: string | null;
   messages: SavedChatMessage[];
   updatedAt: string;
 }

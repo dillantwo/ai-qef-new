@@ -20,6 +20,7 @@ export interface IEnglishChatHistory extends Document {
   title: string;
   topic: string;
   selectedTask?: number | null;
+  studentRole?: string | null;
   messages: ISavedChatMessage[];
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +53,7 @@ const EnglishChatHistorySchema = new Schema<IEnglishChatHistory>(
     title: { type: String, required: true },
     topic: { type: String, required: true },
     selectedTask: { type: Number, default: null },
+    studentRole: { type: String, default: null },
     messages: { type: [SavedChatMessageSchema], default: [] },
   },
   { timestamps: true },

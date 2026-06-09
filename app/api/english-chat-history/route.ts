@@ -43,6 +43,7 @@ export async function GET(req: Request) {
           title: String(doc.title),
           topic: String(doc.topic),
           selectedTask: doc.selectedTask ?? null,
+          studentRole: doc.studentRole ?? null,
           messages: Array.isArray(doc.messages) ? doc.messages : [],
           updatedAt: doc.updatedAt,
         },
@@ -59,6 +60,7 @@ export async function GET(req: Request) {
         title: String(doc.title),
         topic: String(doc.topic),
         selectedTask: doc.selectedTask ?? null,
+        studentRole: doc.studentRole ?? null,
         messages: Array.isArray(doc.messages) ? doc.messages : [],
         updatedAt: doc.updatedAt,
       })),
@@ -82,11 +84,12 @@ export async function POST(req: Request) {
       });
     }
 
-    const { id, title, topic, selectedTask, messages } = (await req.json()) as {
+    const { id, title, topic, selectedTask, studentRole, messages } = (await req.json()) as {
       id?: string;
       title?: string;
       topic?: string;
       selectedTask?: number | null;
+      studentRole?: string | null;
       messages?: SavedChatMessage[];
     };
 
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
           title: title.trim(),
           topic: topic.trim(),
           selectedTask: selectedTask ?? null,
+          studentRole: studentRole ?? null,
           messages: Array.isArray(messages) ? messages : [],
         },
       },

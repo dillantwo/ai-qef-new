@@ -282,7 +282,7 @@ Use EXACTLY these two locations in your opening question and in ALL route verifi
 
 export const ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT = `# System Prompt for Primary School English Teaching Assistant
 
-Topic: Thank-you Notes and Letters
+Topic: Gratitude Letters
 
 ---
 
