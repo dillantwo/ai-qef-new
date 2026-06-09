@@ -26,7 +26,7 @@ const notoSerifTC = Noto_Serif_TC({
 });
 
 export const metadata: Metadata = {
-  title: "AI Website Generator",
+  title: "AI for Subject Learning",
   description: "Generate, Edit and Explore design with AI, Export code as well",
 };
 

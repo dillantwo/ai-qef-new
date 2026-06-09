@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文言文智能學習平台</title>
+    <style>
+        :root {
+            --bg-color: #fcfaf2;        
+            --primary-color: #4a5568;   
+            --accent-teal: #8ba294;     
+            --text-main: #2c3e50;
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.04);
+            
+            --c-subj: #4e6794;      
+            --c-verb: #a56a4b;      
+            --c-obj:  #538066;      
+            --c-attr: #846c82;      
+            --c-adv:  #6d7f7a;      
+        }
+
+        body {
+            font-family: 'Kaiti TC', 'BiauKai', 'KaiTi', '楷体', 'SimSun', '宋体', 'PMingLiU', serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px; /* 稍微加寬以容納完整表格 */
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            font-family: 'PingFang HK', 'Noto Sans TC', sans-serif;
+        }
+
+        h1 {
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-teal);
+            display: inline-block;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* 頂層視圖切換器 */
+        .view-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            font-family: 'PingFang HK', sans-serif;
+        }
+        .btn-view {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-view.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(74, 85, 104, 0.3);
+        }
+
+        /* 原有控制區 */
+        .article-selector { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; font-family: 'PingFang HK', sans-serif; }
+        .btn-article { background: white; border: 1px solid #ddd; padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 15px; transition: all 0.3s; color: #666; }
+        .btn-article.active { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 4px 12px rgba(74, 85, 104, 0.3); }
+
+        .mode-tabs { display: flex; background: #eee; padding: 4px; border-radius: 8px; margin-bottom: 20px; font-family: 'PingFang HK', sans-serif; }
+        .btn-mode { flex: 1; padding: 10px; border: none; background: transparent; cursor: pointer; font-size: 14px; border-radius: 6px; transition: 0.2s; color: #777; }
+        .btn-mode.active { background: white; color: var(--text-main); font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+        /* 內容卡片 */
+        .content-card { background: white; padding: 50px 30px; border-radius: 12px; box-shadow: var(--card-shadow); min-height: 350px; text-align: center; position: relative; }
+        .content-card h2 { margin-top: 0; font-size: 28px; color: var(--primary-color); margin-bottom: 30px; }
+        .text-wrapper { display: inline-block; text-align: left; max-width: 85%; font-size: 24px; line-height: 2.5; letter-spacing: 2px; }
+
+        .svo-mode .subj { color: var(--c-subj); font-weight: bold; border-bottom: 2px solid var(--c-subj); }
+        .svo-mode .verb { color: var(--c-verb); font-weight: bold; border-bottom: 2px solid var(--c-verb); }
+        .svo-mode .obj  { color: var(--c-obj);  font-weight: bold; border-bottom: 2px solid var(--c-obj); }
+        .svo-mode .attr { color: var(--c-attr); border-bottom: 1px dashed var(--c-attr); } 
+        .svo-mode .adv  { color: var(--c-adv);  border-bottom: 1px dotted var(--c-adv); }  
+        
+        ruby { margin-right: 5px; }
+        rt { color: #888; font-size: 14px; font-weight: normal; font-family: 'PingFang HK', sans-serif; letter-spacing: 0; }
+
+        .interactive-sentence { cursor: pointer; border-bottom: 1px dashed var(--accent-teal); padding: 0 4px; transition: 0.2s; }
+        .interactive-sentence:hover { background-color: rgba(139, 162, 148, 0.15); border-radius: 4px; }
+
+        /* 導航頁表格樣式 (優化為更像 PDF 的樣式) */
+        #nav-view { display: none; background: white; padding: 40px; border-radius: 12px; box-shadow: var(--card-shadow); font-family: 'PingFang HK', sans-serif; }
+        .curriculum-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14.5px; border: 2px solid #555; }
+        .curriculum-table th { background-color: #e2e8f0; color: #333; padding: 12px 8px; border: 1px solid #888; text-align: center; font-weight: bold; }
+        .curriculum-table td { padding: 10px 8px; border: 1px solid #aaa; text-align: center; vertical-align: middle; color: #333; }
+        
+        /* 假按鈕樣式 */
+        .fake-tag {
+            display: inline-block;
+            background: white;
+            border: 1px solid #bbb;
+            color: #444;
+            padding: 4px 10px;
+            margin: 3px;
+            border-radius: 4px; /* 改為方正一點的圓角，更像表格內容 */
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .fake-tag:hover { background: var(--accent-teal); color: white; border-color: var(--accent-teal); }
+        .fake-tag.active-demo { background: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold; }
+
+        .legend { margin-top: 25px; background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; display: none; justify-content: center; gap: 25px; font-size: 14px; font-family: 'PingFang HK', sans-serif; flex-wrap: wrap; }
+        .legend span b { margin-right: 4px; }
+
+        #ai-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); font-family: 'PingFang HK', sans-serif; }
+        .modal-content textarea { width: 100%; height: 120px; margin: 15px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; resize: none; box-sizing: border-box; }
+        .ai-feedback { margin-top: 15px; padding: 15px; background: #f8f9fa; border-left: 4px solid var(--accent-teal); border-radius: 4px; font-size: 15px; display: none; max-height: 200px; overflow-y: auto; line-height: 1.6; }
+        .btn-submit { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-cancel { background: #eee; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>古漢語學習空間</h1>
+    </header>
+
+    <div class="view-switcher">
+        <button class="btn-view active" onclick="switchView('learning')">📖 課文學習</button>
+        <button class="btn-view" onclick="switchView('nav')">🗺️ 全部篇章 (導航)</button>
+    </div>
+    
+    <div id="learning-view">
+        <div class="article-selector" id="article-btns">
+            <button class="btn-article active" onclick="selectArticle('zhengran')">鄭人買履</button>
+            <button class="btn-article" onclick="selectArticle('lunyu')">論語四則</button>
+            <button class="btn-article" onclick="selectArticle('xueyi')">二子學弈</button>
+            <button class="btn-article" onclick="selectArticle('yubang')">鷸蚌相爭</button>
+        </div>
+        
+        <div class="mode-tabs" id="mode-btns">
+            <button class="btn-mode active" onclick="selectMode(1)">原文閱讀</button>
+            <button class="btn-mode" onclick="selectMode(2)">句子成分拆解</button>
+            <button class="btn-mode" onclick="selectMode(3)">成分拆解 + 譯釋</button>
+            <button class="btn-mode" onclick="selectMode(4)">AI 互動翻譯</button>
+        </div>
+
+        <div class="content-card" id="text-display"></div>
+
+        <div class="legend" id="svo-legend">
+            <span style="color:var(--c-subj)"><b>■</b> 主語</span>
+            <span style="color:var(--c-verb)"><b>■</b> 謂語 (核心動作)</span>
+            <span style="color:var(--c-obj)"><b>■</b> 賓語</span>
+            <span style="color:var(--c-attr)"><b>≣</b> 定語 (修飾名詞)</span>
+            <span style="color:var(--c-adv)"><b>∷</b> 狀語 (修飾動詞)</span>
+        </div>
+    </div>
+
+    <div id="nav-view">
+        <h2 style="text-align: center; color: var(--primary-color); margin-top: 0; margin-bottom: 20px;">建議篇章 (文言經典部分) 總覽</h2>
+        <table class="curriculum-table">
+            <thead>
+                <tr>
+                    <th width="8%">朝代</th>
+                    <th width="12%">作者 / 出處</th>
+                    <th width="20%">第一學習階段<br>(小一至小三)</th>
+                    <th width="20%">第二學習階段<br>(小四至小六)</th>
+                    <th width="20%">第三學習階段<br>(中一至中三)</th>
+                    <th width="20%">第四學習階段<br>(中四至中六)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td rowspan="10" style="background-color: #eef2f5; font-weight:bold; font-size:16px;">先秦</td><td>詩經 (佚名)</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('國風 關雎')">國風 關雎</span></td></tr>
+                <tr><td>左傳 (佚名)</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('曹劌論戰')">曹劌論戰</span></td></tr>
+                <tr><td>戰國策 (佚名)</td><td></td><td></td><td><span class="fake-tag active-demo" onclick="mockLink('鷸蚌相爭')">鷸蚌相爭</span></td><td><span class="fake-tag" onclick="mockLink('鄒忌諷齊王納諫')">鄒忌諷齊王納諫</span></td></tr>
+                <tr><td>論語 (佚名)</td><td></td><td></td><td><span class="fake-tag active-demo" onclick="mockLink('論語四則')">論語四則</span></td><td><span class="fake-tag" onclick="mockLink('論仁、論孝、論君子')">論仁、論孝、論君子</span></td></tr>
+                <tr><td>孟子</td><td></td><td></td><td><span class="fake-tag active-demo" onclick="mockLink('二子學弈')">二子學弈</span></td><td><span class="fake-tag" onclick="mockLink('論四端')">論四端</span><br><span class="fake-tag" onclick="mockLink('魚我所欲也')">魚我所欲也</span></td></tr>
+                <tr><td>莊子</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('逍遙遊(節錄)')">逍遙遊(節錄)</span></td></tr>
+                <tr><td>荀子</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('勸學(節錄)')">勸學(節錄)</span></td></tr>
+                <tr><td>韓非子</td><td></td><td><span class="fake-tag" onclick="mockLink('守株待兔')">守株待兔</span><br><span class="fake-tag active-demo" onclick="mockLink('鄭人買履')">鄭人買履</span></td><td></td><td></td></tr>
+                <tr><td>列子</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('愚公移山')">愚公移山</span></td><td></td></tr>
+                <tr><td>禮記</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('大同與小康')">大同與小康</span></td><td><span class="fake-tag" onclick="mockLink('大學(節錄)')">大學(節錄)</span></td></tr>
+                
+                <tr><td rowspan="4" style="background-color: #fdf3f2; font-weight:bold; font-size:16px;">漢</td><td>韓嬰</td><td></td><td><span class="fake-tag" onclick="mockLink('孟母戒子')">孟母戒子</span></td><td></td><td></td></tr>
+                <tr><td>司馬遷</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('廉頗藺相如列傳')">廉頗藺相如列傳(節錄)</span></td></tr>
+                <tr><td>佚名</td><td><span class="fake-tag" onclick="mockLink('江南')">江南</span></td><td></td><td></td><td></td></tr>
+                <tr><td>佚名 (古詩十九首)</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('行行重行行')">行行重行行</span><br><span class="fake-tag" onclick="mockLink('迢迢牽牛星')">迢迢牽牛星</span></td></tr>
+
+                <tr><td rowspan="3" style="background-color: #fff9e6; font-weight:bold; font-size:16px;">三國</td><td>曹植</td><td><span class="fake-tag" onclick="mockLink('七步詩')">七步詩</span></td><td></td><td></td><td></td></tr>
+                <tr><td>諸葛亮</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('出師表')">出師表</span></td></tr>
+                <tr><td>李密</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('陳情表')">陳情表</span></td></tr>
+
+                <tr><td style="background-color: #eef7ee; font-weight:bold; font-size:16px;">晉</td><td>陶潛</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('桃花源記')">桃花源記</span></td><td><span class="fake-tag" onclick="mockLink('飲酒(其五)')">飲酒(其五)</span></td></tr>
+
+                <tr><td rowspan="3" style="background-color: #f5eff9; font-weight:bold; font-size:16px;">南北朝</td><td>劉義慶 (世說新語)</td><td><span class="fake-tag" onclick="mockLink('詠雪')">詠雪</span></td><td></td><td><span class="fake-tag" onclick="mockLink('荀巨伯遠看友人疾')">荀巨伯遠看友人疾</span><br><span class="fake-tag" onclick="mockLink('管寧華歆共園中鋤菜')">管寧華歆共園中鋤菜</span></td><td></td></tr>
+                <tr><td>魏收</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('折箭')">折箭</span></td><td></td></tr>
+                <tr><td>佚名</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('木蘭詩')">木蘭詩</span></td><td></td></tr>
+
+                <tr><td rowspan="20" style="background-color: #fdfae8; font-weight:bold; font-size:16px;">唐</td><td>王勃</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('送杜少府之任蜀州')">送杜少府之任蜀州</span></td><td></td></tr>
+                <tr><td>駱賓王</td><td><span class="fake-tag" onclick="mockLink('詠鵝')">詠鵝</span></td><td></td><td></td><td></td></tr>
+                <tr><td>孟浩然</td><td><span class="fake-tag" onclick="mockLink('春曉')">春曉</span></td><td></td><td></td><td></td></tr>
+                <tr><td>王之渙</td><td><span class="fake-tag" onclick="mockLink('登鹳鵲樓')">登鹳鵲樓</span></td><td><span class="fake-tag" onclick="mockLink('涼州詞')">涼州詞</span></td><td></td><td></td></tr>
+                <tr><td>賀知章</td><td><span class="fake-tag" onclick="mockLink('回鄉偶書')">回鄉偶書</span></td><td></td><td></td><td></td></tr>
+                <tr><td>王翰</td><td></td><td><span class="fake-tag" onclick="mockLink('涼州詞')">涼州詞</span></td><td></td><td></td></tr>
+                <tr><td>王昌齡</td><td></td><td><span class="fake-tag" onclick="mockLink('出塞')">出塞</span></td><td></td><td></td></tr>
+                <tr><td>王維</td><td></td><td><span class="fake-tag" onclick="mockLink('九月九日憶山東兄弟')">九月九日憶山東兄弟</span><br><span class="fake-tag" onclick="mockLink('送元二使安西')">送元二使安西</span></td><td></td><td><span class="fake-tag" onclick="mockLink('山居秋暝')">山居秋暝</span></td></tr>
+                <tr><td>李白</td><td></td><td><span class="fake-tag" onclick="mockLink('靜夜思')">靜夜思</span><br><span class="fake-tag" onclick="mockLink('早發白帝城')">早發白帝城</span></td><td></td><td><span class="fake-tag" onclick="mockLink('月下獨酌(其一)')">月下獨酌(其一)</span></td></tr>
+                <tr><td>杜甫</td><td></td><td><span class="fake-tag" onclick="mockLink('客至')">客至</span><br><span class="fake-tag" onclick="mockLink('絕句(兩個黃鸝鳴翠柳)')">絕句(兩個黃鸝...)</span></td><td><span class="fake-tag" onclick="mockLink('兵車行')">兵車行</span></td><td><span class="fake-tag" onclick="mockLink('登樓')">登樓</span></td></tr>
+                <tr><td>張繼</td><td></td><td><span class="fake-tag" onclick="mockLink('楓橋夜泊')">楓橋夜泊</span></td><td></td><td></td></tr>
+                <tr><td>孟郊</td><td></td><td><span class="fake-tag" onclick="mockLink('遊子吟')">遊子吟</span></td><td></td><td></td></tr>
+                <tr><td>韓愈</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('師說')">師說</span></td></tr>
+                <tr><td>柳宗元</td><td></td><td><span class="fake-tag" onclick="mockLink('江雪')">江雪</span></td><td></td><td><span class="fake-tag" onclick="mockLink('始得西山宴遊記')">始得西山宴遊記</span></td></tr>
+                <tr><td>劉禹錫</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('陋室銘')">陋室銘</span></td><td></td></tr>
+                <tr><td>李紳</td><td><span class="fake-tag" onclick="mockLink('憫農(其二)')">憫農(其二)</span></td><td></td><td></td><td></td></tr>
+                <tr><td>白居易</td><td><span class="fake-tag" onclick="mockLink('賦得古原草送別')">賦得古原草送別</span></td><td></td><td><span class="fake-tag" onclick="mockLink('燕詩、慈烏夜啼')">燕詩、慈烏夜啼</span></td><td></td></tr>
+                <tr><td>杜牧</td><td><span class="fake-tag" onclick="mockLink('清明')">清明</span></td><td></td><td><span class="fake-tag" onclick="mockLink('山行')">山行</span></td><td></td></tr>
+                <tr><td>羅隱</td><td><span class="fake-tag" onclick="mockLink('蜂')">蜂</span></td><td></td><td></td><td></td></tr>
+                <tr><td>杜秋娘</td><td><span class="fake-tag" onclick="mockLink('金縷衣')">金縷衣</span></td><td></td><td></td><td></td></tr>
+
+                <tr><td style="background-color: #ebedec; font-weight:bold; font-size:16px;">五代</td><td>李煜</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('虞美人')">虞美人</span></td></tr>
+
+                <tr><td rowspan="10" style="background-color: #eaf6f9; font-weight:bold; font-size:16px;">宋</td><td>范仲淹</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('岳陽樓記')">岳陽樓記</span></td></tr>
+                <tr><td>歐陽修</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('賣油翁')">賣油翁</span></td><td></td></tr>
+                <tr><td>周敦頤</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('愛蓮說')">愛蓮說</span></td><td></td></tr>
+                <tr><td>王安石</td><td><span class="fake-tag" onclick="mockLink('元日')">元日</span></td><td></td><td><span class="fake-tag" onclick="mockLink('傷仲永')">傷仲永</span><br><span class="fake-tag" onclick="mockLink('泊船瓜洲')">泊船瓜洲</span></td><td></td></tr>
+                <tr><td>蘇洵</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('六國論')">六國論</span></td></tr>
+                <tr><td>蘇軾</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('題西林壁')">題西林壁</span></td><td><span class="fake-tag" onclick="mockLink('水調歌頭並序')">水調歌頭並序</span><br><span class="fake-tag" onclick="mockLink('念奴嬌 赤壁懷古')">念奴嬌 赤壁懷古</span></td></tr>
+                <tr><td>岳飛</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('滿江紅(怒髮衝冠)')">滿江紅(怒髮衝冠)</span></td></tr>
+                <tr><td>李清照</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('聲聲慢秋情')">聲聲慢秋情</span></td></tr>
+                <tr><td>辛棄疾</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('青玉案元夕')">青玉案元夕</span></td></tr>
+                <tr><td>楊萬里</td><td><span class="fake-tag" onclick="mockLink('小池')">小池</span></td><td></td><td><span class="fake-tag" onclick="mockLink('曉出淨慈寺送林子方')">曉出淨慈寺...</span></td><td></td></tr>
+
+                <tr><td rowspan="4" style="background-color: #fceceb; font-weight:bold; font-size:16px;">元</td><td>關漢卿</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('四塊玉閒適')">四塊玉閒適</span></td></tr>
+                <tr><td>白樸</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('沉醉東風漁父詞')">沉醉東風漁父詞</span></td></tr>
+                <tr><td>馬致遠</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('天淨沙秋思')">天淨沙秋思</span></td><td></td></tr>
+                <tr><td>佚名</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('岳飛之少年時代')">岳飛之少年時代</span></td><td></td></tr>
+
+                <tr><td rowspan="6" style="background-color: #eaf3eb; font-weight:bold; font-size:16px;">明</td><td>羅貫中</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('楊修之死')">楊修之死</span></td><td></td></tr>
+                <tr><td>劉基</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('賣柑者言')">賣柑者言</span></td><td></td></tr>
+                <tr><td>唐寅</td><td><span class="fake-tag" onclick="mockLink('畫雞')">畫雞</span></td><td></td><td></td><td></td></tr>
+                <tr><td>于謙</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('石灰吟')">石灰吟</span></td><td></td></tr>
+                <tr><td>錢福</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('明日歌')">明日歌</span></td><td></td></tr>
+                <tr><td>袁宏道</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('滿井遊記')">滿井遊記</span></td></tr>
+
+                <tr><td rowspan="5" style="background-color: #f1ecf5; font-weight:bold; font-size:16px;">清</td><td>朱柏廬</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('朱子家訓(節錄)')">朱子家訓(節錄)</span></td><td></td></tr>
+                <tr><td>彭端淑</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('為學')">為學</span></td><td></td></tr>
+                <tr><td>薛福成</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('貓捕雀')">貓捕雀</span></td><td></td></tr>
+                <tr><td>劉蓉</td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('習慣說')">習慣說</span></td><td></td></tr>
+                <tr><td>方苞</td><td></td><td></td><td></td><td><span class="fake-tag" onclick="mockLink('左忠毅公軼事')">左忠毅公軼事</span></td></tr>
+
+            </tbody>
+        </table>
+        <p style="text-align: center; color: #777; font-size: 13px; margin-top: 20px;">* 註：深色標籤為目前系統內建之示範篇章，點擊其他篇章按鈕可查看未來上線提示。</p>
+    </div>
+
+</div>
+
+<div id="ai-modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0; color:var(--primary-color);">AI 老師評閱</h3>
+        <p style="font-size:15px; color:#666;">原文：<span id="modal-original-text" style="color:var(--text-main); font-weight:bold; font-family: 'Kaiti TC', serif; font-size:18px;"></span></p>
+        <textarea id="student-translation" placeholder="請在此處輸入你的白話文翻譯..."></textarea>
+        <div style="text-align: right;">
+            <button class="btn-cancel" onclick="closeModal()">關閉</button>
+            <button class="btn-submit" onclick="submitTranslation()">提交批改</button>
+        </div>
+        <div id="ai-loading" style="display:none; font-size:14px; color:var(--primary-color); margin-top:10px;">老師正在批閱中，請稍候...</div>
+        <div class="ai-feedback" id="ai-feedback"></div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔑 API KEY 填寫處
+    // ==========================================
+    const MINIMAX_API_KEY = "sk-api-Bm1ri-WWlOnMAiomeUmGwHpJUpiQJoF7-mELdhtI6_FW-yz13Rhdm9BLPqWcu_BWsNz6jZiXJjKBXhbIUYgdOzh5I7DloLyrpeu2uhwHaTtkS6c6FKpkXCM"; 
+
+    // ---- 視圖切換邏輯 ----
+    function switchView(viewName) {
+        const btns = document.querySelectorAll('.btn-view');
+        btns[0].classList.toggle('active', viewName === 'learning');
+        btns[1].classList.toggle('active', viewName === 'nav');
+
+        document.getElementById('learning-view').style.display = viewName === 'learning' ? 'block' : 'none';
+        document.getElementById('nav-view').style.display = viewName === 'nav' ? 'block' : 'none';
+    }
+
+    // 假按鈕點擊事件
+    function mockLink(articleName) {
+        alert(`【${articleName}】篇章建置中，敬請期待！\n您可以先前往「課文學習」體驗現有的四篇示範課文。`);
+    }
+
+    // ---- 原有數據庫與邏輯 (未作任何改動) ----
+    const articles = {
+        zhengran: {
+            title: "鄭人買履",
+            sentences: [
+                { original: "鄭人有欲買履者，先自度其足，而置之其坐。", svo: "<span class='attr'>鄭</span><span class='subj'>人</span> <span class='verb'>有</span> <span class='attr'>欲買履</span><span class='obj'>者</span>，<span class='adv'>先自</span><span class='verb'>度</span><span class='attr'>其</span><span class='obj'>足</span>，而<span class='verb'>置</span><span class='obj'>之</span><span class='adv'>其坐</span>。", svo_trans: "<ruby><span class='attr'>鄭</span><span class='subj'>人</span><rt>鄭國人</rt></ruby> <ruby><span class='verb'>有</span><rt>想</rt></ruby> <ruby><span class='attr'>欲買履</span><span class='obj'>者</span><rt>買鞋的人</rt></ruby>，<ruby><span class='adv'>先自</span><rt>先自己</rt></ruby><ruby><span class='verb'>度</span><rt>量度</rt></ruby><ruby><span class='attr'>其</span><span class='obj'>足</span><rt>他的腳</rt></ruby>，而<ruby><span class='verb'>置</span><rt>放</rt></ruby><ruby><span class='obj'>之</span><rt>尺碼</rt></ruby><ruby><span class='adv'>其坐</span><rt>在座位上</rt></ruby>。" },
+                { original: "至之市，而忘操之。", svo: "<span class='adv'>至</span><span class='verb'>之</span><span class='obj'>市</span>，而<span class='verb'>忘操</span><span class='obj'>之</span>。", svo_trans: "<ruby><span class='adv'>至</span><rt>等到</rt></ruby><ruby><span class='verb'>之</span><rt>前往</rt></ruby><ruby><span class='obj'>市</span><rt>集市</rt></ruby>，而<ruby><span class='verb'>忘操</span><rt>忘記帶</rt></ruby><ruby><span class='obj'>之</span><rt>尺碼</rt></ruby>。" },
+                { original: "已得履，乃曰：「吾忘持度。」反歸取之。", svo: "<span class='adv'>已</span><span class='verb'>得</span><span class='obj'>履</span>，乃<span class='verb'>曰</span>：「<span class='subj'>吾</span><span class='verb'>忘持</span><span class='obj'>度</span>。」<span class='adv'>反歸</span><span class='verb'>取</span><span class='obj'>之</span>。", svo_trans: "<ruby><span class='adv'>已</span><rt>已經</rt></ruby><ruby><span class='verb'>得</span><rt>挑好</rt></ruby><ruby><span class='obj'>履</span><rt>鞋</rt></ruby>，乃<ruby><span class='verb'>曰</span><rt>說</rt></ruby>：「<span class='subj'>吾</span><ruby><span class='verb'>忘持</span><rt>忘帶</rt></ruby><ruby><span class='obj'>度</span><rt>尺碼</rt></ruby>。」<ruby><span class='adv'>反歸</span><rt>返回去</rt></ruby><ruby><span class='verb'>取</span><rt>拿</rt></ruby><ruby><span class='obj'>之</span><rt>它</rt></ruby>。" },
+                { original: "及反，市罷，遂不得履。", svo: "<span class='adv'>及</span><span class='verb'>反</span>，<span class='subj'>市</span><span class='verb'>罷</span>，<span class='adv'>遂不</span><span class='verb'>得</span><span class='obj'>履</span>。", svo_trans: "<ruby><span class='adv'>及</span><rt>等到</rt></ruby><ruby><span class='verb'>反</span><rt>返回</rt></ruby>，<ruby><span class='subj'>市</span><rt>市集</rt></ruby><ruby><span class='verb'>罷</span><rt>散了</rt></ruby>，<ruby><span class='adv'>遂不</span><rt>於是沒</rt></ruby><ruby><span class='verb'>得</span><rt>買到</rt></ruby><ruby><span class='obj'>履</span><rt>鞋</rt></ruby>。" }
+            ]
+        },
+        lunyu: { title: "論語四則", sentences: [ { original: "子曰：「學而時習之，不亦說乎？」", svo: "<span class='subj'>子</span><span class='verb'>曰</span>：「<span class='verb'>學</span>而<span class='adv'>時</span><span class='verb'>習</span><span class='obj'>之</span>，<span class='adv'>不亦</span><span class='verb'>說</span>乎？」", svo_trans: "<ruby><span class='subj'>子</span><rt>孔子</rt></ruby>曰：「<ruby>學<rt>學習</rt></ruby>而<ruby><span class='adv'>時</span><rt>按時</rt></ruby><ruby>習<rt>溫習</rt></ruby>之，不亦<ruby>說<rt>悅</rt></ruby>乎？」" } ] },
+        xueyi: { title: "二子學弈", sentences: [ { original: "弈秋，通國之善弈者也。", svo: "<span class='subj'>弈秋</span>，<span class='attr'>通國之善弈</span><span class='obj'>者</span>也。", svo_trans: "<ruby>弈秋<rt>人名</rt></ruby>，<ruby>通國之善弈<rt>全國最擅長下棋</rt></ruby>者也。" } ] },
+        yubang: { title: "鷸蚌相爭", sentences: [ { original: "蚌方出曝，而鷸啄其肉，蚌合而箝其喙。", svo: "<span class='subj'>蚌</span><span class='adv'>方</span><span class='verb'>出曝</span>，而<span class='subj'>鷸</span><span class='verb'>啄</span><span class='attr'>其</span><span class='obj'>肉</span>，<span class='subj'>蚌</span><span class='verb'>合</span>而<span class='verb'>箝</span><span class='attr'>其</span><span class='obj'>喙</span>。", svo_trans: "<ruby>蚌<rt>河蚌</rt></ruby><ruby><span class='adv'>方</span><rt>剛好</rt></ruby><ruby>出曝<rt>出來曬太陽</rt></ruby>，而<ruby>鷸<rt>鷸鳥</rt></ruby>啄其肉..." } ] }
+    };
+
+    let currentArticle = 'zhengran';
+    let currentMode = 1;
+    let selectedSentence = "";
+
+    function selectArticle(articleKey) {
+        currentArticle = articleKey;
+        const btns = document.querySelectorAll('.btn-article');
+        btns.forEach(b => b.classList.toggle('active', b.innerText === articles[articleKey].title || (articleKey === 'lunyu' && b.innerText === '論語四則') || (articleKey === 'xueyi' && b.innerText === '二子學弈') || (articleKey === 'yubang' && b.innerText === '鷸蚌相爭')));
+        renderContent();
+    }
+
+    function selectMode(m) {
+        currentMode = m;
+        const btns = document.querySelectorAll('.btn-mode');
+        btns.forEach((b, i) => b.classList.toggle('active', i + 1 === m));
+        document.getElementById('svo-legend').style.display = (m === 2 || m === 3) ? 'flex' : 'none';
+        renderContent();
+    }
+
+    function renderContent() {
+        const display = document.getElementById('text-display');
+        const data = articles[currentArticle];
+        let html = `<h2>${data.title}</h2><div class="text-wrapper ${currentMode === 2 || currentMode === 3 ? 'svo-mode' : ''}">`;
+        
+        data.sentences.forEach(s => {
+            if (currentMode === 1) html += s.original + " ";
+            else if (currentMode === 2) html += s.svo + " ";
+            else if (currentMode === 3) html += s.svo_trans + " ";
+            else if (currentMode === 4) html += `<span class="interactive-sentence" onclick="openInteractiveModal('${s.original}')">${s.original}</span> `;
+        });
+        
+        html += `</div>`;
+        if(currentMode === 4) html += `<p style="text-align:center; color:#999; font-size:14px; margin-top:40px; font-family:'PingFang HK', sans-serif;">（請點擊上方句子開始互動翻譯）</p>`;
+        display.innerHTML = html;
+    }
+
+    function openInteractiveModal(s) {
+        selectedSentence = s;
+        document.getElementById('modal-original-text').innerText = s;
+        document.getElementById('student-translation').value = '';
+        document.getElementById('ai-feedback').style.display = 'none';
+        document.getElementById('ai-modal').style.display = 'flex';
+        setTimeout(() => document.getElementById('student-translation').focus(), 100);
+    }
+
+    function closeModal() { document.getElementById('ai-modal').style.display = 'none'; }
+
+    async function submitTranslation() {
+        const studentText = document.getElementById('student-translation').value.trim();
+        if (!studentText) return alert("請輸入你的翻譯喔！");
+        if (MINIMAX_API_KEY.includes("你的")) return alert("請先在程式碼第 358 行填入 API KEY");
+
+        document.getElementById('ai-loading').style.display = 'block';
+        document.getElementById('ai-feedback').style.display = 'none';
+
+        try {
+            const resp = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MINIMAX_API_KEY}` },
+                body: JSON.stringify({
+                    model: "abab6.5s-chat",
+                    messages: [
+                        { role: "system", name: "teacher", content: "你是一位專業溫和的香港中學語文教師。請用繁體中文回答，指出學生翻譯的優缺點並給出正確答案。" },
+                        { role: "user", name: "student", content: `請評改這句文言文翻譯。原文：${selectedSentence}，我的翻譯：${studentText}` }
+                    ]
+                })
+            });
+            const res = await resp.json();
+            const feedback = res.choices[0].message.content;
+            document.getElementById('ai-feedback').innerText = feedback;
+            document.getElementById('ai-feedback').style.display = 'block';
+        } catch (e) {
+            alert("網路請求失敗，請檢查 API Key 或網路連線。");
+        } finally {
+            document.getElementById('ai-loading').style.display = 'none';
+        }
+    }
+
+    renderContent();
+</script>
+
+</body>
+</html>
