@@ -2,54 +2,76 @@
 
 import { Suspense, useRef, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useChat } from "@ai-sdk/react";
 import {
   ArrowUp,
   Square,
   BookOpen,
   Compass,
-  MessageSquare,
+  Sparkles,
   Mic,
   MicOff,
   ImagePlus,
   X,
   ChevronLeft,
   PanelRight,
+  Copy,
+  Check,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { basePath } from "@/lib/utils";
-import { DefaultChatTransport } from "ai";
-import { getEnglishLocationDirectionPrompt } from "@/lib/english-prompts";
 import {
   createEnglishChatId,
-  serializeUiMessages,
-  restoreUiMessages,
   upsertEnglishChatHistory,
   type EnglishChatHistoryItem,
+  type SavedChatMessage,
 } from "@/lib/english-chat-history";
+import { pickLocationPair, type LocationPair } from "@/lib/english-prompts";
+
+const API_ENDPOINT = "/api/english-location-direction";
+const TOPIC_ID = "location-direction";
+const DEFAULT_TITLE = "English Chat";
+
+type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
+type ChatMsg = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  images?: ChatImage[];
+};
 
 // Map topic to its preview HTML file
 const previewMap: Record<string, string> = {
   "location-direction": `${basePath}/english/preview-location-direction.html`,
 };
 
+// Builds the displayed task prompt for a concrete [A] → [B] pair.
+const taskTemplates: Record<number, (a: string, b: string) => string> = {
+  1: (a, b) => `Let us start Task 1. Look at the map. How can I go from ${a} to ${b}? Use prepositional phrases to describe the direction.`,
+  2: (a, b) => `Let us start Task 2. Look at the map. How can I go from ${a} to ${b}? Write short sentences with the prepositional phrases you learned.`,
+  3: (a, b) => `Let us start Task 3. Look at the map. How can I go from ${a} to ${b}? Write more than one sentence and use linking words (First, Then, After that, Finally).`,
+  4: (a, b) => `Let us start Task 4. Look at the map. How can I go from ${a} to ${b}? Write a complete paragraph with a topic sentence and linking words.`,
+};
+
+const TASK_5_PROMPT =
+  "Let us start Task 5. Can you read my map? Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing to the chatbot.";
+
 const tasks = [
-  { id: 1, label: "Task 1", prompt: "Let us start Task 1. Look at the map. How can I go from [A] to [B]? Use prepositional phrases to describe the direction." },
-  { id: 2, label: "Task 2", prompt: "Let us start Task 2. Look at the map. How can I go from [A] to [B]? Write short sentences with the prepositional phrases you learned." },
-  { id: 3, label: "Task 3", prompt: "Let us start Task 3. Look at the map. How can I go from [A] to [B]? Write more than one sentence and use linking words (First, Then, After that, Finally)." },
-  { id: 4, label: "Task 4", prompt: "Let us start Task 4. Look at the map. How can I go from [A] to [B]? Write a complete paragraph with a topic sentence and linking words." },
-  { id: 5, label: "Task 5", prompt: "Let us start Task 5. Can you read my map? Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing to the chatbot." },
+  { id: 1, label: "Task 1" },
+  { id: 2, label: "Task 2" },
+  { id: 3, label: "Task 3" },
+  { id: 4, label: "Task 4" },
+  { id: 5, label: "Task 5" },
 ];
 
 export default function EnglishDashboardPage() {
@@ -62,40 +84,53 @@ export default function EnglishDashboardPage() {
 
 function EnglishDashboardContent() {
   const searchParams = useSearchParams();
-  const topic = searchParams.get("topic") || "location-direction";
+  const topic = searchParams.get("topic") || TOPIC_ID;
 
-  // Keep the current task id in a ref so the transport's body resolver always
-  // sees the latest selection without recreating the transport.
+  // Keep the current task id in a ref so the request body always sees the
+  // latest selection without recreating callbacks.
   const selectedTaskRef = useRef<number | null>(null);
 
-  const { messages, setMessages, sendMessage, status, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: `${basePath}/api/chat`,
-      body: () => ({
-        systemPrompt: getEnglishLocationDirectionPrompt(selectedTaskRef.current),
-      }),
-    }),
-  });
-
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [status, setStatus] = useState<"idle" | "submitted" | "streaming">("idle");
   const [input, setInput] = useState("");
   const [selectedTask, setSelectedTask] = useState<number | null>(null);
-
   const [taskPrompt, setTaskPrompt] = useState<string | null>(null);
+  const [locationPair, setLocationPair] = useState<LocationPair | null>(null);
   const [chatFiles, setChatFiles] = useState<File[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [chatVisible, setChatVisible] = useState(true);
   const [currentChatId, setCurrentChatId] = useState(() => createEnglishChatId());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  const [showPinned, setShowPinned] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  // When a chat is loaded from history we don't want the auto-save effect to
+  // re-save it (which would bump updatedAt and re-sort the list to the top).
+  const skipSaveRef = useRef(false);
 
   useEffect(() => {
     selectedTaskRef.current = selectedTask;
   }, [selectedTask]);
 
+  // Broadcast the active chat id so the sidebar can highlight the open item.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("english-chat:active", { detail: { id: currentChatId } })
+    );
+  }, [currentChatId]);
+
+  const locationPairRef = useRef<LocationPair | null>(null);
+  useEffect(() => {
+    locationPairRef.current = locationPair;
+  }, [locationPair]);
+
   const isLoading = status === "submitted" || status === "streaming";
   const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
+  const pinnedMessages = messages.filter((m) => pinnedIds.includes(m.id));
 
   const previewSrc = previewMap[topic] || `${basePath}/english/preview-location-direction.html`;
 
@@ -107,16 +142,53 @@ function EnglishDashboardContent() {
     return () => { recognitionRef.current?.stop(); };
   }, []);
 
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStatus("idle");
+  }, []);
+
+  const handleCopy = useCallback(async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand("copy"); } catch { /* ignore */ }
+      document.body.removeChild(textarea);
+    }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((prev) => (prev === id ? null : prev)), 2000);
+  }, []);
+
+  const togglePin = useCallback((id: string) => {
+    setPinnedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      if (next.length > 0) setShowPinned(true);
+      return next;
+    });
+  }, []);
+
   const handleNewChat = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     setCurrentChatId(createEnglishChatId());
     setMessages([]);
     setInput("");
     setChatFiles([]);
+    setStatus("idle");
     setSelectedTask(null);
     setTaskPrompt(null);
+    setLocationPair(null);
+    setPinnedIds([]);
+    setShowPinned(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setChatVisible(true);
-  }, [setMessages]);
+  }, []);
 
   // Listen for sidebar "New Chat" button
   useEffect(() => {
@@ -131,47 +203,68 @@ function EnglishDashboardContent() {
   useEffect(() => {
     function onLoadChat(event: Event) {
       const detail = (event as CustomEvent<{ item: EnglishChatHistoryItem }>).detail?.item;
-      if (!detail) return;
+      if (!detail || detail.topic !== TOPIC_ID) return;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      // Loading an existing chat must not trigger a re-save.
+      skipSaveRef.current = true;
       setCurrentChatId(detail.id);
-      setMessages(restoreUiMessages(detail.messages));
+      const restored: ChatMsg[] = detail.messages.map((m) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        text: m.parts.find((p) => p.type === "text")?.text ?? "",
+        images: m.parts
+          .filter((p) => p.type === "file")
+          .map((p) => ({ mediaType: p.mediaType ?? "", dataUrl: p.url ?? "", filename: p.filename })),
+      }));
+      setMessages(restored);
       setSelectedTask(detail.selectedTask ?? null);
-      setTaskPrompt(
-        detail.selectedTask
-          ? tasks.find((t) => t.id === detail.selectedTask)?.prompt ?? null
-          : null
-      );
+      // The chosen [A]/[B] live in the saved conversation, so we don't show a
+      // (possibly stale) task prompt card on reload.
+      setTaskPrompt(null);
+      setLocationPair(null);
       setInput("");
       setChatFiles([]);
+      setStatus("idle");
+      setPinnedIds([]);
+      setShowPinned(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setChatVisible(true);
     }
     window.addEventListener("english-chat:load", onLoadChat);
     return () => window.removeEventListener("english-chat:load", onLoadChat);
-  }, [setMessages]);
+  }, []);
 
   // Auto-save chat history
   useEffect(() => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
     if (messages.length === 0) return;
     if (status === "streaming" || status === "submitted") return;
 
-    const firstUserText = messages
-      .filter((m) => m.role === "user")
-      .flatMap((m) => m.parts)
-      .find((p) => p.type === "text" && p.text.trim().length > 0);
+    const firstUserText = messages.find((m) => m.role === "user")?.text;
+    const title = firstUserText ? firstUserText.slice(0, 50) : DEFAULT_TITLE;
 
-    const title = firstUserText?.type === "text"
-      ? firstUserText.text.slice(0, 50)
-      : "English Chat";
+    const savedMessages: SavedChatMessage[] = messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      parts: [
+        ...(m.text ? [{ type: "text" as const, text: m.text }] : []),
+        ...(m.images ?? []).map((img) => ({ type: "file" as const, url: img.dataUrl, mediaType: img.mediaType, filename: img.filename })),
+      ],
+    }));
 
-    upsertEnglishChatHistory({
+    void upsertEnglishChatHistory({
       id: currentChatId,
       title,
-      topic,
+      topic: TOPIC_ID,
       selectedTask,
-      messages: serializeUiMessages(messages),
+      messages: savedMessages,
       updatedAt: new Date().toISOString(),
     });
-  }, [currentChatId, messages, status, topic, selectedTask]);
+  }, [currentChatId, messages, status, selectedTask]);
 
   function stopListening() {
     recognitionRef.current?.stop();
@@ -212,21 +305,181 @@ function EnglishDashboardContent() {
     });
   }
 
+  type PayloadMessage = {
+    role: "user" | "assistant";
+    text: string;
+    images?: { mediaType: string; data: string }[];
+  };
+
+  // Streams an assistant reply (with typewriter effect) into the message that
+  // matches `assistantId`. Shared by manual sends and task kickoffs.
+  async function runStream(
+    assistantId: string,
+    payloadMessages: PayloadMessage[],
+    controller: AbortController,
+    ctx: { taskId: number | null; pair: LocationPair | null },
+  ) {
+    try {
+      const res = await fetch(`${basePath}${API_ENDPOINT}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: payloadMessages,
+          taskId: ctx.taskId,
+          locationA: ctx.pair?.from ?? null,
+          locationB: ctx.pair?.to ?? null,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => "");
+        setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, text: `(Error) ${errText || res.statusText}` } : m));
+        setStatus("idle");
+        abortRef.current = null;
+        return;
+      }
+
+      setStatus("streaming");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let target = "";
+      let displayed = "";
+      let streamDone = false;
+      let rafId: number | null = null;
+      const CHARS_PER_TICK = 2;
+
+      const tick = () => {
+        if (displayed.length < target.length) {
+          const remaining = target.length - displayed.length;
+          const step = Math.max(CHARS_PER_TICK, Math.ceil(remaining / 30));
+          displayed = target.slice(0, displayed.length + step);
+          const snapshot = displayed;
+          setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, text: snapshot } : m));
+        }
+        if (displayed.length < target.length || !streamDone) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          rafId = null;
+        }
+      };
+      rafId = requestAnimationFrame(tick);
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (chunk) target += chunk;
+        }
+      } finally {
+        streamDone = true;
+        await new Promise<void>((resolve) => {
+          const waitForCatchUp = () => {
+            if (displayed.length >= target.length) {
+              if (rafId !== null) cancelAnimationFrame(rafId);
+              setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, text: target } : m));
+              resolve();
+            } else {
+              requestAnimationFrame(waitForCatchUp);
+            }
+          };
+          waitForCatchUp();
+        });
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, text: error instanceof Error ? `(Error) ${error.message}` : "(Error) Unknown error" } : m));
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId || m.text));
+      }
+    } finally {
+      abortRef.current = null;
+      setStatus("idle");
+    }
+  }
+
+  // Switching tasks resets the conversation and lets the chatbot greet the
+  // student with the new task instructions automatically.
+  async function startTask(id: number) {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (isListening) stopListening();
+
+    const pair = id === 5 ? null : pickLocationPair(id);
+    const prompt = id === 5
+      ? TASK_5_PROMPT
+      : pair ? taskTemplates[id](pair.from, pair.to) : null;
+
+    // Update selection + keep refs in sync immediately (effects run too late).
+    setSelectedTask(id);
+    setLocationPair(pair);
+    setTaskPrompt(prompt);
+    selectedTaskRef.current = id;
+    locationPairRef.current = pair;
+
+    // Reset the chat for the new task.
+    setInput("");
+    setChatFiles([]);
+    setPinnedIds([]);
+    setShowPinned(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setCurrentChatId(createEnglishChatId());
+    setChatVisible(true);
+
+    const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
+    setMessages([assistantMsg]);
+    setStatus("submitted");
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Hidden trigger so the assistant produces the opening instructions.
+    const triggerText = id === 5
+      ? "Please start Task 5 now. Greet me warmly and give me the Task 5 instructions."
+      : `Please start Task ${id} now. Greet me warmly and ask me how to go from ${pair!.from} to ${pair!.to}, following the Task ${id} instructions.`;
+
+    await runStream(assistantMsg.id, [{ role: "user", text: triggerText }], controller, { taskId: id, pair });
+  }
+
   async function doSend() {
     if (!canSend) return;
     if (isListening) stopListening();
-    const fileParts = await Promise.all(
+
+    const images: ChatImage[] = await Promise.all(
       chatFiles.map(async (file) => ({
-        type: "file" as const,
         mediaType: file.type,
+        dataUrl: await fileToDataURL(file),
         filename: file.name,
-        url: await fileToDataURL(file),
       }))
     );
-    sendMessage({ text: input.trim() || "(see image)", ...(fileParts.length > 0 ? { files: fileParts } : {}) });
+
+    const userText = input.trim() || "(see image)";
+    const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: "user", text: userText, ...(images.length > 0 ? { images } : {}) };
+    const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
+
+    const nextMessages = [...messages, userMsg];
+    setMessages([...nextMessages, assistantMsg]);
     setInput("");
     setChatFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setStatus("submitted");
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const payloadMessages: PayloadMessage[] = nextMessages.map((message) => ({
+      role: message.role,
+      text: message.text,
+      ...(message.images && message.images.length > 0
+        ? { images: message.images.map((image) => ({ mediaType: image.mediaType, data: image.dataUrl })) }
+        : {}),
+    }));
+
+    await runStream(assistantMsg.id, payloadMessages, controller, {
+      taskId: selectedTaskRef.current,
+      pair: locationPairRef.current,
+    });
   }
 
   function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -256,13 +509,13 @@ function EnglishDashboardContent() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    doSend();
+    void doSend();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      doSend();
+      void doSend();
     }
   }
 
@@ -316,7 +569,7 @@ function EnglishDashboardContent() {
             </span>
             <Separator orientation="vertical" className="h-4" />
             <div className="flex gap-1.5">
-              {tasks.map(({ id, label, prompt }) => (
+              {tasks.map(({ id, label }) => (
                 <Button
                   key={id}
                   variant={selectedTask === id ? "default" : "outline"}
@@ -326,10 +579,7 @@ function EnglishDashboardContent() {
                       ? "h-7 px-3 text-xs rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
                       : "h-7 px-3 text-xs rounded-[4px] border-[#d8d8d8]"
                   }
-                  onClick={() => {
-                    setSelectedTask(id);
-                    setTaskPrompt(prompt || null);
-                  }}
+                  onClick={() => startTask(id)}
                 >
                   {label}
                 </Button>
@@ -374,7 +624,7 @@ function EnglishDashboardContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-[#146ef5] text-white">
-                  <MessageSquare className="size-4" />
+                  <Sparkles className="size-4" />
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">English assistant</p>
@@ -382,6 +632,19 @@ function EnglishDashboardContent() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {pinnedIds.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPinned((v) => !v)}
+                    className={`rounded-[4px] border-[#d8d8d8] px-2 text-xs font-medium transition-all hover:bg-[#f4f4f5] ${showPinned ? "text-[#146ef5] border-[#146ef5]/40" : "text-[#080808]"}`}
+                    title={showPinned ? "Hide pinned" : "Show pinned"}
+                  >
+                    <Pin className="size-3.5" />
+                    {pinnedIds.length}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="default"
@@ -406,90 +669,131 @@ function EnglishDashboardContent() {
             </div>
           </div>
 
+          {/* Pinned messages (collapsible, kept inside the chat panel) */}
+          {showPinned && pinnedMessages.length > 0 && (
+            <div className="border-b border-[#d8d8d8] bg-[#fafafa] px-3 py-2">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#ababab]">
+                <Pin className="size-3" />
+                Pinned messages
+              </div>
+              <div className="max-h-48 space-y-2 overflow-y-auto">
+                {pinnedMessages.map((message) => (
+                  <div key={message.id} className="rounded-[8px] border border-[#ededed] bg-white p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${message.role === "user" ? "bg-[#f4f4f5] text-[#5a5a5a]" : "bg-[#146ef5]/10 text-[#146ef5]"}`}>
+                        {message.role === "user" ? "You" : "AI"}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <button type="button" onClick={() => handleCopy(message.id, message.text)}
+                          className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="Copy">
+                          {copiedId === message.id ? <Check className="size-3.5 text-[#16a34a]" /> : <Copy className="size-3.5" />}
+                        </button>
+                        <button type="button" onClick={() => togglePin(message.id)}
+                          className="inline-flex size-7 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]" title="Unpin">
+                          <PinOff className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="prose prose-sm max-w-none break-words text-[13px] leading-relaxed [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-1.5 [&_th]:py-0.5 [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-1.5 [&_td]:py-0.5">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                        {message.text}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Chat messages */}
-          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
+          <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 min-h-0 bg-white">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start gap-2 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.role === "assistant" && (
-                  <ChatAvatar
-                    role="assistant"
-                    className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
-                  />
-                )}
-                <div
-                  className={`min-w-0 max-w-[85%] rounded-[8px] px-3 py-2 text-sm leading-relaxed shadow-[2px_2px_0px_#080808] ${
-                    message.role === "user"
-                      ? "bg-[#146ef5] text-white"
-                      : "border border-[#d8d8d8] bg-white text-[#080808]"
-                  }`}
-                >
-                  {message.parts.some((p) => p.type === "file") && (
-                    <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
-                      {message.parts
-                        .filter((p): p is { type: "file"; mediaType: string; url: string; filename?: string } => p.type === "file" && p.mediaType.startsWith("image/"))
-                        .map((filePart, i) => (
-                          <img
-                            key={i}
-                            src={filePart.url}
-                            alt={filePart.filename ?? "uploaded image"}
-                            className="max-w-[200px] max-h-[200px] rounded-[4px] border border-white/30 object-contain"
-                          />
+              message.role === "user" ? (
+                <div key={message.id} className="flex flex-col items-end">
+                  <div className="min-w-0 max-w-[85%] rounded-2xl bg-[#f4f4f5] px-3.5 py-2 text-sm leading-relaxed text-[#080808]">
+                    {message.images && message.images.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-1.5 not-prose">
+                        {message.images.map((image, idx) => (
+                          <img key={idx} src={image.dataUrl} alt={image.filename ?? "uploaded image"} className="max-w-[180px] max-h-[180px] rounded-[8px] object-contain" />
                         ))}
+                      </div>
+                    )}
+                    <div className="prose prose-sm max-w-none break-words [overflow-wrap:anywhere]">
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                        {message.text}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  {message.text && (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(message.id, message.text)}
+                        className="group/copy relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]"
+                        aria-label="Copy message"
+                      >
+                        {copiedId === message.id ? <Check className="size-4 text-[#16a34a]" /> : <Copy className="size-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePin(message.id)}
+                        className={`group/pin relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full transition-colors hover:bg-[#f4f4f5] ${pinnedIds.includes(message.id) ? "text-[#146ef5]" : "text-[#9a9a9a] hover:text-[#5a5a5a]"}`}
+                        aria-label={pinnedIds.includes(message.id) ? "Unpin" : "Pin message"}
+                      >
+                        {pinnedIds.includes(message.id) ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                      </button>
                     </div>
                   )}
-                  {message.parts
-                    .filter((part): part is { type: "text"; text: string } => part.type === "text")
-                    .map((part, i) => (
-                      message.role === "assistant" ? (
-                        <div
-                          key={i}
-                          className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#d8d8d8] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#f7f7f7] [&_td]:border [&_td]:border-[#d8d8d8] [&_td]:px-2 [&_td]:py-1"
-                        >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[[rehypeKatex, { strict: false }]]}
-                          >
-                            {part.text}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        <div
-                          key={i}
-                          className="prose prose-sm max-w-none break-words prose-invert [overflow-wrap:anywhere]"
-                        >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[[rehypeKatex, { strict: false }]]}
-                          >
-                            {part.text}
-                          </ReactMarkdown>
-                        </div>
-                      )
-                    ))}
                 </div>
-                {message.role === "user" && (
-                  <ChatAvatar
-                    role="user"
-                    className="h-8 w-8 rounded-[4px] border border-[#d8d8d8] bg-white"
-                  />
-                )}
-              </div>
+              ) : (
+                <div key={message.id} className="flex items-start gap-2.5">
+                  {message.text ? (
+                    <Sparkles className="mt-1 size-5 shrink-0 text-[#146ef5]" />
+                  ) : (
+                    <span className="relative mt-0.5 inline-flex size-6 shrink-0 items-center justify-center">
+                      <span className="absolute inset-0 rounded-full border-2 border-[#146ef5]/20 border-t-[#146ef5] animate-spin" />
+                      <Sparkles className="size-3.5 text-[#146ef5]" />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {message.text && (
+                      <div className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#fafafa] [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-2 [&_td]:py-1">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                          {message.text}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                    {message.text && !(isLoading && message.id === messages[messages.length - 1]?.id) && (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(message.id, message.text)}
+                          className="group/copy relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-[#f4f4f5] hover:text-[#5a5a5a]"
+                          aria-label="Copy reply"
+                        >
+                          {copiedId === message.id ? <Check className="size-4 text-[#16a34a]" /> : <Copy className="size-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => togglePin(message.id)}
+                          className={`group/pin relative mt-1.5 inline-flex size-8 items-center justify-center rounded-full transition-colors hover:bg-[#f4f4f5] ${pinnedIds.includes(message.id) ? "text-[#146ef5]" : "text-[#9a9a9a] hover:text-[#5a5a5a]"}`}
+                          aria-label={pinnedIds.includes(message.id) ? "Unpin" : "Pin reply"}
+                        >
+                          {pinnedIds.includes(message.id) ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
             ))}
 
             {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-              <div className="flex items-start gap-2 justify-start">
-                <ChatAvatar
-                  role="assistant"
-                  className="h-8 w-8 rounded-[4px] shadow-[2px_2px_0px_#080808]"
-                />
-                <div className="rounded-[8px] border border-[#d8d8d8] bg-white px-3 py-2 text-sm text-[#5a5a5a]">
-                  <span className="animate-pulse">Thinking...</span>
-                </div>
+              <div className="flex items-start gap-2.5">
+                <span className="relative mt-0.5 inline-flex size-6 shrink-0 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full border-2 border-[#146ef5]/20 border-t-[#146ef5] animate-spin" />
+                  <Sparkles className="size-3.5 text-[#146ef5]" />
+                </span>
               </div>
             )}
 
@@ -499,7 +803,7 @@ function EnglishDashboardContent() {
           {/* Chat input */}
           <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
             <form onSubmit={handleSubmit}>
-              <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
+              <div className="relative w-full rounded-2xl border border-[#e5e5e5] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 {/* Image preview thumbnails */}
                 {chatFiles.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 px-3 pt-2">
@@ -508,7 +812,7 @@ function EnglishDashboardContent() {
                         <img
                           src={URL.createObjectURL(file)}
                           alt={file.name}
-                          className="size-12 rounded-[4px] border border-[#d8d8d8] object-cover"
+                          className="size-12 rounded-[8px] border border-[#e5e5e5] object-cover"
                         />
                         <button
                           type="button"
@@ -529,7 +833,7 @@ function EnglishDashboardContent() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
-                  className="min-h-[58px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-3 pt-3 pb-10 text-sm shadow-none focus-visible:ring-0"
+                  className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0"
                 />
 
                 <input
@@ -541,31 +845,29 @@ function EnglishDashboardContent() {
                   className="hidden"
                 />
 
-                <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                   <div className="flex items-center gap-1">
                     <Button
                       type="button"
                       size="icon-sm"
                       variant="ghost"
                       onClick={() => fileInputRef.current?.click()}
-                      className="rounded-[4px] border border-[#d8d8d8] bg-white text-[#080808] transition-all hover:border-[#898989] hover:bg-white"
+                      className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]"
                       title="Upload image"
                     >
-                      <ImagePlus className="size-3.5 text-[#5a5a5a]" />
+                      <ImagePlus className="size-4" />
                     </Button>
                     <Button
                       type="button"
                       size="icon-sm"
                       variant="ghost"
                       onClick={toggleVoice}
-                      className={`rounded-[4px] border bg-white transition-all hover:bg-white ${
-                        isListening
-                          ? 'border-red-400 text-red-500 hover:border-red-500 hover:text-red-600'
-                          : 'border-[#d8d8d8] text-[#080808] hover:border-[#898989] hover:text-[#080808]'
+                      className={`rounded-full transition-all ${
+                        isListening ? 'text-red-500 hover:bg-red-50' : 'text-[#5a5a5a] hover:bg-[#f4f4f5]'
                       }`}
                       title={isListening ? 'Stop voice input' : 'Voice input'}
                     >
-                      {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5 text-[#5a5a5a]" />}
+                      {isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
                     </Button>
                     {isListening && (
                       <span className="text-[11px] font-medium text-red-500 animate-pulse">Listening…</span>
@@ -575,8 +877,8 @@ function EnglishDashboardContent() {
                     <Button
                       type="button"
                       size="icon-sm"
-                      variant="outline"
-                      className="rounded-[4px]"
+                      variant="default"
+                      className="rounded-full bg-[#146ef5] hover:bg-[#0055d4]"
                       onClick={stop}
                     >
                       <Square className="size-3" />
@@ -585,10 +887,10 @@ function EnglishDashboardContent() {
                     <Button
                       type="submit"
                       size="icon-sm"
-                      className="rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
+                      className="rounded-full bg-[#146ef5] text-white hover:bg-[#0055d4] disabled:bg-[#d8d8d8]"
                       disabled={!canSend}
                     >
-                      <ArrowUp className="size-3.5" />
+                      <ArrowUp className="size-4" />
                     </Button>
                   )}
                 </div>

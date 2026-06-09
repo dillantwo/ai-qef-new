@@ -148,6 +148,9 @@ function MathDashboardContent() {
   const [currentChatId, setCurrentChatId] = useState(() => createMathChatId());
   const [toolPreviewRefreshKey, setToolPreviewRefreshKey] = useState(0);
   const suppressHistoryAnalysisRef = useRef(false);
+  // Loading a saved chat must not re-save it (which would bump updatedAt and
+  // reorder the history list). Cleared once a genuine new exchange starts.
+  const skipSaveRef = useRef(false);
   const restoredToolUrlRef = useRef<string | null>(null);
   const [toolChatSessionIds, setToolChatSessionIds] = useState<Record<"volume-cubes" | "clock-24hrs" | "clock-time-difference", string>>({
     "volume-cubes": createMathChatId(),
@@ -494,6 +497,21 @@ function MathDashboardContent() {
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { toolboxRef.current = toolbox; }, [toolbox]);
 
+  // Allow saving again once a genuine new exchange starts (a new send sets the
+  // status to submitted/streaming; loading a chat never does).
+  useEffect(() => {
+    if (status === "submitted" || status === "streaming") {
+      skipSaveRef.current = false;
+    }
+  }, [status]);
+
+  // Broadcast the active math chat id so the sidebar can highlight the open item.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("math-chat:active", { detail: { id: currentChatId } })
+    );
+  }, [currentChatId]);
+
   function serializeMessages(): SavedChatMessage[] {
     return serializeUiMessages(messages);
   }
@@ -548,6 +566,9 @@ function MathDashboardContent() {
 
       const s = statusRef.current;
       if (s === "streaming" || s === "submitted") stopRef.current?.();
+
+      // Don't let this load trigger a re-save (which would reorder the list).
+      skipSaveRef.current = true;
 
       setChatVisible(true);
       setIsExtractingParams(false);
@@ -611,6 +632,10 @@ function MathDashboardContent() {
       setMessagesRef.current?.([]);
       toolboxRef.current?.setSelectedTool(detail.kind);
       setToolChatSessionIds((prev) => ({ ...prev, [detail.kind]: detail.id }));
+      // Tool chats don't change currentChatId, so highlight this item directly.
+      window.dispatchEvent(
+        new CustomEvent("math-chat:active", { detail: { id: detail.id } })
+      );
     }
     function handleLoadAiTool(event: Event) {
       const customEvent = event as CustomEvent<{
@@ -666,6 +691,10 @@ function MathDashboardContent() {
 
   useEffect(() => {
     if (selectedTool === "volume-cubes" || selectedTool === "clock-24hrs" || selectedTool === "clock-time-difference") {
+      return;
+    }
+
+    if (skipSaveRef.current) {
       return;
     }
 

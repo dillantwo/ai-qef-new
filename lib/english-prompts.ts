@@ -213,11 +213,71 @@ export const ENGLISH_LOCATION_DIRECTION_PROMPTS: Record<number, string> = {
   5: SHARED_CORE + TASK_5 + POST,
 };
 
-export function getEnglishLocationDirectionPrompt(taskId: number | null | undefined): string {
-  if (!taskId || !ENGLISH_LOCATION_DIRECTION_PROMPTS[taskId]) {
-    return ENGLISH_LOCATION_DIRECTION_PROMPTS[1];
+// Buildings grouped by street — must match the map described in SHARED_CORE.
+export const LOCATION_BUILDINGS: Record<"west" | "north" | "east", string[]> = {
+  west: ["Post Office", "Train Station", "Book Shop", "Hospital", "Church", "Police Station"],
+  north: ["Sports Centre", "Bank", "Fire Station"],
+  east: ["Clinic", "Bakery", "Supermarket"],
+};
+
+// Same-street pairs used by Tasks 1–2 (2–3 buildings apart), taken from the
+// "Same-street task pairs" list in SHARED_CORE.
+export const LOCATION_SAME_STREET_PAIRS: Array<[string, string]> = [
+  ["Post Office", "Hospital"],
+  ["Train Station", "Church"],
+  ["Book Shop", "Police Station"],
+  ["Sports Centre", "Fire Station"],
+  ["Supermarket", "Clinic"],
+];
+
+export type LocationPair = { from: string; to: string };
+
+function randItem<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Pick a concrete [A] → [B] location pair for a task.
+ * - Tasks 1–2: a same-street pair (2–3 buildings apart).
+ * - Tasks 3–4: a cross-street pair (two buildings on different streets).
+ * Task 5 has no pair (the student uses their own map) → returns null.
+ */
+export function pickLocationPair(taskId: number | null | undefined): LocationPair | null {
+  if (taskId === 5) return null;
+
+  // Cross-street for Tasks 3–4.
+  if (taskId === 3 || taskId === 4) {
+    const streets = [LOCATION_BUILDINGS.west, LOCATION_BUILDINGS.north, LOCATION_BUILDINGS.east];
+    const i = Math.floor(Math.random() * streets.length);
+    let j = Math.floor(Math.random() * (streets.length - 1));
+    if (j >= i) j += 1;
+    return { from: randItem(streets[i]), to: randItem(streets[j]) };
   }
-  return ENGLISH_LOCATION_DIRECTION_PROMPTS[taskId];
+
+  // Same-street for Tasks 1–2 (default).
+  const [a, b] = randItem(LOCATION_SAME_STREET_PAIRS);
+  return Math.random() < 0.5 ? { from: a, to: b } : { from: b, to: a };
+}
+
+export function getEnglishLocationDirectionPrompt(
+  taskId: number | null | undefined,
+  pair?: { from?: string | null; to?: string | null } | null,
+): string {
+  const base = (!taskId || !ENGLISH_LOCATION_DIRECTION_PROMPTS[taskId])
+    ? ENGLISH_LOCATION_DIRECTION_PROMPTS[1]
+    : ENGLISH_LOCATION_DIRECTION_PROMPTS[taskId];
+
+  if (pair?.from && pair?.to) {
+    return `${base}
+
+## Fixed Locations for This Task (OVERRIDE — highest priority)
+The starting location [A] and destination [B] have ALREADY been chosen for you. Do NOT randomly pick your own pair.
+- [A] (start) = ${pair.from}
+- [B] (destination) = ${pair.to}
+Use EXACTLY these two locations in your opening question and in ALL route verification. Wherever the task instructions say [A], use "${pair.from}"; wherever they say [B], use "${pair.to}".`;
+  }
+
+  return base;
 }
 
 export const ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT = `# System Prompt for Primary School English Teaching Assistant

@@ -52,6 +52,12 @@ export interface ChineseTopicConfig {
   emptyHint?: string;
   /** Optional default title used for history entries. */
   defaultTitle?: string;
+  /** Optional quick-start buttons shown when the chat is empty. Clicking one
+   *  sends `message` as if the student had typed it. */
+  quickStartOptions?: { label: string; message: string }[];
+  /** When true, the input box is disabled until the student picks a
+   *  quick-start option (i.e. while the conversation is empty). */
+  requireQuickStartSelection?: boolean;
 }
 
 type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
@@ -77,6 +83,8 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     placeholder = "輸入你的作文或問題…",
     emptyHint = `開始與 AI 對話，練習${config.topicLabel}。`,
     defaultTitle = `${config.topicLabel}對話`,
+    quickStartOptions,
+    requireQuickStartSelection = false,
   } = config;
   const HeaderIcon = ICON_MAP[icon];
 
@@ -105,10 +113,25 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Loading a saved chat must not re-save it (which would bump updatedAt and
+  // reorder the shared history list).
+  const skipSaveRef = useRef(false);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
+  const mustSelectFirst =
+    requireQuickStartSelection &&
+    !!quickStartOptions?.length &&
+    messages.length === 0;
+  const canSend =
+    (!!input.trim() || chatFiles.length > 0) && !isLoading && !mustSelectFirst;
   const pinnedMessages = messages.filter((m) => pinnedIds.includes(m.id));
+
+  // Broadcast the active chat id so the sidebar can highlight the open item.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("chinese-chat:active", { detail: { id: currentChatId } })
+    );
+  }, [currentChatId]);
 
   useEffect(() => {
     setSessionId(makeSessionId());
@@ -172,6 +195,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
       if (!detail || detail.topic !== topicId) return;
       abortRef.current?.abort();
       abortRef.current = null;
+      skipSaveRef.current = true;
       setCurrentChatId(detail.id);
       const restored: ChatMsg[] = detail.messages.map((m) => ({
         id: m.id,
@@ -195,6 +219,10 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
 
   // Auto-save chat history
   useEffect(() => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
     if (messages.length === 0) return;
     if (status === "streaming" || status === "submitted") return;
 
@@ -266,19 +294,26 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     });
   }
 
-  async function doSend() {
-    if (!canSend) return;
+  async function doSend(overrideText?: string) {
+    const isQuick = typeof overrideText === "string";
+    if (isQuick) {
+      if (isLoading) return;
+    } else if (!canSend) {
+      return;
+    }
     if (isListening) stopListening();
 
-    const images: ChatImage[] = await Promise.all(
-      chatFiles.map(async (file) => ({
-        mediaType: file.type,
-        dataUrl: await fileToDataURL(file),
-        filename: file.name,
-      }))
-    );
+    const images: ChatImage[] = isQuick
+      ? []
+      : await Promise.all(
+          chatFiles.map(async (file) => ({
+            mediaType: file.type,
+            dataUrl: await fileToDataURL(file),
+            filename: file.name,
+          }))
+        );
 
-    const userText = input.trim() || "（見圖片）";
+    const userText = isQuick ? overrideText : (input.trim() || "（見圖片）");
     const userMsg: ChatMsg = { id: `u-${Date.now()}`, role: "user", text: userText, ...(images.length > 0 ? { images } : {}) };
     const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
 
@@ -438,8 +473,24 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
         <div className={`flex-1 px-4 py-6 min-h-0 bg-white ${messages.length > 0 ? "overflow-y-auto" : "overflow-hidden"}`}>
           <div className="w-full space-y-6">
           {messages.length === 0 && (
-            <div className="flex h-full items-center justify-center text-sm text-[#9a9a9a]">
-              {emptyHint}
+            <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
+              <span className="text-sm text-[#9a9a9a]">{emptyHint}</span>
+              {quickStartOptions && quickStartOptions.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {quickStartOptions.map((opt) => (
+                    <Button
+                      key={opt.message}
+                      type="button"
+                      variant="outline"
+                      onClick={() => void doSend(opt.message)}
+                      disabled={isLoading}
+                      className="rounded-full border-[#e5e5e5] px-4 py-2 text-sm font-medium text-[#080808] transition-all hover:border-[#146ef5]/40 hover:bg-[#146ef5]/5 hover:text-[#146ef5]"
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {messages.map((message) => (
@@ -579,16 +630,16 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
                   ))}
                 </div>
               )}
-              <Textarea ref={textareaRef} placeholder={placeholder} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
-                className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0" />
+              <Textarea ref={textareaRef} placeholder={mustSelectFirst ? "請先在上方選擇一個模式…" : placeholder} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} disabled={mustSelectFirst}
+                className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-60" />
               <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleChatFileChange} className="hidden" />
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => fileInputRef.current?.click()}
+                  <Button type="button" size="icon-sm" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={mustSelectFirst}
                     className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="上傳圖片">
                     <ImagePlus className="size-4" />
                   </Button>
-                  <Button type="button" size="icon-sm" variant="ghost" onClick={toggleVoice}
+                  <Button type="button" size="icon-sm" variant="ghost" onClick={toggleVoice} disabled={mustSelectFirst}
                     className={`rounded-full transition-all ${isListening ? 'text-red-500 hover:bg-red-50' : 'text-[#5a5a5a] hover:bg-[#f4f4f5]'}`}
                     title={isListening ? '停止語音輸入' : '語音輸入'}>
                     {isListening ? <MicOff className="size-4" /> : <Mic className="size-4" />}

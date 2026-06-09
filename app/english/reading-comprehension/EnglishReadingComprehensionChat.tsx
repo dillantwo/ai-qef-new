@@ -81,10 +81,20 @@ export default function EnglishReadingComprehensionChat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Loading a saved chat must not re-save it (which would bump updatedAt and
+  // reorder the shared history list).
+  const skipSaveRef = useRef(false);
 
   const isLoading = status === "submitted" || status === "streaming";
   const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
   const pinnedMessages = messages.filter((m) => pinnedIds.includes(m.id));
+
+  // Broadcast the active chat id so the sidebar can highlight the open item.
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("english-chat:active", { detail: { id: currentChatId } })
+    );
+  }, [currentChatId]);
 
   useEffect(() => {
     setSessionId(makeSessionId());
@@ -149,6 +159,7 @@ export default function EnglishReadingComprehensionChat() {
       if (!detail || detail.topic !== TOPIC_ID) return;
       abortRef.current?.abort();
       abortRef.current = null;
+      skipSaveRef.current = true;
       setCurrentChatId(detail.id);
       const restored: ChatMsg[] = detail.messages.map((m) => ({
         id: m.id,
@@ -172,6 +183,10 @@ export default function EnglishReadingComprehensionChat() {
 
   // Auto-save chat history
   useEffect(() => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
     if (messages.length === 0) return;
     if (status === "streaming" || status === "submitted") return;
 

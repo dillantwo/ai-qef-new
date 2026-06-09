@@ -152,6 +152,9 @@ export function AppSidebar() {
   const [mathChatHistory, setMathChatHistory] = useState<MathChatHistoryItem[]>([]);
   const [englishChatHistory, setEnglishChatHistory] = useState<EnglishChatHistoryItem[]>([]);
   const [chineseChatHistory, setChineseChatHistory] = useState<ChineseChatHistoryItem[]>([]);
+  const [activeEnglishChatId, setActiveEnglishChatId] = useState<string | null>(null);
+  const [activeChineseChatId, setActiveChineseChatId] = useState<string | null>(null);
+  const [activeMathChatId, setActiveMathChatId] = useState<string | null>(null);
 
   const fetchSavedAiTools = useCallback(() => {
     if (!isMathDashboard || (!isTeacher && !isStudent)) return;
@@ -214,6 +217,17 @@ export function AppSidebar() {
     return () => window.removeEventListener("math-chat-history:changed", handleChange);
   }, [isMathDashboard]);
 
+  // Track which math chat is currently open so we can highlight it.
+  useEffect(() => {
+    if (!isMathDashboard) return;
+    function handleActive(event: Event) {
+      const id = (event as CustomEvent<{ id: string | null }>).detail?.id ?? null;
+      setActiveMathChatId(id);
+    }
+    window.addEventListener("math-chat:active", handleActive);
+    return () => window.removeEventListener("math-chat:active", handleActive);
+  }, [isMathDashboard]);
+
   useEffect(() => {
     if (!isEnglishDashboard) return;
 
@@ -236,6 +250,17 @@ export function AppSidebar() {
     return () => window.removeEventListener("english-chat-history:changed", handleChange);
   }, [isEnglishDashboard, pathname]);
 
+  // Track which English chat is currently open so we can highlight it.
+  useEffect(() => {
+    if (!isEnglishDashboard) return;
+    function handleActive(event: Event) {
+      const id = (event as CustomEvent<{ id: string | null }>).detail?.id ?? null;
+      setActiveEnglishChatId(id);
+    }
+    window.addEventListener("english-chat:active", handleActive);
+    return () => window.removeEventListener("english-chat:active", handleActive);
+  }, [isEnglishDashboard]);
+
   useEffect(() => {
     if (!isChineseWriting) return;
 
@@ -256,6 +281,17 @@ export function AppSidebar() {
     window.addEventListener("chinese-chat-history:changed", handleChange);
     return () => window.removeEventListener("chinese-chat-history:changed", handleChange);
   }, [isChineseWriting, pathname]);
+
+  // Track which Chinese chat is currently open so we can highlight it.
+  useEffect(() => {
+    if (!isChineseWriting) return;
+    function handleActive(event: Event) {
+      const id = (event as CustomEvent<{ id: string | null }>).detail?.id ?? null;
+      setActiveChineseChatId(id);
+    }
+    window.addEventListener("chinese-chat:active", handleActive);
+    return () => window.removeEventListener("chinese-chat:active", handleActive);
+  }, [isChineseWriting]);
 
   useEffect(() => {
     function handleAiToolSaved() {
@@ -407,17 +443,22 @@ export function AppSidebar() {
                 {englishChatHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                    className={`flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors ${
+                      activeEnglishChatId === item.id
+                        ? "bg-blue-50 ring-1 ring-blue-300"
+                        : "hover:bg-muted"
+                    }`}
                   >
                     <button
                       className="flex min-w-0 flex-1 items-start gap-2 text-left"
                       onClick={() => {
+                        setActiveEnglishChatId(item.id);
                         window.dispatchEvent(new CustomEvent("english-chat:load", { detail: { item } }));
                       }}
                     >
-                      <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <MessageSquare className={`size-3.5 mt-0.5 shrink-0 ${activeEnglishChatId === item.id ? "text-blue-600" : "text-muted-foreground"}`} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-medium leading-snug line-clamp-2">
+                        <div className={`text-xs font-medium leading-snug line-clamp-2 ${activeEnglishChatId === item.id ? "text-blue-700" : ""}`}>
                           {item.title}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -461,17 +502,22 @@ export function AppSidebar() {
                 {chineseChatHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                    className={`flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors ${
+                      activeChineseChatId === item.id
+                        ? "bg-blue-50 ring-1 ring-blue-300"
+                        : "hover:bg-muted"
+                    }`}
                   >
                     <button
                       className="flex min-w-0 flex-1 items-start gap-2 text-left"
                       onClick={() => {
+                        setActiveChineseChatId(item.id);
                         window.dispatchEvent(new CustomEvent("chinese-chat:load", { detail: { item } }));
                       }}
                     >
-                      <MessageSquare className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <MessageSquare className={`size-3.5 mt-0.5 shrink-0 ${activeChineseChatId === item.id ? "text-blue-600" : "text-muted-foreground"}`} />
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-medium leading-snug line-clamp-2">
+                        <div className={`text-xs font-medium leading-snug line-clamp-2 ${activeChineseChatId === item.id ? "text-blue-700" : ""}`}>
                           {item.title}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -605,20 +651,25 @@ export function AppSidebar() {
                   {mathChatHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                      className={`flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors ${
+                        activeMathChatId === item.id
+                          ? "bg-blue-50 ring-1 ring-blue-300"
+                          : "hover:bg-muted"
+                      }`}
                     >
                       <button
                         className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
                         onClick={() => {
+                          setActiveMathChatId(item.id);
                           window.dispatchEvent(new CustomEvent("dashboard:load-math-chat", { detail: { item } }));
                         }}
                       >
                         {(() => {
                           const Icon = getMathHistoryIcon(item.kind, item.selectedTool);
-                          return <Icon className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />;
+                          return <Icon className={`size-3.5 mt-0.5 shrink-0 ${activeMathChatId === item.id ? "text-blue-600" : "text-muted-foreground"}`} />;
                         })()}
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium leading-snug line-clamp-2 prose prose-sm max-w-none [&_p]:m-0">
+                          <div className={`text-xs font-medium leading-snug line-clamp-2 prose prose-sm max-w-none [&_p]:m-0 ${activeMathChatId === item.id ? "text-blue-700" : ""}`}>
                             <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
                               {item.title}
                             </ReactMarkdown>
