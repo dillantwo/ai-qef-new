@@ -43,6 +43,10 @@ export interface ChineseTopicConfig {
   sessionPrefix: string;
   /** API route this topic talks to (system prompt lives on the server). */
   apiEndpoint: string;
+  /** Where the header back-link points (defaults to the Chinese subject). */
+  backHref?: string;
+  /** Label shown next to the header back-link (defaults to "返回中文科"). */
+  backLabel?: string;
   /** Optional header icon name (defaults to "pen"). Passed as a string so the
    *  config can cross the Server -> Client Component boundary. */
   icon?: "pen" | "book";
@@ -79,6 +83,8 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     topicLabel,
     sessionPrefix,
     apiEndpoint,
+    backHref = "/chinese",
+    backLabel = "返回中文科",
     icon = "pen",
     placeholder = "輸入你的作文或問題…",
     emptyHint = `開始與 AI 對話，練習${config.topicLabel}。`,
@@ -441,11 +447,11 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
           <div className="flex items-center gap-1">
             <SidebarTrigger />
             <Link
-              href="/chinese"
+              href={backHref}
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              返回中文科
+              {backLabel}
             </Link>
           </div>
           <div className="flex items-center gap-2">

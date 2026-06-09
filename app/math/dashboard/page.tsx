@@ -43,6 +43,27 @@ function stripTextModeLatex(text: string): string {
   return text.replace(/\$\\text\{((?:[^{}]|\{[^{}]*\})*)\}\$/g, "$1");
 }
 
+/**
+ * Hosts that have been compromised and must never load inside the tool iframe.
+ * polyfill.io was taken over in 2024 and now serves a 401 Basic-Auth challenge
+ * (the browser "Sign in" popup) or malicious code, so any reference is removed.
+ * This also scrubs tools that were generated/saved before the server-side guard
+ * was added.
+ */
+const BLOCKED_IFRAME_HOSTS = ["polyfill.io", "polyfill.com", "bootcss.com", "bootcdn.net", "staticfile.org"];
+
+function sanitizeAiToolHtml(html: string | null): string | undefined {
+  if (!html) return undefined;
+  const hostPattern = BLOCKED_IFRAME_HOSTS.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const blocked = new RegExp(`(?:https?:)?//(?:[\\w.-]*\\.)?(?:${hostPattern})`, "i");
+  return html
+    .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*>[\s\S]*?<\/script>/gi, (m, _q, src) =>
+      blocked.test(src) ? "" : m
+    )
+    .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, src) => (blocked.test(src) ? "" : m))
+    .replace(/<link\b[^>]*\bhref\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, href) => (blocked.test(href) ? "" : m));
+}
+
 interface ToolboxConfigFromDB {
   type: string;
   label: string;
@@ -760,13 +781,23 @@ function MathDashboardContent() {
         }),
       });
 
-      if (!res.ok) throw new Error("Generate HTML failed");
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        console.error("[generate-html] failed:", {
+          status: res.status,
+          azureStatus: detail?.statusCode,
+          error: detail?.error,
+          responseBody: detail?.responseBody,
+        });
+        throw new Error(detail?.error || "Generate HTML failed");
+      }
 
       const json = await res.json();
       setAiToolHtml(json.html ?? null);
       setAiToolTitle(json.title ?? null);
       setHasSavedAiTool(false);
-    } catch {
+    } catch (err) {
+      console.error("[generate-html] regenerate error:", err);
       // Keep the current preview if regeneration fails.
     } finally {
       setIsGeneratingAiTool(false);
@@ -1158,7 +1189,7 @@ function MathDashboardContent() {
                 </div>
               ) : (
                 <iframe
-                  srcDoc={aiToolHtml}
+                  srcDoc={sanitizeAiToolHtml(aiToolHtml)}
                   sandbox="allow-scripts"
                   className="h-full min-h-0 w-full rounded-b-[8px]"
                   title={aiToolTitle ?? "AI Generated HTML Tool"}

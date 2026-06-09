@@ -135,6 +135,11 @@ export function AppSidebar() {
   const isChineseCharacter = pathname.startsWith('/chinese/character');
   const isChineseLinZexu = pathname.startsWith('/chinese/lin-zexu');
   const isChineseWriting = isChineseScenery || isChineseCharacter || isChineseLinZexu;
+  const isScienceCircuit = pathname.startsWith('/science/circuit');
+  const isScienceAerospace = pathname.startsWith('/science/aerospace');
+  const isHumanitiesWater = pathname.startsWith('/humanities/water-resources');
+  const isHumanitiesAntiJapaneseWar = pathname.startsWith('/humanities/anti-japanese-war');
+  const isChineseLikeChat = isChineseWriting || isScienceCircuit || isScienceAerospace || isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isEnglishDashboard = pathname.startsWith('/english/dashboard') || pathname.startsWith('/english/thankyouletter') || pathname.startsWith('/english/reading-comprehension');
   const isTeacher = user?.role === "teacher";
   const isStudent = user?.role === "student";
@@ -262,9 +267,17 @@ export function AppSidebar() {
   }, [isEnglishDashboard]);
 
   useEffect(() => {
-    if (!isChineseWriting) return;
+    if (!isChineseLikeChat) return;
 
-    const chineseTopic = pathname.startsWith('/chinese/character')
+    const chineseTopic = isScienceCircuit
+      ? 'science-circuit'
+      : isScienceAerospace
+      ? 'science-aerospace'
+      : isHumanitiesWater
+      ? 'humanities-water-resources'
+      : isHumanitiesAntiJapaneseWar
+      ? 'humanities-anti-japanese-war'
+      : pathname.startsWith('/chinese/character')
       ? 'character-description'
       : pathname.startsWith('/chinese/lin-zexu')
       ? 'lin-zexu'
@@ -280,18 +293,18 @@ export function AppSidebar() {
     }
     window.addEventListener("chinese-chat-history:changed", handleChange);
     return () => window.removeEventListener("chinese-chat-history:changed", handleChange);
-  }, [isChineseWriting, pathname]);
+  }, [isChineseLikeChat, isScienceCircuit, isScienceAerospace, pathname]);
 
   // Track which Chinese chat is currently open so we can highlight it.
   useEffect(() => {
-    if (!isChineseWriting) return;
+    if (!isChineseLikeChat) return;
     function handleActive(event: Event) {
       const id = (event as CustomEvent<{ id: string | null }>).detail?.id ?? null;
       setActiveChineseChatId(id);
     }
     window.addEventListener("chinese-chat:active", handleActive);
     return () => window.removeEventListener("chinese-chat:active", handleActive);
-  }, [isChineseWriting]);
+  }, [isChineseLikeChat]);
 
   useEffect(() => {
     function handleAiToolSaved() {
@@ -333,7 +346,7 @@ export function AppSidebar() {
         </Link>
         <Button
           className={`mt-4 w-full ${
-            isChineseWriting || isEnglishDashboard
+            isChineseLikeChat || isEnglishDashboard
               ? 'bg-[#146ef5] text-white hover:bg-[#0055d4]'
               : ''
           }`}
@@ -345,14 +358,21 @@ export function AppSidebar() {
             window.dispatchEvent(new CustomEvent('dashboard:new-question'));
             return;
           }
-          // On the chinese or english dashboard, signal "new chat" to reset the chatbot.
-          if ((subject === 'chinese' && isChineseWriting) || (subject === 'english' && isEnglishDashboard)) {
+          // On the chinese/english/science chat dashboards, signal "new chat" to reset the chatbot.
+          if (
+            (subject === 'chinese' && isChineseWriting) ||
+            (subject === 'english' && isEnglishDashboard) ||
+            (subject === 'science' && isScienceCircuit) ||
+            (subject === 'science' && isScienceAerospace) ||
+            (subject === 'humanities' && isHumanitiesWater) ||
+            (subject === 'humanities' && isHumanitiesAntiJapaneseWar)
+          ) {
             window.dispatchEvent(new CustomEvent('dashboard:new-chat'));
             return;
           }
           router.push(`/${subject}`);
         }}>
-          {isChineseWriting || isEnglishDashboard ? '+ New Chat' : '+ Add New Question'}
+          {isChineseLikeChat || isEnglishDashboard ? '+ New Chat' : '+ Add New Question'}
         </Button>
         {isMathDashboard && isTeacher && (
           <Button
@@ -490,8 +510,8 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Chinese Chat History — inline in sidebar */}
-        {isChineseWriting && (
+        {/* Chinese / Science Chat History — inline in sidebar */}
+        {isChineseLikeChat && (
           <SidebarGroup>
             <SidebarGroupLabel className="flex items-center gap-1.5">
               <Clock className="size-3.5" />

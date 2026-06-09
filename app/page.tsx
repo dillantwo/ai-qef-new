@@ -51,7 +51,7 @@ const subjects = [
     description: "電路、航天科技。",
     icon: FlaskConical,
     href: "/science",
-    available: false,
+    available: true,
     accent: "#ff6b00",
   },
   {
@@ -61,7 +61,7 @@ const subjects = [
     description: "水資源、抗日戰爭。",
     icon: Landmark,
     href: "/humanities",
-    available: false,
+    available: true,
     accent: "#ed52cb",
   },
 ];
