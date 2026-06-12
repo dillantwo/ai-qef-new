@@ -202,6 +202,7 @@ function MathDashboardContent() {
       "fraction-subtraction": "/math/FractionApp-Subtraction.html",
       "fraction-multiplication": "/math/FractionApp-Multiplication.html",
       "fraction-division": "/math/FractionApp-Division.html",
+      "fraction-comparison": "/math/FractionApp-comparison.html",
       "fraction-expanding-simplifying": "/math/FractionApp-es.html",
     };
 
@@ -347,25 +348,29 @@ function MathDashboardContent() {
     };
     const fractionOpHtml = fractionOpHtmlMap[selectedTool];
 
-    if (suppressHistoryAnalysisRef.current) {
-      setIsExtractingParams(false);
-      const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
-        ? `${basePath}/math/FractionApp-es.html`
+    // 直接帶參數的獨立工具頁（非「兩數運算」的版面），各自有專屬的參數組合
+    const standaloneHtmlMap: Record<string, string> = {
+      "fraction-expanding-simplifying": "FractionApp-es.html",
+      "fraction-comparison": "FractionApp-comparison.html",
+    };
+    const standaloneHtml = standaloneHtmlMap[selectedTool];
+
+    const buildFallbackUrl = () =>
+      standaloneHtml
+        ? `${basePath}/math/${standaloneHtml}`
         : fractionOpHtml
           ? `${basePath}/math/${fractionOpHtml}`
           : `${basePath}/math/preview.html`;
-      setPreviewUrl(fallbackUrl);
+
+    if (suppressHistoryAnalysisRef.current) {
+      setIsExtractingParams(false);
+      setPreviewUrl(buildFallbackUrl());
       return;
     }
 
     if (!question) {
       setIsExtractingParams(false);
-      const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
-        ? `${basePath}/math/FractionApp-es.html`
-        : fractionOpHtml
-          ? `${basePath}/math/${fractionOpHtml}`
-          : `${basePath}/math/preview.html`;
-      setPreviewUrl(fallbackUrl);
+      setPreviewUrl(buildFallbackUrl());
       return;
     }
 
@@ -406,6 +411,24 @@ function MathDashboardContent() {
             qs.set("targetDen", String(params.targetDenominator));
           }
           if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-es.html?${qs.toString()}`);
+        } else if (selectedTool === "fraction-comparison") {
+          const qs = new URLSearchParams();
+          const count = params.count === 3 ? 3 : 2;
+          qs.set("count", String(count));
+
+          const fractions: Array<{ whole?: number | null; num?: number | null; den?: number | null; format?: string | null }> =
+            Array.isArray(params.fractions) ? params.fractions : [];
+
+          for (let i = 0; i < count; i++) {
+            const f = fractions[i] ?? {};
+            const idx = i + 1;
+            // 分子默認 1（0 顯示醜），分母為 0 用 1 避免除零
+            qs.set(`num${idx}`, String(f.num && f.num !== 0 ? f.num : 1));
+            qs.set(`den${idx}`, String(f.den && f.den !== 0 ? f.den : 1));
+            if (f.whole != null) qs.set(`whole${idx}`, String(f.whole));
+            if (f.format) qs.set(`format${idx}`, String(f.format));
+          }
+          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-comparison.html?${qs.toString()}`);
         } else if (fractionOpHtml) {
           const qs = new URLSearchParams();
           // 分子默認 1（AI 回傳 0 通常代表純整數題目，0/1 顯示醜，改用 1）
@@ -433,12 +456,7 @@ function MathDashboardContent() {
           if (!cancelled) setPreviewUrl(`${basePath}/math/preview.html?${qs.toString()}`);
         }
       } catch {
-        const fallbackUrl = selectedTool === "fraction-expanding-simplifying"
-          ? `${basePath}/math/FractionApp-es.html`
-          : fractionOpHtml
-            ? `${basePath}/math/${fractionOpHtml}`
-            : `${basePath}/math/preview.html`;
-        if (!cancelled) setPreviewUrl(fallbackUrl);
+        if (!cancelled) setPreviewUrl(buildFallbackUrl());
       } finally {
         window.clearTimeout(timeoutId);
         if (!cancelled) setIsExtractingParams(false);

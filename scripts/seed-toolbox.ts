@@ -101,6 +101,17 @@ const seedData = [
         hover: "hover:bg-amber-200 hover:border-amber-300",
         text: "text-amber-700",
       },
+      {
+        key: "fraction-comparison",
+        label: "比較大小",
+        sub: "FractionApp (Comparison)",
+        icon: "ArrowUpDown",
+        bg: "bg-cyan-100",
+        iconBg: "bg-cyan-500",
+        border: "border-cyan-200",
+        hover: "hover:bg-cyan-200 hover:border-cyan-300",
+        text: "text-cyan-700",
+      },
     ],
   },
   {

@@ -526,7 +526,7 @@ function EnglishDashboardContent() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(20,110,245,0.14),_transparent_48%)]" />
 
       {/* Left panel: Tasks + HTML Preview */}
-      <div className="relative flex min-w-0 flex-1 flex-col border-r border-[#d8d8d8]">
+      <div className={`relative flex min-w-0 flex-col border-r border-[#d8d8d8] ${chatVisible ? "w-[60%] min-w-[360px]" : "flex-1"}`}>
         {/* Top bar */}
         <div className="flex h-[57px] shrink-0 items-center justify-between border-b border-[#d8d8d8] bg-white/95 px-4">
           <div className="flex items-center gap-1">
@@ -619,7 +619,7 @@ function EnglishDashboardContent() {
 
       {/* Right panel: AI Chat */}
       {chatVisible && (
-        <div className="relative flex w-[360px] shrink-0 flex-col min-h-0 bg-white/95">
+        <div className="relative flex flex-1 min-w-[340px] flex-col min-h-0 bg-white/95">
           <div className="border-b border-[#d8d8d8] px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

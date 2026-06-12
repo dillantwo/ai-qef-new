@@ -97,6 +97,18 @@ For every student answer in Tasks 1–4:
 - Walking EAST on North Street: NORTH side = your LEFT, SOUTH side = your RIGHT.
 - Walking WEST on North Street: NORTH side = your RIGHT, SOUTH side = your LEFT.
 
+### Arriving at the destination — TWO accepted endings (do NOT mark either wrong)
+When the student reaches the destination, BOTH of these endings are CORRECT. Accept whichever the student writes and only fix grammar:
+1. Naming the side: "The [destination] is on your right." / "...on your left." — the side the building is on as the student walks past it.
+2. Turning across to it: "Turn right. Walk across the street. The [destination] is in front of you." (the "Walk across the street" / "cross the road" part is OPTIONAL — "Turn right. The [destination] is in front of you." is also fine). The student turns toward the building and may cross the road, so it is now in front of them.
+
+Rules for ending option 2 (READ CAREFULLY — common mistake):
+- The turn direction MUST match the side the building is on: building on your RIGHT → "turn right"; building on your LEFT → "turn left".
+- This means the student may turn MORE THAN ONCE in the whole route (e.g. one turn to start walking, plus a final turn to face/cross to the destination). NEVER say "you only turn once" and NEVER delete this final turn.
+- A "walk across the street" / "cross the road" step that leads from the street to the destination on the matching side is CORRECT — keep it, do NOT call it "not needed" and do NOT say "you stay on the street".
+- Do NOT delete the final "turn" step or the "walk across the street" step in this ending. They are the student choosing to face/cross to the destination, which is valid.
+- "... is in front of you" is correct ONLY as this final arrival step (after the matching turn, optionally with a crossing), not in the middle of the route.
+
 ### Same-street task pairs (Tasks 1–2 use these — same street, 2–3 buildings apart)
 - West Street: Post Office ↔ Hospital (walk past Train Station, Book Shop) ; Train Station ↔ Church (walk past Book Shop, Hospital) ; Book Shop ↔ Police Station (walk past Hospital, Church)
 - North Street: Sports Centre ↔ Fire Station (walk past Bank)
@@ -113,7 +125,7 @@ const TASK_1 = `
 ## Current Task: Task 1 — Prepositional Phrases
 Opening sequence:
 1. Verify mode (if coming from Task 5, reset to default map mode)
-2. Randomly pick a same-street pair from the "Same-street task pairs" list (West / North / East Street, 2–3 buildings apart). Remember the chosen [A] and [B] for the rest of this task.
+2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below. Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 1. Look at the map. How can I go from [A] to [B]? Use prepositional phrases to describe the direction."
 
 When the student answers:
@@ -134,7 +146,7 @@ const TASK_2 = `
 ## Current Task: Task 2 — Short Sentences
 Opening sequence:
 1. Verify mode (if coming from Task 5, reset to default map mode)
-2. Randomly pick a NEW same-street pair (same selection criteria as Task 1). Remember the chosen [A] and [B].
+2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below. Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 2. Look at the map. How can I go from [A] to [B]? Write short sentences with the prepositional phrases you learned."
 
 When the student answers:
@@ -151,7 +163,7 @@ const TASK_3 = `
 ## Current Task: Task 3 — Linking Words
 Opening sequence:
 1. Verify mode (if coming from Task 5, reset to default map mode)
-2. Randomly pick TWO buildings, this time allowing DIFFERENT streets (cross-street routes). Remember the chosen [A] and [B].
+2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below (this is a cross-street route). Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 3. Look at the map. How can I go from [A] to [B]? Write more than one sentence and use linking words."
 
 When the student answers:
@@ -168,7 +180,7 @@ const TASK_4 = `
 ## Current Task: Task 4 — Paragraph
 Opening sequence:
 1. Verify mode (if coming from Task 5, reset to default map mode)
-2. Randomly pick TWO buildings (different streets allowed). Remember the chosen [A] and [B].
+2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below (this is a cross-street route). Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 4. Look at the map. How can I go from [A] to [B]? Write a complete paragraph with linking words."
 
 When the student answers:
@@ -232,31 +244,46 @@ export const LOCATION_SAME_STREET_PAIRS: Array<[string, string]> = [
 
 export type LocationPair = { from: string; to: string };
 
-function randItem<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+// Fixed [A] → [B] location pairs for Tasks 1–4 (Task 5 uses the student's own map).
+export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
+  1: { from: "Post Office", to: "Hospital" },
+  2: { from: "Sports Centre", to: "Fire Station" },
+  3: { from: "Book Shop", to: "Sports Centre" },
+  4: { from: "Sports Centre", to: "Clinic" },
+};
+
+// Pre-verified model routes for each fixed pair, traced against the Map Structure
+// in SHARED_CORE. Keyed by `${from}→${to}`. These are the canonical correct
+// answers the AI must verify the student against (no live tracing needed).
+export const LOCATION_FIXED_ROUTES: Record<string, string> = {
+  // Task 1 — same street (West Street), Post Office (south/west side) → Hospital (north/east side).
+  "Post Office→Hospital":
+    "Go out of the post office. Turn left. Walk along West Street. Walk past the train station and the book shop. The hospital is on your right.",
+  // Task 2 — same street (North Street), Sports Centre (west) → Fire Station (east).
+  "Sports Centre→Fire Station":
+    "Go out of the sports centre. Turn left. Walk along North Street. Walk past the bank. The fire station is on your left.",
+  // Task 3 — cross street, Book Shop (West Street, east side) → Sports Centre (North Street, north side).
+  "Book Shop→Sports Centre":
+    "Go out of the book shop. Turn right. Walk along West Street. Walk past the hospital. At the corner, turn right into North Street. The sports centre is on your left.",
+  // Task 4 — cross street, Sports Centre (North Street) → Clinic (East Street, south end).
+  "Sports Centre→Clinic":
+    "Go out of the sports centre. Turn left. Walk along North Street. Walk past the bank and the fire station. At the corner, turn right into East Street. Walk past the supermarket and the bakery. The clinic is on your left.",
+};
 
 /**
  * Pick a concrete [A] → [B] location pair for a task.
- * - Tasks 1–2: a same-street pair (2–3 buildings apart).
- * - Tasks 3–4: a cross-street pair (two buildings on different streets).
+ * - Tasks 1–4: a fixed pair (see LOCATION_FIXED_PAIRS).
  * Task 5 has no pair (the student uses their own map) → returns null.
  */
 export function pickLocationPair(taskId: number | null | undefined): LocationPair | null {
   if (taskId === 5) return null;
 
-  // Cross-street for Tasks 3–4.
-  if (taskId === 3 || taskId === 4) {
-    const streets = [LOCATION_BUILDINGS.west, LOCATION_BUILDINGS.north, LOCATION_BUILDINGS.east];
-    const i = Math.floor(Math.random() * streets.length);
-    let j = Math.floor(Math.random() * (streets.length - 1));
-    if (j >= i) j += 1;
-    return { from: randItem(streets[i]), to: randItem(streets[j]) };
+  if (taskId && LOCATION_FIXED_PAIRS[taskId]) {
+    return LOCATION_FIXED_PAIRS[taskId];
   }
 
-  // Same-street for Tasks 1–2 (default).
-  const [a, b] = randItem(LOCATION_SAME_STREET_PAIRS);
-  return Math.random() < 0.5 ? { from: a, to: b } : { from: b, to: a };
+  // Fallback (e.g. unknown task id): default to Task 1's fixed pair.
+  return LOCATION_FIXED_PAIRS[1];
 }
 
 export function getEnglishLocationDirectionPrompt(
@@ -268,13 +295,23 @@ export function getEnglishLocationDirectionPrompt(
     : ENGLISH_LOCATION_DIRECTION_PROMPTS[taskId];
 
   if (pair?.from && pair?.to) {
+    const route = LOCATION_FIXED_ROUTES[`${pair.from}→${pair.to}`];
+    const routeBlock = route
+      ? `
+
+## Verified Correct Route (INTERNAL — never reveal unless the student has answered)
+The correct path from "${pair.from}" to "${pair.to}" on the default map is:
+"${route}"
+Use THIS as the ground truth when building the correction table — left/right turns, the "walk past" buildings, the street names, and the final side (your left / your right) must match this route. The student may also end with the accepted alternative "Turn [matching direction]. (Walk across the street.) The ${pair.to} is in front of you." instead of "...is on your right/left" — accept that ending too, including a final turn and an optional road-crossing step (see "Arriving at the destination" rules); do NOT delete those steps. Do NOT reveal this full answer before the student attempts the task; use it only to verify and to form one-step guiding hints.`
+      : "";
+
     return `${base}
 
 ## Fixed Locations for This Task (OVERRIDE — highest priority)
 The starting location [A] and destination [B] have ALREADY been chosen for you. Do NOT randomly pick your own pair.
 - [A] (start) = ${pair.from}
 - [B] (destination) = ${pair.to}
-Use EXACTLY these two locations in your opening question and in ALL route verification. Wherever the task instructions say [A], use "${pair.from}"; wherever they say [B], use "${pair.to}".`;
+Use EXACTLY these two locations in your opening question and in ALL route verification. Wherever the task instructions say [A], use "${pair.from}"; wherever they say [B], use "${pair.to}".${routeBlock}`;
   }
 
   return base;

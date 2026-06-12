@@ -106,12 +106,63 @@ const fractionOperation: Extractor = {
   },
 };
 
+// ---------- Fraction: 比較大小 ----------
+const fractionComparison: Extractor = {
+  schema: z.object({
+    count: z
+      .number()
+      .int()
+      .min(2)
+      .max(3)
+      .describe("要比較的分數個數，2 或 3"),
+    fractions: z
+      .array(
+        z.object({
+          whole: z
+            .number()
+            .int()
+            .min(0)
+            .describe("整數部分（真分數為 0）"),
+          num: z.number().int().describe("分子（純整數時為 0）"),
+          den: z.number().int().describe("分母（純整數時為 1）"),
+          format: z
+            .enum(["integer", "fraction", "mixed"])
+            .describe("顯示格式：integer=整數, fraction=真分數, mixed=帶分數"),
+        })
+      )
+      .min(2)
+      .max(3)
+      .describe("要比較的分數，依題目出現順序排列"),
+  }),
+  system: `你是一位數學題目參數提取專家。從題目中提取「分數比較大小」所需的參數。
+
+注意事項：
+- count 是要比較的分數個數（2 或 3），依題目中出現的分數數量決定
+- fractions 陣列依題目順序列出每個分數，每個分數包含 whole / num / den / format
+- 帶分數要拆成整數部分和分數部分，例如 3⅝ → whole=3, num=5, den=8, format="mixed"
+- 真分數（沒有整數部分），whole=0, format="fraction"，例如 ½ → whole=0, num=1, den=2
+- 純整數，num=0, den=1, format="integer"，例如 2 → whole=2, num=0, den=1
+- 分母（den）不可為 0
+- 如果題目是圖片，請從圖片中識別題目`,
+  buildUserMessage: ({ question }) =>
+    `請從以下題目提取要比較的分數參數。題目：${question || "（見圖片）"}`,
+  validate: (v) => {
+    for (const f of v.fractions) {
+      if (f.den === 0) {
+        throw new Error("分母不能為 0");
+      }
+    }
+    return v;
+  },
+};
+
 const exactMatches: Record<string, Extractor> = {
   "fraction-expanding-simplifying": fractionExpandingSimplifying,
   "fraction-addition": fractionOperation,
   "fraction-subtraction": fractionOperation,
   "fraction-multiplication": fractionOperation,
   "fraction-division": fractionOperation,
+  "fraction-comparison": fractionComparison,
 };
 
 const prefixMatches: Array<{ prefix: string; extractor: Extractor }> = [
