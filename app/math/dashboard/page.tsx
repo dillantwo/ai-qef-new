@@ -130,6 +130,7 @@ function MathDashboardContent() {
           trigger,
           messageId,
           mode: entryModeRef.current,
+          hasQuestion: hasUserQuestionRef.current,
         },
       }),
     }),
@@ -151,6 +152,12 @@ function MathDashboardContent() {
   const [isGeneratingAiTool, setIsGeneratingAiTool] = useState(false);
   const [isExtractingParams, setIsExtractingParams] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const handleChatScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasSentInitial = useRef(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -166,6 +173,7 @@ function MathDashboardContent() {
   const [isQuestionListening, setIsQuestionListening] = useState(false);
   const [isEditingQuestion, setIsEditingQuestion] = useState(false);
   const [hasUserQuestion, setHasUserQuestion] = useState(false);
+  const hasUserQuestionRef = useRef(false);
   const [currentChatId, setCurrentChatId] = useState(() => createMathChatId());
   const [toolPreviewRefreshKey, setToolPreviewRefreshKey] = useState(0);
   const suppressHistoryAnalysisRef = useRef(false);
@@ -240,6 +248,10 @@ function MathDashboardContent() {
   useEffect(() => {
     entryModeRef.current = entryMode;
   }, [entryMode]);
+
+  useEffect(() => {
+    hasUserQuestionRef.current = hasUserQuestion;
+  }, [hasUserQuestion]);
 
   // Fetch toolbox config from DB
   useEffect(() => {
@@ -482,7 +494,13 @@ function MathDashboardContent() {
   }, [question, questionImage, sendMessage]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatScrollRef.current;
+    if (!container) return;
+    // Follow the latest message only while the user is pinned to the bottom.
+    // Scroll the container itself (never the page) so the layout doesn't shift.
+    if (isAtBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const stopListening = useCallback(() => {
@@ -1471,7 +1489,7 @@ function MathDashboardContent() {
         </div>
 
         {/* Chat messages */}
-        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
+        <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 space-y-3 overflow-y-auto px-4 py-4 min-h-0 bg-[linear-gradient(180deg,_rgba(20,110,245,0.03)_0%,_rgba(255,255,255,1)_35%)]">
           {messages.map((message) => (
             <div
               key={message.id}

@@ -115,6 +115,12 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [showPinned, setShowPinned] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const handleChatScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -254,7 +260,12 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
   }, [currentChatId, messages, status, topicId, defaultTitle]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatScrollRef.current;
+    if (!container) return;
+    // Follow the latest message only while the user is pinned to the bottom.
+    if (isAtBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const stopListening = useCallback(() => {
@@ -476,7 +487,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
         </div>
 
         {/* Chat messages */}
-        <div className={`flex-1 px-4 py-6 min-h-0 bg-white ${messages.length > 0 ? "overflow-y-auto" : "overflow-hidden"}`}>
+        <div ref={chatScrollRef} onScroll={handleChatScroll} className={`flex-1 px-4 py-6 min-h-0 bg-white ${messages.length > 0 ? "overflow-y-auto" : "overflow-hidden"}`}>
           <div className="w-full space-y-6">
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-5 text-center">

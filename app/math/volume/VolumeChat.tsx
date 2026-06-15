@@ -48,6 +48,12 @@ export function VolumeChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const handleChatScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
   const cubeCount = useCubeStore((s) => Object.keys(s.cubes).length);
 
   const transport = useMemo(
@@ -69,7 +75,13 @@ export function VolumeChat() {
   const isLoading = status === "submitted" || status === "streaming";
 
   useEffect(() => {
-    if (open) messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!open) return;
+    const container = chatScrollRef.current;
+    if (!container) return;
+    // Follow the latest message only while the user is pinned to the bottom.
+    if (isAtBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages, open, isLoading]);
 
   function handleSend(text?: string) {
@@ -126,7 +138,7 @@ export function VolumeChat() {
       </div>
 
       {/* Messages */}
-      <div className="min-h-0 flex-1 overflow-y-auto bg-white px-3 py-3">
+      <div ref={chatScrollRef} onScroll={handleChatScroll} className="min-h-0 flex-1 overflow-y-auto bg-white px-3 py-3">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-2 text-center">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-[#146ef5]/10 text-[#146ef5]">

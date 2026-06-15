@@ -104,6 +104,12 @@ function EnglishDashboardContent() {
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [showPinned, setShowPinned] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const handleChatScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -135,7 +141,12 @@ function EnglishDashboardContent() {
   const previewSrc = previewMap[topic] || `${basePath}/english/preview-location-direction.html`;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatScrollRef.current;
+    if (!container) return;
+    // Follow the latest message only while the user is pinned to the bottom.
+    if (isAtBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -706,7 +717,7 @@ function EnglishDashboardContent() {
           )}
 
           {/* Chat messages */}
-          <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4 min-h-0 bg-white">
+          <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 space-y-5 overflow-y-auto px-4 py-4 min-h-0 bg-white">
             {messages.map((message) => (
               message.role === "user" ? (
                 <div key={message.id} className="flex flex-col items-end">
