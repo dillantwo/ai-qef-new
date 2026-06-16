@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ImgHTMLAttributes } from "react";
 import {
   ArrowUp,
   Square,
@@ -23,6 +24,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -76,6 +78,126 @@ const ICON_MAP: Record<NonNullable<ChineseTopicConfig["icon"]>, LucideIcon> = {
   pen: PenTool,
   book: BookOpen,
 };
+
+// Shared prose styling for assistant markdown (extracted so HTML and markdown
+// branches stay visually identical).
+const ASSISTANT_PROSE_CLASS =
+  "prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#fafafa] [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-2 [&_td]:py-1";
+
+// Markdown plugin config shared by every ReactMarkdown instance below.
+// `rehypeRaw` is required so inline raw HTML the AI emits inside Markdown
+// (e.g. <img ...> tags placed in table cells) renders as real elements
+// instead of showing up as escaped text. It must run before rehypeKatex.
+const MARKDOWN_REMARK_PLUGINS = [remarkGfm, remarkMath];
+const MARKDOWN_REHYPE_PLUGINS = [rehypeRaw, [rehypeKatex, { strict: false }]] as never;
+
+// Constrain images that come from inline HTML so they stay responsive and
+// never overflow the chat bubble, regardless of any width attribute the AI sets.
+const MARKDOWN_COMPONENTS = {
+  img: (props: ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      {...props}
+      alt={props.alt ?? ""}
+      className="inline-block h-auto max-w-full rounded-[6px]"
+      loading="lazy"
+    />
+  ),
+} as const;
+
+// Some Humanities prompts intentionally emit raw HTML (e.g. an embedded WRI
+// water-risk map, or a timeline image link). The chat normally renders Markdown
+// only, so that HTML would otherwise show up as escaped text. Detect such a
+// block and render it inside a sandboxed iframe instead.
+const HTML_START_RE = /```html|<!doctype html|<html[\s>]|<iframe[\s>]/i;
+const HTML_BLOCK_RE =
+  /```html\s*([\s\S]*?)```|(<!doctype html[\s\S]*?<\/html>)|(<html[\s\S]*?<\/html>)|(<iframe[\s\S]*?<\/iframe>)|(<a\b[\s\S]*?<\/a>)/i;
+
+function extractEmbeddedHtml(
+  text: string
+): { before: string; html: string; after: string } | null {
+  const m = text.match(HTML_BLOCK_RE);
+  if (!m) return null;
+  const html = (m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5] ?? "").trim();
+  if (!html || !html.includes("<")) return null;
+  const start = m.index ?? 0;
+  return {
+    before: text.slice(0, start).trim(),
+    html,
+    after: text.slice(start + m[0].length).trim(),
+  };
+}
+
+// Strip references to compromised CDNs before rendering AI-produced HTML.
+const BLOCKED_IFRAME_HOSTS = ["polyfill.io", "polyfill.com", "bootcss.com", "bootcdn.net", "staticfile.org"];
+
+function sanitizeEmbedHtml(html: string): string {
+  const hostPattern = BLOCKED_IFRAME_HOSTS.map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const blocked = new RegExp(`(?:https?:)?//(?:[\\w.-]*\\.)?(?:${hostPattern})`, "i");
+  return html
+    .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*>[\s\S]*?<\/script>/gi, (m, _q, src) =>
+      blocked.test(src) ? "" : m
+    )
+    .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, src) => (blocked.test(src) ? "" : m))
+    .replace(/<link\b[^>]*\bhref\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, href) => (blocked.test(href) ? "" : m));
+}
+
+// Renders AI-produced HTML in a sandboxed iframe that auto-grows to fit its
+// content, so the whole page shows with no inner scroll bar.
+function EmbeddedHtmlFrame({ html }: { html: string }) {
+  const ref = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(480);
+
+  useEffect(() => {
+    const iframe = ref.current;
+    if (!iframe) return;
+    let ro: ResizeObserver | null = null;
+    const timers: number[] = [];
+
+    const measure = () => {
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      const h = Math.max(
+        doc.documentElement?.scrollHeight ?? 0,
+        doc.body?.scrollHeight ?? 0
+      );
+      if (h > 0) setHeight(h);
+    };
+
+    const onLoad = () => {
+      measure();
+      const doc = iframe.contentDocument;
+      if (doc?.body) {
+        ro = new ResizeObserver(measure);
+        ro.observe(doc.body);
+      }
+      // Re-measure as images / the nested map settle.
+      timers.push(window.setTimeout(measure, 300));
+      timers.push(window.setTimeout(measure, 1200));
+    };
+
+    iframe.addEventListener("load", onLoad);
+    if (iframe.contentDocument?.readyState === "complete") onLoad();
+
+    return () => {
+      iframe.removeEventListener("load", onLoad);
+      ro?.disconnect();
+      timers.forEach((t) => clearTimeout(t));
+    };
+  }, [html]);
+
+  return (
+    <iframe
+      ref={ref}
+      srcDoc={sanitizeEmbedHtml(html)}
+      sandbox="allow-scripts allow-same-origin allow-popups"
+      scrolling="no"
+      className="w-full overflow-hidden rounded-[8px] border border-[#e5e5e5] bg-white"
+      style={{ height }}
+      title="互動內容"
+    />
+  );
+}
 
 export default function ChineseTopicChat({ config }: { config: ChineseTopicConfig }) {
   const {
@@ -522,7 +644,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
                     </div>
                   )}
                   <div className="prose prose-sm max-w-none break-words [overflow-wrap:anywhere]">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                    <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} rehypePlugins={MARKDOWN_REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
                       {message.text}
                     </ReactMarkdown>
                   </div>
@@ -573,13 +695,43 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  {message.text && (
-                    <div className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#fafafa] [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-2 [&_td]:py-1">
-                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
-                        {message.text}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                  {message.text && (() => {
+                    const embedded = extractEmbeddedHtml(message.text);
+                    if (embedded) {
+                      return (
+                        <div className="space-y-2">
+                          {embedded.before && (
+                            <div className={ASSISTANT_PROSE_CLASS}>
+                              <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} rehypePlugins={MARKDOWN_REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                                {embedded.before}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                          <EmbeddedHtmlFrame html={embedded.html} />
+                          {embedded.after && (
+                            <div className={ASSISTANT_PROSE_CLASS}>
+                              <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} rehypePlugins={MARKDOWN_REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                                {embedded.after}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    // HTML still streaming in (no closing tag yet) — show a
+                    // placeholder instead of flashing raw tags as text.
+                    const streamingThis = isLoading && message.id === messages[messages.length - 1]?.id;
+                    if (streamingThis && HTML_START_RE.test(message.text)) {
+                      return <div className="text-sm text-[#9a9a9a]">互動內容生成中…⏳</div>;
+                    }
+                    return (
+                      <div className={ASSISTANT_PROSE_CLASS}>
+                        <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} rehypePlugins={MARKDOWN_REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                          {message.text}
+                        </ReactMarkdown>
+                      </div>
+                    );
+                  })()}
                   {message.text && !(isLoading && message.id === messages[messages.length - 1]?.id) && (
                     <button
                       type="button"
@@ -711,7 +863,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
                     </div>
                   </div>
                   <div className="prose prose-sm max-w-none break-words text-[13px] leading-relaxed [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-1.5 [&_th]:py-0.5 [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-1.5 [&_td]:py-0.5">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                    <ReactMarkdown remarkPlugins={MARKDOWN_REMARK_PLUGINS} rehypePlugins={MARKDOWN_REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
                       {message.text}
                     </ReactMarkdown>
                   </div>

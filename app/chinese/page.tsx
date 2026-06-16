@@ -12,6 +12,7 @@ const topics: {
   icon: typeof PenTool;
   accent: string;
   available: boolean;
+  hidden?: boolean;
 }[] = [
   {
     id: "scenery-description",
@@ -39,6 +40,8 @@ const topics: {
     icon: BookOpen,
     accent: "#7a3dff",
     available: true,
+    // 暫時對所有用戶隱藏，需要時將 hidden 改為 false 即可重新開放。
+    hidden: true,
   },
   {
     id: "wenyan",
@@ -86,7 +89,7 @@ export default function ChinesePage() {
         <div className="relative mx-auto flex w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="flex w-full flex-col gap-10 py-2">
             <section className="grid gap-4 px-2 sm:px-0 sm:grid-cols-2 lg:grid-cols-3">
-              {topics.map(({ id, label, labelEn, description, icon: Icon, accent, available }) => (
+              {topics.filter((t) => !t.hidden).map(({ id, label, labelEn, description, icon: Icon, accent, available }) => (
                 <button
                   key={id}
                   onClick={() => navigateToTopic(id, available)}

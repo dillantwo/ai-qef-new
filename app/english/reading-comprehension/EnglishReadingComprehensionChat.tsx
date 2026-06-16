@@ -28,7 +28,6 @@ import { basePath } from "@/lib/utils";
 import {
   READING_ROLES,
   READING_ROLE_LABELS,
-  READING_COMPREHENSION_FULL_TEXT,
   type ReadingRole,
 } from "@/lib/english-prompts";
 import {
@@ -450,7 +449,7 @@ export default function EnglishReadingComprehensionChat() {
     const fullTextMsg: ChatMsg = {
       id: `a-fulltext-${Date.now()}`,
       role: "assistant",
-      text: READING_COMPREHENSION_FULL_TEXT,
+      text: `Here is our reading. Let's read it together!\n\n![Sunshine Ice-cream advertisement](${basePath}/english/reading-comprehension-article.png)`,
     };
     setMessages([fullTextMsg]);
     await streamAssistant(

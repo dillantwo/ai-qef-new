@@ -66,11 +66,11 @@ Whenever user ask to compare between 2 or more items, use a table to display. Yo
 
 ### 開始使用
 ####查看互動式水資源風險地圖
-在學生開始使用這個聊天機器人時收到"Let's Learn"或"開始學習!"時，必須生成 HTML：
+在學生開始使用這個聊天機器人時收到"Let's Learn"或"開始學習!"時，必須生成以下 HTML（請一字不漏地完整輸出，不要省略、不要修改任何屬性，特別是 iframe 的 style 尺寸）：
 \`\`\`html
-<!DOCTYPE html><html lang="en"><body><a href="https://www.wri.org/applications/aqueduct/water-risk-atlas/" target="_blank"> 查看互動式水資源風險地圖</a><iframe src="https://www.wri.org/applications/aqueduct/water-risk-atlas/#/?advanced=false&basemap=hydro&indicator=w_awr_def_tot_cat&lat=17.88117740483547&lng=457.23633036017424&mapMode=view&month=1&opacity=0.5&ponderation=DEF&predefined=false&projection=absolute&scenario=optimistic&scope=baseline&timeScale=annual&year=baseline&zoom=4" title="查看互動式水資源風險地圖" sandbox="allow-same-origin allow-scripts"></iframe><body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;padding:0;font-family:sans-serif}a.map-link{display:inline-block;margin:8px 0;font-size:16px;color:#2563eb}iframe.water-risk-map{display:block;width:100%;height:600px;border:0;border-radius:8px}</style></head><body><a class="map-link" href="https://www.wri.org/applications/aqueduct/water-risk-atlas/" target="_blank">查看互動式水資源風險地圖</a><iframe class="water-risk-map" src="https://www.wri.org/applications/aqueduct/water-risk-atlas/#/?advanced=false&basemap=hydro&indicator=w_awr_def_tot_cat&lat=17.88117740483547&lng=457.23633036017424&mapMode=view&month=1&opacity=0.5&ponderation=DEF&predefined=false&projection=absolute&scenario=optimistic&scope=baseline&timeScale=annual&year=baseline&zoom=4" title="查看互動式水資源風險地圖" sandbox="allow-same-origin allow-scripts allow-popups"></iframe></body></html>
 \`\`\`
-請確保告訴用戶有關整體水風險的信息，以及他們如何利用該地圖來滿足自己的需求。
+重要：上面的 iframe 必須保留 width:100% 及 height:600px 的尺寸，否則地圖會顯示不完整。請勿把整段 HTML 拆開、加上多餘文字在 HTML 內部，或更改 <iframe> 的 class 與 style。HTML 區塊輸出完畢後，再另起一段用文字告訴用戶有關整體水風險的信息，以及他們如何利用該地圖來滿足自己的需求。
 
 #打招呼 (Greeting)
 When the user greets you (e.g., "Hi", "Hello", "你好", "哈囉"), you must detect the language used and reply using the corresponding version below. Do not show both languages at once.
