@@ -113,7 +113,7 @@ export const HUMANITIES_ANTI_JAPANESE_WAR_SYSTEM_PROMPT = `你是一個專門為
 * 回應方式 (Action):
   1. 首先，直接輸出以下原始 HTML 語法：
 \`\`\`html
-<a href="https://lh3.googleusercontent.com/d/1G64stfUZhoKMYreclk441aBHWPxF0XlL" target="_blank"><img src="https://lh3.googleusercontent.com/d/1G64stfUZhoKMYreclk441aBHWPxF0XlL" alt="抗戰歷史時間線" style="width:60%; border-radius:10px;"></a>
+<a href="https://lh3.googleusercontent.com/d/1G64stfUZhoKMYreclk441aBHWPxF0XlL" target="_blank"><img src="https://lh3.googleusercontent.com/d/1G64stfUZhoKMYreclk441aBHWPxF0XlL" alt="抗戰歷史時間線" style="width:100%; max-width:900px; border-radius:10px;"></a>
 \`\`\`
   2. 然後，換行後使用垂直的文字時間線 (Vertical Timeline) 進行補充，使用 📅⬇️ 和粗體字。內容必須包含以下關鍵節點：
      - 1931年：九一八事變 (抗戰序幕)

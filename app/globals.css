@@ -129,3 +129,69 @@
     @apply font-sans;
   }
 }
+
+/* ----------------------------------------------------------------------- */
+/* 學習文言文 · 挑戰模式 game animations                                     */
+/* ----------------------------------------------------------------------- */
+
+@keyframes wyt-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes wyt-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wyt-pop-in {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wyt-fade-in-up {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wyt-float-up {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-32px) scale(1.15); }
+}
+
+@keyframes wyt-flame {
+  0%, 100% { transform: scale(1) rotate(-3deg); }
+  50% { transform: scale(1.18) rotate(3deg); }
+}
+
+@keyframes wyt-confetti-fall {
+  0% { transform: translateY(-12px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(360px) rotate(720deg); opacity: 0; }
+}
+
+@keyframes wyt-ring-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.wyt-shake { animation: wyt-shake 0.42s ease; }
+.wyt-pop { animation: wyt-pop 0.38s ease; }
+.wyt-pop-in { animation: wyt-pop-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.25) both; }
+.wyt-fade-in-up { animation: wyt-fade-in-up 0.35s ease both; }
+.wyt-float-up { animation: wyt-float-up 1s ease forwards; }
+.wyt-flame { animation: wyt-flame 0.7s ease-in-out infinite; }
+.wyt-ring-pulse { animation: wyt-ring-pulse 0.8s ease-in-out infinite; }
+.wyt-confetti-piece { animation: wyt-confetti-fall linear forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wyt-shake, .wyt-pop, .wyt-pop-in, .wyt-fade-in-up, .wyt-float-up,
+  .wyt-flame, .wyt-ring-pulse, .wyt-confetti-piece {
+    animation: none !important;
+  }
+}

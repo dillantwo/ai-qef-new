@@ -1,6 +1,10 @@
 import { createAzure } from "@ai-sdk/azure";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { after } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import { getSession } from "@/lib/session";
+import { TokenUsage } from "@/models/TokenUsage";
 
 /**
  * Dedicated Azure provider for the math AI tool generator.
@@ -129,6 +133,8 @@ export async function POST(req: Request) {
       });
     }
 
+    const session = await getSession().catch(() => null);
+
     const messages: Array<{
       role: "user";
       content:
@@ -202,6 +208,28 @@ export async function POST(req: Request) {
         html: z.string().min(1),
       }),
       messages,
+    });
+
+    after(async () => {
+      try {
+        if (!session || !result.usage) return;
+        await connectDB();
+        await TokenUsage.create({
+          userId: session.userId,
+          username: session.username,
+          subject: "math",
+          modelName: HTML_GEN_DEPLOYMENT,
+          promptTokens: Math.max(0, (result.usage.inputTokens ?? 0) - (result.usage.cachedInputTokens ?? 0)),
+          cachedInputTokens: result.usage.cachedInputTokens ?? 0,
+          completionTokens: result.usage.outputTokens ?? 0,
+          totalTokens:
+            result.usage.totalTokens ??
+            ((result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)),
+          endpoint: "/api/generate-html",
+        });
+      } catch (err) {
+        console.error("[generate-html] Failed to record token usage:", err);
+      }
     });
 
     return Response.json({

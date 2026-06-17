@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, BookOpen, Drama } from "lucide-react";
 import Header from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
-import { basePath } from "@/lib/utils";
 
 const modes = [
   {
@@ -36,8 +35,7 @@ export default function EnglishReadingComprehensionLandingPage() {
       return;
     }
     if (modeId === "learning") {
-      // Static learning page lives in /public/english.
-      window.location.href = `${basePath}/english/ReadingComprehensionLearning.html`;
+      router.push("/english/reading-comprehension/learning");
     }
   }
 
