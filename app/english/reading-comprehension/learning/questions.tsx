@@ -26,7 +26,7 @@ export const questions: Question[] = [
   {
     id: 1,
     part: "part1",
-    text: "There is a mix of _____ flavours in 'Rainbow Ice Cream'.",
+    text: "There is a mix of _____ flavours in Tropical Sunshine Ice-cream.",
     options: [
       { val: "A", label: "three" },
       { val: "B", label: "four" },
@@ -37,14 +37,15 @@ export const questions: Question[] = [
     clues: ["q1"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Look at the subtitle under the ice cream name. Count the
-        flavours listed: <em>cherry, banana, melon and blueberry</em>. How many are there?
+        <strong>💡 Hint:</strong> Look at the subtitle under the ice-cream name. Count the
+        flavours listed: <em>pineapple, banana, mango and passionfruit</em>. How many are there?
       </>
     ),
     strategy: (
       <>
-        <strong>Scanning:</strong> When you need specific information, scan the text for
-        keywords. Here, look for the flavour names listed after &quot;a mix of delicious&quot;.
+        <strong>Scanning &amp; Inference:</strong> You cannot see the exact words &quot;four
+        flavours&quot; in the reading, but you can scan for the keyword &quot;flavours&quot;,
+        count them and get the sum. This is numerical reasoning.
       </>
     ),
     explain: (
@@ -52,7 +53,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: B. four</strong>
         <br />
         <br />
-        The subtitle says &quot;a mix of delicious <em>cherry, banana, melon and blueberry</em>{" "}
+        The subtitle says &quot;a mix of <em>pineapple, banana, mango and passionfruit</em>{" "}
         flavours.&quot; Counting these gives us <strong>four</strong> flavours.
       </>
     ),
@@ -60,80 +61,80 @@ export const questions: Question[] = [
   {
     id: 2,
     part: "part1",
-    text: "To enjoy this week's special offer, Bella has to ______.",
+    text: "To enjoy the special offer, you have to ______.",
     options: [
-      { val: "A", label: "buy two scoops of ice cream" },
+      { val: "A", label: "buy two minicups of ice cream" },
       { val: "B", label: "order the family pack" },
       { val: "C", label: "post a comment on the website" },
-      { val: "D", label: "visit the Sha Tin shop" },
+      { val: "D", label: "visit the Tai Po shop" },
     ],
     answer: "D",
     clues: ["q2"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Read the special offer banner carefully. It says the offer is{" "}
-        <em>&quot;for the Sha Tin branch only&quot;</em>. What does Bella need to do to get this
-        offer?
+        <em>&quot;for the Tai Po branch only&quot;</em>. What do you need to do to get this offer?
       </>
     ),
     strategy: (
       <>
-        <strong>Scanning &amp; Inference:</strong> Find the special offer section and look at ALL
-        the conditions. The key detail is often at the end — the branch restriction tells you what
-        action is required.
+        <strong>Scanning &amp; Comparing:</strong> Find the special offer section and read all the
+        conditions. Take out the answers with no evidence in the text, then compare the rest. The
+        branch restriction tells you what action is required.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: D. visit the Sha Tin shop</strong>
+        <strong>✅ Correct: D. visit the Tai Po shop</strong>
         <br />
         <br />
-        The special offer states &quot;for the Sha Tin branch only,&quot; meaning Bella must go to
-        the Sha Tin shop to enjoy the &quot;Buy 1 get 1 FREE&quot; deal.
+        The special offer states &quot;for the Tai Po branch only,&quot; so you must go to the Tai
+        Po shop to enjoy the &quot;Buy 1 minicup and get 1 minicup FREE&quot; deal. You only need to
+        buy <em>one</em> minicup, so A is wrong; B and C have no clue in the text.
       </>
     ),
   },
   {
     id: 3,
     part: "part1",
-    text: "Bella can get a gift if she buys 'Rainbow Ice Cream' on ______.",
+    text: "You can get a gift if you buy Tropical Sunshine Ice-cream on ______.",
     options: [
-      { val: "A", label: "14 July" },
-      { val: "B", label: "16 July" },
-      { val: "C", label: "13 July" },
-      { val: "D", label: "24 July" },
+      { val: "A", label: "8 August" },
+      { val: "B", label: "9 August" },
+      { val: "C", label: "15 August" },
+      { val: "D", label: "22 August" },
     ],
-    answer: "B",
-    clues: ["q3", "q3b"],
+    answer: "C",
+    clues: ["q3"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> The special offer runs from <em>16–22 July</em>. The
-        &quot;gift&quot; is the free scoop. Check which answer dates fall <strong>within</strong>{" "}
-        this week. 14 July is before the offer starts!
+        <strong>💡 Hint:</strong> The offer runs during <em>10–16 August</em>. Check which answer
+        date falls <strong>within</strong> this period. 8 and 9 August are before it starts; 22
+        August is after it ends!
       </>
     ),
     strategy: (
       <>
-        <strong>Numerical Reasoning:</strong> Work with dates carefully. The offer is 16–22 July.
-        Check each option: 13 and 14 July are before the offer starts. 24 July is after the offer
-        ends. Only 16 July is within the range.
+        <strong>Numerical Reasoning:</strong> Activate your knowledge of time relations. &quot;10–16
+        August&quot; is a period of time. Check each option and decide whether the date falls inside
+        the period.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: B. 16 July</strong>
+        <strong>✅ Correct: C. 15 August</strong>
         <br />
         <br />
-        The special offer runs from <strong>16–22 July</strong>. 13 and 14 July are <em>before</em>{" "}
-        the offer period, and 24 July is after. B (16 July) is the only date within the promotional
-        period.
+        The clue says <strong>10–16 August</strong>. 8 and 9 August are <em>before</em> the period
+        and 22 August is after. Only <strong>15 August</strong> falls within 10–16 August, so C is
+        correct.
       </>
     ),
   },
   {
     id: 4,
     part: "part2",
-    text: "In the 'Comments' section, the word 'ordinary' means ______.",
+    text: "In the comment from Vicky2026, the word 'ordinary' means ______.",
     options: [
       { val: "A", label: "common" },
       { val: "B", label: "special" },
@@ -144,7 +145,7 @@ export const questions: Question[] = [
     clues: ["q4", "q4b"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Jimmy says he prefers &quot;these ordinary flavours to the{" "}
+        <strong>💡 Hint:</strong> Vicky2026 says she prefers &quot;the ordinary flavours to the{" "}
         <em>strange</em> new mix.&quot; The word &quot;ordinary&quot; is <strong>contrasted</strong>{" "}
         with &quot;strange.&quot; If &quot;strange&quot; means unusual, what does
         &quot;ordinary&quot; mean? Think about opposites!
@@ -153,8 +154,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         <strong>Contextual Inference:</strong> When you don&apos;t know a word&apos;s meaning, look
-        at the surrounding words for clues. Here, &quot;ordinary&quot; is contrasted with
-        &quot;strange&quot; — they are opposites.
+        at the surrounding words for clues. &quot;Prefer…to…&quot; compares two things in contrast,
+        so &quot;ordinary&quot; is the opposite of &quot;strange.&quot;
       </>
     ),
     explain: (
@@ -162,16 +163,17 @@ export const questions: Question[] = [
         <strong>✅ Correct: A. common</strong>
         <br />
         <br />
-        Jimmy prefers &quot;ordinary&quot; flavours (vanilla and chocolate) to the
+        Vicky2026 prefers the &quot;ordinary&quot; flavours (chocolate and strawberry) to the
         &quot;strange&quot; new mix. Since &quot;ordinary&quot; is the opposite of
-        &quot;strange,&quot; it means <strong>common</strong> (normal, usual).
+        &quot;strange,&quot; it means <strong>common</strong> (normal, usual). These flavours are
+        not &quot;special&quot; or &quot;new,&quot; so B and C are wrong.
       </>
     ),
   },
   {
     id: 5,
     part: "part2",
-    text: "In the 'Comments' section, 'Ugh!' is the sound of someone finding something ______.",
+    text: "In the comment from HappyPeter, 'Yuck!' is the sound of someone finding something ______.",
     options: [
       { val: "A", label: "interesting" },
       { val: "B", label: "expensive" },
@@ -182,16 +184,17 @@ export const questions: Question[] = [
     clues: ["q5", "q5b", "q5c"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Read what happens after &quot;Ugh!&quot; — the ice cream{" "}
-        <em>melted</em>, the colours <em>mixed together</em>, and HappyDave calls it{" "}
-        <em>&quot;What a mess!&quot;</em>. Was this a good or bad experience?
+        <strong>💡 Hint:</strong> Read what happens after &quot;Yuck!&quot; — the ice-cream{" "}
+        <em>melted</em>, it was <em>&quot;What a mess!&quot;</em>, and HappyPeter calls it{" "}
+        <em>&quot;Tropical Cyclone Ice-cream&quot;</em>. Was this a good or bad experience?
       </>
     ),
     strategy: (
       <>
-        <strong>Coherence Inference:</strong> Connect the exclamation &quot;Ugh!&quot; with
-        HappyDave&apos;s overall attitude. The words &quot;melted,&quot; &quot;mess,&quot; and the
-        sarcastic renaming to &quot;Typhoon Ice Cream&quot; all show <strong>negative feelings</strong>.
+        <strong>Interpreting Feelings:</strong> Connect the exclamation &quot;Yuck!&quot; with
+        HappyPeter&apos;s overall attitude. &quot;What a mess!&quot;, &quot;melted&quot; and the
+        sarcastic renaming to &quot;Tropical Cyclone Ice-cream&quot; all show{" "}
+        <strong>negative feelings</strong>.
       </>
     ),
     explain: (
@@ -199,31 +202,32 @@ export const questions: Question[] = [
         <strong>✅ Correct: D. horrible</strong>
         <br />
         <br />
-        &quot;Ugh!&quot; expresses disgust. HappyDave found the melted, messy ice cream{" "}
-        <strong>horrible</strong>. The context clues — &quot;melted,&quot; &quot;mixed
-        together,&quot; &quot;What a mess!&quot; — all point to a very negative experience.
+        &quot;Yuck!&quot; expresses disgust. HappyPeter found the melted, messy ice-cream{" "}
+        <strong>horrible</strong>. The context clues — &quot;melted,&quot; &quot;What a mess!&quot;
+        and &quot;Tropical Cyclone Ice-cream&quot; — all point to a very negative experience.
+        &quot;Expensive&quot; and &quot;delicious&quot; are not mentioned.
       </>
     ),
   },
   {
     id: 6,
     part: "part2",
-    text: "Who enjoyed 'Rainbow Ice Cream' the most?",
+    text: "Who enjoyed Tropical Sunshine Ice-cream the most?",
     options: [
-      { val: "A", label: "Jimmy1234" },
-      { val: "B", label: "CoolChloe01" },
-      { val: "C", label: "KatyLovesFood" },
-      { val: "D", label: "HappyDave" },
+      { val: "A", label: "Vicky2026" },
+      { val: "B", label: "Rebecca01" },
+      { val: "C", label: "Vera123" },
+      { val: "D", label: "HappyPeter" },
     ],
     answer: "B",
     clues: ["q6"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Look at each comment&apos;s attitude:
-        <br />• Jimmy1234 — prefers other flavours (not a fan)
-        <br />• CoolChloe01 — <em>&quot;I&apos;m coming back for more!&quot;</em> (very positive!)
-        <br />• KatyLovesFood — <em>&quot;Looks good but tastes average&quot;</em> (mixed)
-        <br />• HappyDave — <em>&quot;What a mess!&quot;</em> (negative)
+        <br />• Vicky2026 — prefers other flavours (not a fan)
+        <br />• Rebecca01 — <em>&quot;I&apos;m coming back for more!&quot;</em> (very positive!)
+        <br />• Vera123 — <em>&quot;Smells good, but tastes…&quot;</em> (mixed)
+        <br />• HappyPeter — <em>&quot;What a mess!&quot;</em> (negative)
         <br />
         <br />
         Who sounds the most enthusiastic?
@@ -231,19 +235,19 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Coherence Inference:</strong> Match each person&apos;s attitude to the ice cream.
-        Compare the <strong>feelings</strong> expressed in each comment. &quot;Coming back for
-        more&quot; is the most positive statement of all four comments.
+        <strong>Interpreting Feelings:</strong> Match each person&apos;s attitude to the ice-cream.
+        Compare the <strong>feelings</strong> in each comment. &quot;Coming back for more&quot; is
+        the most positive statement of all four comments.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: B. CoolChloe01</strong>
+        <strong>✅ Correct: B. Rebecca01</strong>
         <br />
         <br />
-        CoolChloe01 says <em>&quot;I&apos;m coming back for more!&quot;</em> — this shows she enjoyed
-        it so much she wants to buy it again. The others were negative, mixed, or preferred different
-        flavours.
+        Rebecca01 says <em>&quot;I&apos;m coming back for more!&quot;</em> — this shows she enjoyed
+        it so much she wants to buy it again. Vicky2026 and HappyPeter did not like it, and Vera123
+        thought it was not very good.
       </>
     ),
   },

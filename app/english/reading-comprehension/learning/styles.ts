@@ -49,8 +49,8 @@ export const learningStyles = `
 }
 .rc-learning * { box-sizing: border-box; }
 
-.rc-learning .app-shell { max-width: 1200px; margin: 0 auto; padding: 12px 16px 60px; position: relative; z-index: 1; }
-.rc-learning .narrow { max-width: 720px; margin: 0 auto; }
+.rc-learning .app-shell { width: 100%; max-width: 1400px; margin: 0 auto; padding: 12px clamp(16px, 4vw, 48px) 60px; position: relative; z-index: 1; }
+.rc-learning .narrow { width: 100%; max-width: 960px; margin: 0 auto; }
 
 .rc-learning .app-header { text-align: center; padding: 22px 16px 14px; }
 .rc-learning .app-header h1 {
@@ -63,7 +63,7 @@ export const learningStyles = `
 
 .rc-learning .nav-tabs {
   display: flex; gap: 6px; margin: 0 auto 18px; overflow-x: auto; padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch; max-width: 720px;
+  -webkit-overflow-scrolling: touch; max-width: 960px;
 }
 .rc-learning .nav-tabs::-webkit-scrollbar { display: none; }
 .rc-learning .nav-tab {
@@ -106,6 +106,8 @@ export const learningStyles = `
 .rc-learning .ad-header { text-align: center; margin-bottom: 14px; }
 .rc-learning .ad-header h2 { font-weight: 700; font-size: 19px; background: linear-gradient(90deg, #E8477C, #FF8C42, #FFD166, #3CC9A3, #4DABF7, #9B72CF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 3px; }
 .rc-learning .ad-subtitle { color: var(--text-secondary); font-size: 13px; font-style: italic; }
+.rc-learning .ad-title { font-weight: 700; font-size: 15px; color: var(--text-primary); margin-bottom: 3px; }
+.rc-learning .gift-banner { background: linear-gradient(135deg, var(--accent-mint), var(--accent-blue)); color: #fff; border-radius: var(--radius-sm); padding: 12px 14px; text-align: center; margin: 14px 0 0; font-size: 12px; font-weight: 600; line-height: 1.5; }
 .rc-learning .highlight-clue { transition: all 0.4s ease; border-radius: 4px; padding: 1px 4px; }
 
 .rc-learning .ice-cream-deco { text-align: center; font-size: 30px; margin: 6px 0 12px; animation: rcBounce 2s infinite; }
@@ -140,6 +142,18 @@ export const learningStyles = `
 .rc-learning .skill-tag { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; margin: 3px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--bg-article); border: 1px solid var(--border-light); color: var(--text-secondary); }
 
 .rc-learning .question-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); border: 2px solid var(--border-light); transition: border-color 0.4s ease; }
+.rc-learning .q-progress { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rc-learning .q-progress-label { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.rc-learning .q-progress-track { display: inline-flex; gap: 6px; }
+.rc-learning .q-progress-dot { width: 22px; height: 6px; border-radius: 99px; background: var(--border-light); transition: background 0.3s ease; }
+.rc-learning .q-progress-dot.active { background: var(--accent-blue); }
+.rc-learning .q-progress-dot.done { background: var(--accent-mint); }
+.rc-learning .q-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.rc-learning .q-nav-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 99px; font-weight: 600; font-size: 14px; cursor: pointer; border: 2px solid var(--border-light); transition: all 0.2s ease; }
+.rc-learning .q-nav-btn.back { background: var(--bg-card); color: var(--text-secondary); }
+.rc-learning .q-nav-btn.back:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.rc-learning .q-nav-btn.next { background: linear-gradient(135deg,var(--accent-blue),var(--accent-purple)); color: #fff; border-color: transparent; box-shadow: 0 3px 12px rgba(20,110,245,0.3); }
+.rc-learning .q-nav-btn.next:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(20,110,245,0.4); }
 .rc-learning .question-card.answered-correct { border-color: var(--correct-border); }
 .rc-learning .question-card.answered-wrong { border-color: var(--wrong-border); }
 .rc-learning .q-number { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-blue); margin-bottom: 6px; }

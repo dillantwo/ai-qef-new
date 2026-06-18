@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   Book,
   BookOpen,
@@ -31,7 +32,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import { learningStyles } from "./styles";
-import { questions, TOTAL_QUESTIONS, type Question } from "./questions";
+import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 
 type Section = "overview" | "part1" | "part2" | "summary";
 
@@ -54,6 +55,7 @@ export default function EnglishReadingComprehensionLearningPage() {
   const [answered, setAnswered] = useState<Record<number, string>>({});
   const [hints, setHints] = useState<Record<number, boolean>>({});
   const [strategies, setStrategies] = useState<Record<number, boolean>>({});
+  const [step, setStep] = useState<Record<PartId, number>>({ part1: 0, part2: 0 });
   const [activeClues, setActiveClues] = useState<{ ids: string[]; badge: string }>({
     ids: [],
     badge: "",
@@ -131,10 +133,27 @@ export default function EnglishReadingComprehensionLearningPage() {
     setStrategies((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
+  const advanceStep = useCallback(
+    (part: PartId) => {
+      setStep((prev) => ({ ...prev, [part]: prev[part] + 1 }));
+      clearHighlights();
+    },
+    [clearHighlights],
+  );
+
+  const goBackStep = useCallback(
+    (part: PartId) => {
+      setStep((prev) => ({ ...prev, [part]: Math.max(0, prev[part] - 1) }));
+      clearHighlights();
+    },
+    [clearHighlights],
+  );
+
   const resetAll = useCallback(() => {
     setAnswered({});
     setHints({});
     setStrategies({});
+    setStep({ part1: 0, part2: 0 });
     clearHighlights();
     setSection("overview");
     mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -174,63 +193,111 @@ export default function EnglishReadingComprehensionLearningPage() {
     }`;
 
   function renderQuestions(part: "part1" | "part2") {
-    return questions
-      .filter((q) => q.part === part)
-      .map((q) => {
-        const picked = answered[q.id];
-        const cardClass = picked
-          ? picked === q.answer
-            ? "question-card answered-correct"
-            : "question-card answered-wrong"
-          : "question-card";
-        return (
-          <div className={cardClass} key={q.id}>
-            <div className="q-number">Question {q.id}</div>
-            <div className="q-text">{q.text}</div>
-            <ul className="options-list">
-              {q.options.map((opt) => {
-                let cls = "option-btn";
-                if (picked) {
-                  cls += " disabled";
-                  if (opt.val === q.answer) cls += " correct";
-                  else if (opt.val === picked) cls += " wrong";
-                }
-                return (
-                  <li key={opt.val}>
-                    <button
-                      type="button"
-                      className={cls}
-                      onClick={() => handleAnswer(q, opt.val)}
-                    >
-                      <span className="opt-letter">{opt.val}</span> {opt.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="hint-row">
-              <button type="button" className="hint-btn" onClick={() => toggleHint(q)}>
-                <Lightbulb className="size-3.5" /> Show Hint
-              </button>
+    const list = questions.filter((q) => q.part === part);
+    const current = step[part];
+    const currentQ = list[current];
+    const currentAnswered = currentQ ? Boolean(answered[currentQ.id]) : false;
+    const isLast = current >= list.length - 1;
+    return (
+      <>
+        <div className="q-progress">
+          <span className="q-progress-label">
+            Question {Math.min(current + 1, list.length)} of {list.length}
+          </span>
+          <span className="q-progress-track">
+            {list.map((q, i) => (
+              <span
+                key={q.id}
+                className={`q-progress-dot${i <= current ? " active" : ""}${
+                  answered[q.id] ? " done" : ""
+                }`}
+              />
+            ))}
+          </span>
+        </div>
+        {list.slice(current, current + 1).map((q) => {
+          const picked = answered[q.id];
+          const cardClass = picked
+            ? picked === q.answer
+              ? "question-card answered-correct"
+              : "question-card answered-wrong"
+            : "question-card";
+          return (
+            <div className={cardClass} key={q.id}>
+              <div className="q-number">Question {q.id}</div>
+              <div className="q-text">{q.text}</div>
+              <ul className="options-list">
+                {q.options.map((opt) => {
+                  let cls = "option-btn";
+                  if (picked) {
+                    cls += " disabled";
+                    if (opt.val === q.answer) cls += " correct";
+                    else if (opt.val === picked) cls += " wrong";
+                  }
+                  return (
+                    <li key={opt.val}>
+                      <button
+                        type="button"
+                        className={cls}
+                        onClick={() => handleAnswer(q, opt.val)}
+                      >
+                        <span className="opt-letter">{opt.val}</span> {opt.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="hint-row">
+                <button type="button" className="hint-btn" onClick={() => toggleHint(q)}>
+                  <Lightbulb className="size-3.5" /> Show Hint
+                </button>
+                <button
+                  type="button"
+                  className="hint-btn strategy-btn"
+                  onClick={() => toggleStrategy(q.id)}
+                >
+                  <GraduationCap className="size-3.5" /> Reading Strategy
+                </button>
+              </div>
+              {hints[q.id] && <div className="hint-box">{q.hint}</div>}
+              {strategies[q.id] && (
+                <div className="reading-strategy">
+                  <GraduationCap className="size-3.5" />
+                  <span>{q.strategy}</span>
+                </div>
+              )}
+              {picked && <div className="explain-box">{q.explain}</div>}
+            </div>
+          );
+        })}
+        {(current > 0 || (currentAnswered && !isLast)) && (
+          <div className="q-nav-row">
+            {current > 0 ? (
               <button
                 type="button"
-                className="hint-btn strategy-btn"
-                onClick={() => toggleStrategy(q.id)}
+                className="q-nav-btn back"
+                onClick={() => goBackStep(part)}
               >
-                <GraduationCap className="size-3.5" /> Reading Strategy
+                <ArrowLeft className="size-4" /> Previous
               </button>
-            </div>
-            {hints[q.id] && <div className="hint-box">{q.hint}</div>}
-            {strategies[q.id] && (
-              <div className="reading-strategy">
-                <GraduationCap className="size-3.5" />
-                <span>{q.strategy}</span>
-              </div>
+            ) : (
+              <span />
             )}
-            {picked && <div className="explain-box">{q.explain}</div>}
+            {currentAnswered && !isLast ? (
+              <button
+                type="button"
+                className="q-nav-btn next"
+                onClick={() => advanceStep(part)}
+              >
+                Next Question <ArrowRight className="size-4" />
+              </button>
+            ) : (
+              <span />
+            )}
           </div>
-        );
-      });
+        )}
+      </>
+    );
   }
 
   return (
@@ -247,7 +314,7 @@ export default function EnglishReadingComprehensionLearningPage() {
               <h1>
                 <BookOpenCheck className="size-6" /> Reading Scaffolding
               </h1>
-              <p>Cycle 1 — Reading 1: Webpage Advertisement</p>
+              <p>Cycle 1 — Reading 1: Sunshine Ice-cream Webpage</p>
             </div>
 
             {/* Tabs */}
@@ -336,39 +403,44 @@ export default function EnglishReadingComprehensionLearningPage() {
                         <span className="browser-dot r" />
                         <span className="browser-dot y" />
                         <span className="browser-dot g" />
-                        <div className="url-bar">www.happyicecream.com.hk</div>
+                        <div className="url-bar">www.sunshineicecream.com.hk</div>
                       </div>
                       <div className="webpage-body">
                         <div className="ad-header">
-                          <div className="ice-cream-deco">🍦🌈🍨</div>
-                          <h2>Try Our New Rainbow Ice Cream!</h2>
+                          <div className="ice-cream-deco">🌅🍦🏝️</div>
+                          <h2>Welcome to the Tropical Wonderland!</h2>
+                          <p className="ad-title">Enjoy the Tropical Sunshine Ice-cream</p>
                           <p className="ad-subtitle">
-                            a mix of delicious cherry, banana, melon and blueberry flavours
+                            a mix of pineapple, banana, mango and passionfruit flavours
                           </p>
                         </div>
                         <div className="price-grid">
                           <div className="price-card">
-                            <div className="label">Mini Cup</div>
-                            <div className="price">$30</div>
-                          </div>
-                          <div className="price-card">
-                            <div className="label">Single Scoop</div>
+                            <div className="label">Minicup</div>
                             <div className="price">$38</div>
                           </div>
                           <div className="price-card">
+                            <div className="label">Stickbar</div>
+                            <div className="price">$48</div>
+                          </div>
+                          <div className="price-card">
                             <div className="label">Family Pack</div>
-                            <div className="price">$105</div>
+                            <div className="price">$108</div>
                           </div>
                         </div>
                         <div className="special-banner">
-                          <h3>This Week&apos;s Special Offer</h3>
+                          <h3>Special Offer</h3>
                           <p>
-                            (16–22 July)
+                            (for the Tai Po branch only)
                             <br />
-                            Buy 1 scoop and get 1 scoop FREE!
+                            10–16 August
                             <br />
-                            (for the Sha Tin branch only)
+                            Buy 1 minicup and get 1 minicup FREE!
                           </p>
+                        </div>
+                        <div className="gift-banner">
+                          🎁 <strong>FREE GIFT</strong> — Spend over $300 from 10–12 August to get a
+                          pair of sunglasses for FREE! 😎
                         </div>
                         <div style={{ marginTop: 14 }}>
                           <div
@@ -478,8 +550,8 @@ export default function EnglishReadingComprehensionLearningPage() {
                       </div>
                       <ul className="pre-reading-list">
                         <li>
-                          <HelpCircle className="size-4" /> Is there only one ice-cream flavour in
-                          the shop?
+                          <HelpCircle className="size-4" /> Does the Tropical Sunshine Ice-cream
+                          taste fruity?
                         </li>
                         <li>
                           <HelpCircle className="size-4" /> Is there any special offer?
@@ -495,51 +567,52 @@ export default function EnglishReadingComprehensionLearningPage() {
                           <span className="browser-dot r" />
                           <span className="browser-dot y" />
                           <span className="browser-dot g" />
-                          <div className="url-bar">www.happyicecream.com.hk</div>
+                          <div className="url-bar">www.sunshineicecream.com.hk</div>
                         </div>
                         <div className="webpage-body">
                           <div className="ad-header">
-                            <div className="ice-cream-deco">🍦🌈🍨</div>
-                            <h2>Try Our New Rainbow Ice Cream!</h2>
+                            <div className="ice-cream-deco">🌅🍦🏝️</div>
+                            <h2>Welcome to the Tropical Wonderland!</h2>
+                            <p className="ad-title">Enjoy the Tropical Sunshine Ice-cream</p>
                             <p className="ad-subtitle">
-                              a mix of delicious{" "}
+                              a mix of{" "}
                               <span className={clueClass("q1")} ref={setClueRef("q1")}>
-                                cherry, banana, melon and blueberry
+                                pineapple, banana, mango and passionfruit
                               </span>{" "}
                               flavours
                             </p>
                           </div>
                           <div className="price-grid">
                             <div className="price-card">
-                              <div className="label">Mini Cup</div>
-                              <div className="price">$30</div>
-                            </div>
-                            <div className="price-card">
-                              <div className="label">Single Scoop</div>
+                              <div className="label">Minicup</div>
                               <div className="price">$38</div>
                             </div>
                             <div className="price-card">
+                              <div className="label">Stickbar</div>
+                              <div className="price">$48</div>
+                            </div>
+                            <div className="price-card">
                               <div className="label">Family Pack</div>
-                              <div className="price">$105</div>
+                              <div className="price">$108</div>
                             </div>
                           </div>
                           <div className="special-banner">
-                            <h3>This Week&apos;s Special Offer</h3>
+                            <h3>Special Offer</h3>
                             <p>
-                              <span className={clueClass("q3")} ref={setClueRef("q3")}>
-                                (
-                                <span className={clueClass("q3b")} ref={setClueRef("q3b")}>
-                                  16–22 July
-                                </span>
-                                )
-                              </span>
-                              <br />
-                              Buy 1 scoop and get 1 scoop FREE!
-                              <br />
                               <span className={clueClass("q2")} ref={setClueRef("q2")}>
-                                (for the Sha Tin branch only)
+                                (for the Tai Po branch only)
                               </span>
+                              <br />
+                              <span className={clueClass("q3")} ref={setClueRef("q3")}>
+                                10–16 August
+                              </span>
+                              <br />
+                              Buy 1 minicup and get 1 minicup FREE!
                             </p>
+                          </div>
+                          <div className="gift-banner">
+                            🎁 <strong>FREE GIFT</strong> — Spend over $300 from 10–12 August to get
+                            a pair of sunglasses for FREE! 😎
                           </div>
                         </div>
                       </div>
@@ -551,19 +624,21 @@ export default function EnglishReadingComprehensionLearningPage() {
                       <PenLine className="size-3.5" /> Questions
                     </div>
                     {renderQuestions("part1")}
-                    <div style={{ textAlign: "center", marginTop: 6 }}>
-                      <button
-                        type="button"
-                        className="restart-btn"
-                        onClick={() => switchSection("part2")}
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-purple),var(--accent-pink))",
-                        }}
-                      >
-                        Continue to Part 2 <ArrowRight className="size-4" />
-                      </button>
-                    </div>
+                    {part1Done && (
+                      <div style={{ textAlign: "center", marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="restart-btn"
+                          onClick={() => switchSection("part2")}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-purple),var(--accent-pink))",
+                          }}
+                        >
+                          Continue to Part 2 <ArrowRight className="size-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -604,16 +679,16 @@ export default function EnglishReadingComprehensionLearningPage() {
                           <span className="browser-dot r" />
                           <span className="browser-dot y" />
                           <span className="browser-dot g" />
-                          <div className="url-bar">www.happyicecream.com.hk — Comments</div>
+                          <div className="url-bar">www.sunshineicecream.com.hk — Comments</div>
                         </div>
                         <div className="webpage-body">
                           <div className="comment-item">
                             <div className="comment-meta">
-                              <span className="comment-user">Jimmy1234</span>
-                              <span className="comment-date">14 July 20XX</span>
+                              <span className="comment-user">Vicky2026</span>
+                              <span className="comment-date">20 Aug 2026</span>
                             </div>
                             <p className="comment-text">
-                              I like vanilla and chocolate flavours more. I prefer these{" "}
+                              I like chocolate and strawberry flavours more. I prefer the{" "}
                               <span className="vocab-word" tabIndex={0}>
                                 <span className={clueClass("q4")} ref={setClueRef("q4")}>
                                   ordinary
@@ -631,8 +706,8 @@ export default function EnglishReadingComprehensionLearningPage() {
                           </div>
                           <div className="comment-item">
                             <div className="comment-meta">
-                              <span className="comment-user">CoolChloe01</span>
-                              <span className="comment-date">2 July 20XX</span>
+                              <span className="comment-user">Rebecca01</span>
+                              <span className="comment-date">15 Aug 2026</span>
                             </div>
                             <p className="comment-text">
                               <span className={clueClass("q6")} ref={setClueRef("q6")}>
@@ -642,36 +717,35 @@ export default function EnglishReadingComprehensionLearningPage() {
                           </div>
                           <div className="comment-item">
                             <div className="comment-meta">
-                              <span className="comment-user">KatyLovesFood</span>
-                              <span className="comment-date">28 June 20XX</span>
+                              <span className="comment-user">Vera123</span>
+                              <span className="comment-date">11 Aug 2026</span>
                             </div>
-                            <p className="comment-text">Looks good but tastes average...</p>
+                            <p className="comment-text">Smells good, but tastes...</p>
                           </div>
                           <div className="comment-item">
                             <div className="comment-meta">
-                              <span className="comment-user">HappyDave</span>
-                              <span className="comment-date">19 June 20XX</span>
+                              <span className="comment-user">HappyPeter</span>
+                              <span className="comment-date">10 Aug 2026</span>
                             </div>
                             <p className="comment-text">
-                              I ordered the family pack online. When I opened it...{" "}
+                              I ordered a family pack online. When I opened the delivery bag…{" "}
                               <span className="vocab-word" tabIndex={0}>
                                 <span className={clueClass("q5")} ref={setClueRef("q5")}>
-                                  Ugh!
+                                  Yuck!
                                 </span>
                                 <span className="vocab-tip">
-                                  💡 <strong>Ugh!</strong> = a sound expressing disgust or
+                                  💡 <strong>Yuck!</strong> = a sound expressing disgust or
                                   displeasure
                                 </span>
                               </span>{" "}
-                              The ice cream{" "}
-                              <span className={clueClass("q5b")} ref={setClueRef("q5b")}>
-                                melted
-                              </span>{" "}
-                              and the colours mixed together.{" "}
                               <span className={clueClass("q5c")} ref={setClueRef("q5c")}>
                                 What a mess!
                               </span>{" "}
-                              It should be called &apos;Typhoon Ice Cream&apos; instead!
+                              The ice-cream has already{" "}
+                              <span className={clueClass("q5b")} ref={setClueRef("q5b")}>
+                                melted
+                              </span>
+                              . It should be called &apos;Tropical Cyclone Ice-cream&apos; instead!
                             </p>
                           </div>
                         </div>
@@ -684,15 +758,17 @@ export default function EnglishReadingComprehensionLearningPage() {
                       <PenLine className="size-3.5" /> Questions
                     </div>
                     {renderQuestions("part2")}
-                    <div style={{ textAlign: "center", marginTop: 6 }}>
-                      <button
-                        type="button"
-                        className="restart-btn"
-                        onClick={() => switchSection("summary")}
-                      >
-                        View Summary <Trophy className="size-4" />
-                      </button>
-                    </div>
+                    {part2Done && (
+                      <div style={{ textAlign: "center", marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="restart-btn"
+                          onClick={() => switchSection("summary")}
+                        >
+                          View Summary <Trophy className="size-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -798,16 +874,16 @@ export default function EnglishReadingComprehensionLearningPage() {
 
 const OVERVIEW_COMMENTS = [
   {
-    user: "Jimmy1234",
-    date: "14 July 20XX",
-    text: "I like vanilla and chocolate flavours more. I prefer these ordinary flavours to the strange new mix.",
+    user: "Vicky2026",
+    date: "20 Aug 2026",
+    text: "I like chocolate and strawberry flavours more. I prefer the ordinary flavours to the strange new mix.",
   },
-  { user: "CoolChloe01", date: "2 July 20XX", text: "I'm coming back for more!" },
-  { user: "KatyLovesFood", date: "28 June 20XX", text: "Looks good but tastes average..." },
+  { user: "Rebecca01", date: "15 Aug 2026", text: "I'm coming back for more!" },
+  { user: "Vera123", date: "11 Aug 2026", text: "Smells good, but tastes..." },
   {
-    user: "HappyDave",
-    date: "19 June 20XX",
-    text: "I ordered the family pack online. When I opened it... Ugh! The ice cream melted and the colours mixed together. What a mess! It should be called 'Typhoon Ice Cream' instead!",
+    user: "HappyPeter",
+    date: "10 Aug 2026",
+    text: "I ordered a family pack online. When I opened the delivery bag… Yuck! What a mess! The ice-cream has already melted. It should be called 'Tropical Cyclone Ice-cream' instead!",
   },
 ];
 
