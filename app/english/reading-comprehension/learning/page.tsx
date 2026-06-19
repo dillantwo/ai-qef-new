@@ -302,7 +302,7 @@ export default function EnglishReadingComprehensionLearningPage() {
 
   return (
     <>
-      <Header backHref="/english/reading-comprehension" backLabel="返回" />
+      <Header backHref="/english/reading-comprehension" backLabel="Back" />
 
       <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="rc-learning">

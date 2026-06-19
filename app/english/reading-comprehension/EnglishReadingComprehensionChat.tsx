@@ -440,7 +440,7 @@ export default function EnglishReadingComprehensionChat() {
     await streamAssistant(payloadMessages, studentRole);
   }
 
-  // Agent kick-off: the student picks a role, then clicks "開始對話". We first
+  // Agent kick-off: the student picks a role, then clicks "Start". We first
   // show the full reading text as a pinnable message, then the AI opens the
   // reciprocal-reading discussion. The starter turn is sent to the API but not
   // shown as a student bubble.
@@ -493,7 +493,7 @@ export default function EnglishReadingComprehensionChat() {
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              返回
+              Back
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -529,12 +529,12 @@ export default function EnglishReadingComprehensionChat() {
                 disabled={!studentRole || isLoading}
                 className="rounded-full bg-[#146ef5] px-6 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,110,245,0.3)] transition-all hover:bg-[#0055d4] disabled:bg-[#d8d8d8] disabled:shadow-none"
               >
-                開始對話
+                Start
               </Button>
               <p className="text-xs text-[#b5b5b5]">
                 {studentRole
-                  ? `你的角色：${READING_ROLE_LABELS[studentRole]}`
-                  : "請先在下方輸入框選擇你的角色"}
+                  ? `Your role: ${READING_ROLE_LABELS[studentRole]}`
+                  : "Please choose your role in the input box below first"}
               </p>
             </div>
           )}
@@ -712,7 +712,7 @@ export default function EnglishReadingComprehensionChat() {
                   ))}
                 </div>
               )}
-              <Textarea ref={textareaRef} placeholder={hasStarted ? PLACEHOLDER : "請先選擇角色並點擊「開始對話」"} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
+              <Textarea ref={textareaRef} placeholder={hasStarted ? PLACEHOLDER : "Please choose a role and click \u201CStart\u201D"} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
                 disabled={!hasStarted}
                 className="min-h-[56px] max-h-[160px] resize-none overflow-y-auto border-0 bg-transparent px-4 pt-3.5 pb-10 text-sm shadow-none focus-visible:ring-0 disabled:cursor-not-allowed" />
               <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleChatFileChange} className="hidden" />

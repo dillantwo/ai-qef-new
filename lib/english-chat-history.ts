@@ -127,3 +127,45 @@ export async function deleteEnglishChatHistoryItem(id: string) {
     // Keep deletes silent in UI.
   }
 }
+
+// --- Teacher: view students' chat history ---
+
+export interface EnglishStudentSummary {
+  id: string;
+  displayName: string;
+  username: string;
+  count: number;
+  lastUpdatedAt: string | null;
+}
+
+export async function getEnglishStudents(): Promise<EnglishStudentSummary[]> {
+  try {
+    const response = await fetch(`${basePath}/api/english-chat-history/teacher`, {
+      credentials: "include",
+    });
+    if (!response.ok) return [];
+    const json = (await response.json()) as { students?: EnglishStudentSummary[] };
+    return Array.isArray(json.students) ? json.students : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getEnglishStudentChatHistory(
+  studentId: string,
+  topic?: string,
+): Promise<EnglishChatHistoryItem[]> {
+  try {
+    const params = new URLSearchParams({ studentId });
+    if (topic) params.set("topic", topic);
+    const response = await fetch(
+      `${basePath}/api/english-chat-history/teacher?${params.toString()}`,
+      { credentials: "include" },
+    );
+    if (!response.ok) return [];
+    const json = (await response.json()) as { items?: EnglishChatHistoryItem[] };
+    return Array.isArray(json.items) ? json.items : [];
+  } catch {
+    return [];
+  }
+}

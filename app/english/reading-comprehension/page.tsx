@@ -8,19 +8,19 @@ import { Badge } from "@/components/ui/badge";
 const modes = [
   {
     id: "learning",
-    label: "學習閱讀理解",
+    label: "Learn Reading Comprehension",
     subtitle: "Guided Learning",
     description:
-      "透過互動式網頁範例與分步練習，學習略讀、掃讀、推論等閱讀理解技巧。",
+      "Learn skimming, scanning, and inference skills through interactive web examples and step-by-step practice.",
     icon: BookOpen,
     color: "#ff6b00",
   },
   {
     id: "roleplay",
-    label: "AI 角色扮演互動",
+    label: "AI Role-Play Practice",
     subtitle: "Reciprocal Reading",
     description:
-      "選擇你的角色，與 AI 進行互惠閱讀討論，輪流總結、提問與解釋生字。",
+      "Choose your role and join a reciprocal reading discussion with AI, taking turns to summarise, question, and explain new words.",
     icon: Drama,
     color: "#146ef5",
   },
@@ -41,7 +41,7 @@ export default function EnglishReadingComprehensionLandingPage() {
 
   return (
     <>
-      <Header backHref="/english" backLabel="返回英文科" />
+      <Header backHref="/english" backLabel="Back to English" />
 
       <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
         <div className="absolute inset-0 bg-[linear-gradient(165deg,_#ffffff_0%,_#f7fbff_52%,_#ffffff_100%)]" />
@@ -55,10 +55,10 @@ export default function EnglishReadingComprehensionLandingPage() {
                 Reading Comprehension
               </p>
               <h1 className="text-[34px] leading-[1.04] font-semibold tracking-[-0.03em] text-[#080808] sm:text-[40px]">
-                選擇你的學習方式
+                Choose how you want to learn
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-[#5a5a5a]">
-                你可以先透過引導式練習學習閱讀理解技巧，或直接與 AI 進行角色扮演互動，鞏固所學。
+                Start with guided practice to learn reading comprehension skills, or jump straight into an AI role-play to reinforce what you have learned.
               </p>
             </section>
 
@@ -98,7 +98,7 @@ export default function EnglishReadingComprehensionLandingPage() {
 
                   <div className="relative mt-auto border-t border-[#d8d8d8] pt-5">
                     <span className="inline-flex items-center gap-2 text-sm font-medium text-[#080808] transition-transform duration-200 group-hover:translate-x-[6px]">
-                      開始
+                      Start
                       <ArrowRight className="size-4 text-[#146ef5]" />
                     </span>
                   </div>

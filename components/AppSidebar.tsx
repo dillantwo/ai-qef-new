@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Box, Clock, LogOut, MessageSquare, Sparkles, Save, Share2, Timer, Trash2, Variable, Zap } from "lucide-react";
+import { Box, Clock, LogOut, MessageSquare, Sparkles, Save, Share2, Timer, Trash2, Users, Variable, Zap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -41,8 +41,31 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { basePath } from "@/lib/utils";
 import { deleteMathChatHistoryItem, getMathChatHistory, type MathChatHistoryItem } from "@/lib/math-chat-history";
-import { getEnglishChatHistory, deleteEnglishChatHistoryItem, type EnglishChatHistoryItem } from "@/lib/english-chat-history";
-import { getChineseChatHistory, deleteChineseChatHistoryItem, type ChineseChatHistoryItem } from "@/lib/chinese-chat-history";
+import { getEnglishChatHistory, deleteEnglishChatHistoryItem, getEnglishStudents, getEnglishStudentChatHistory, type EnglishChatHistoryItem, type EnglishStudentSummary } from "@/lib/english-chat-history";
+import { getChineseChatHistory, deleteChineseChatHistoryItem, getChineseStudents, getChineseStudentChatHistory, getScienceStudents, getScienceStudentChatHistory, getHumanitiesStudents, getHumanitiesStudentChatHistory, type ChineseChatHistoryItem, type ChineseStudentSummary } from "@/lib/chinese-chat-history";
+import StudentHistoryDialog from "@/components/StudentHistoryDialog";
+
+const CHINESE_TOPIC_LABELS: Record<string, string> = {
+  "scenery-description": "景物描寫",
+  "character-description": "人物描寫",
+  "lin-zexu": "學習林則徐",
+};
+
+const ENGLISH_TOPIC_LABELS: Record<string, string> = {
+  "thank-you-letter": "感謝信",
+  "reading-comprehension": "閱讀理解",
+  "location-direction": "位置與方向",
+};
+
+const SCIENCE_TOPIC_LABELS: Record<string, string> = {
+  "science-circuit": "電力及電路",
+  "science-aerospace": "航天科技",
+};
+
+const HUMANITIES_TOPIC_LABELS: Record<string, string> = {
+  "humanities-water-resources": "水資源",
+  "humanities-anti-japanese-war": "抗日戰爭",
+};
 
 interface SavedMessagePart {
   type: "text" | "file";
@@ -137,8 +160,10 @@ export function AppSidebar() {
   const isChineseWriting = isChineseScenery || isChineseCharacter || isChineseLinZexu;
   const isScienceCircuit = pathname.startsWith('/science/circuit');
   const isScienceAerospace = pathname.startsWith('/science/aerospace');
+  const isScience = isScienceCircuit || isScienceAerospace;
   const isHumanitiesWater = pathname.startsWith('/humanities/water-resources');
   const isHumanitiesAntiJapaneseWar = pathname.startsWith('/humanities/anti-japanese-war');
+  const isHumanities = isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isChineseLikeChat = isChineseWriting || isScienceCircuit || isScienceAerospace || isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isEnglishDashboard = pathname.startsWith('/english/dashboard') || pathname.startsWith('/english/thankyouletter') || pathname.startsWith('/english/reading-comprehension');
   const isTeacher = user?.role === "teacher";
@@ -160,6 +185,19 @@ export function AppSidebar() {
   const [activeEnglishChatId, setActiveEnglishChatId] = useState<string | null>(null);
   const [activeChineseChatId, setActiveChineseChatId] = useState<string | null>(null);
   const [activeMathChatId, setActiveMathChatId] = useState<string | null>(null);
+
+  // Teacher: student chat history viewer (Chinese writing topics).
+  const [chineseStudents, setChineseStudents] = useState<ChineseStudentSummary[]>([]);
+  const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+  // Teacher: student chat history viewer (English topics).
+  const [englishStudents, setEnglishStudents] = useState<EnglishStudentSummary[]>([]);
+  const [englishDialogOpen, setEnglishDialogOpen] = useState(false);
+  // Teacher: student chat history viewer (Science topics).
+  const [scienceStudents, setScienceStudents] = useState<ChineseStudentSummary[]>([]);
+  const [scienceDialogOpen, setScienceDialogOpen] = useState(false);
+  // Teacher: student chat history viewer (Humanities topics).
+  const [humanitiesStudents, setHumanitiesStudents] = useState<ChineseStudentSummary[]>([]);
+  const [humanitiesDialogOpen, setHumanitiesDialogOpen] = useState(false);
 
   const fetchSavedAiTools = useCallback(() => {
     if (!isMathDashboard || (!isTeacher && !isStudent)) return;
@@ -305,6 +343,17 @@ export function AppSidebar() {
     window.addEventListener("chinese-chat:active", handleActive);
     return () => window.removeEventListener("chinese-chat:active", handleActive);
   }, [isChineseLikeChat]);
+
+  // Teacher: load the list of students who have Chinese chat history.
+  useEffect(() => {
+    if (!isChineseWriting || !isTeacher) return;
+
+    async function refreshStudents() {
+      setChineseStudents(await getChineseStudents());
+    }
+
+    void refreshStudents();
+  }, [isChineseWriting, isTeacher]);
 
   useEffect(() => {
     function handleAiToolSaved() {
@@ -569,6 +618,70 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
+        {/* Teacher: view each student's Chinese chat history (read-only popup) */}
+        {isChineseWriting && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getChineseStudents().then(setChineseStudents);
+              setStudentDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            學生歷史記錄
+          </Button>
+        )}
+
+        {/* Teacher: view each student's English chat history (read-only popup) */}
+        {isEnglishDashboard && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getEnglishStudents().then(setEnglishStudents);
+              setEnglishDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            學生歷史記錄
+          </Button>
+        )}
+
+        {/* Teacher: view each student's Science chat history (read-only popup) */}
+        {isScience && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getScienceStudents().then(setScienceStudents);
+              setScienceDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            學生歷史記錄
+          </Button>
+        )}
+
+        {/* Teacher: view each student's Humanities chat history (read-only popup) */}
+        {isHumanities && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getHumanitiesStudents().then(setHumanitiesStudents);
+              setHumanitiesDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            學生歷史記錄
+          </Button>
+        )}
+
         {isMathDashboard && (isTeacher || isStudent) && (
           <Sheet>
             <SheetTrigger
@@ -644,7 +757,8 @@ export function AppSidebar() {
           </Sheet>
         )}
 
-        {/* History trigger */}
+        {/* History trigger — hidden where inline 聊天記錄 already shows (Chinese / Science / Humanities / English) */}
+        {!isChineseLikeChat && !isEnglishDashboard && (
         <Sheet>
           <SheetTrigger
             render={
@@ -732,6 +846,7 @@ export function AppSidebar() {
             </div>
           </SheetContent>
         </Sheet>
+        )}
 
         {/* User info */}
         <Separator />
@@ -760,6 +875,46 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarFooter>
+
+      {isChineseWriting && isTeacher && (
+        <StudentHistoryDialog
+          students={chineseStudents}
+          open={studentDialogOpen}
+          onClose={() => setStudentDialogOpen(false)}
+          fetchChats={getChineseStudentChatHistory}
+          topicLabels={CHINESE_TOPIC_LABELS}
+        />
+      )}
+
+      {isEnglishDashboard && isTeacher && (
+        <StudentHistoryDialog
+          students={englishStudents}
+          open={englishDialogOpen}
+          onClose={() => setEnglishDialogOpen(false)}
+          fetchChats={getEnglishStudentChatHistory}
+          topicLabels={ENGLISH_TOPIC_LABELS}
+        />
+      )}
+
+      {isScience && isTeacher && (
+        <StudentHistoryDialog
+          students={scienceStudents}
+          open={scienceDialogOpen}
+          onClose={() => setScienceDialogOpen(false)}
+          fetchChats={getScienceStudentChatHistory}
+          topicLabels={SCIENCE_TOPIC_LABELS}
+        />
+      )}
+
+      {isHumanities && isTeacher && (
+        <StudentHistoryDialog
+          students={humanitiesStudents}
+          open={humanitiesDialogOpen}
+          onClose={() => setHumanitiesDialogOpen(false)}
+          fetchChats={getHumanitiesStudentChatHistory}
+          topicLabels={HUMANITIES_TOPIC_LABELS}
+        />
+      )}
     </Sidebar>
   );
 }

@@ -284,7 +284,7 @@ function EnglishDashboardContent() {
 
   function toggleVoice() {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert('您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。');
+      alert('Your browser does not support voice input. Please use Chrome or Edge.');
       return;
     }
     if (isListening) { stopListening(); return; }
@@ -547,7 +547,7 @@ function EnglishDashboardContent() {
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              選科目
+              Select Subject
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -563,7 +563,7 @@ function EnglishDashboardContent() {
                 size="icon-sm"
                 onClick={() => setChatVisible(true)}
                 className="rounded-[4px] border border-[#d8d8d8] bg-white/90 shadow-sm backdrop-blur ml-3"
-                title="顯示 AI 助手"
+                title="Show AI assistant"
               >
                 <PanelRight className="size-4" />
               </Button>
@@ -672,7 +672,7 @@ function EnglishDashboardContent() {
                   size="icon-sm"
                   onClick={() => setChatVisible(false)}
                   className="rounded-[4px]"
-                  title="隱藏 AI 助手"
+                  title="Hide AI assistant"
                 >
                   <PanelRight className="size-4" />
                 </Button>

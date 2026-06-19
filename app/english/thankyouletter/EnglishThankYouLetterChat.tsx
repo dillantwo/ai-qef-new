@@ -405,7 +405,7 @@ export default function EnglishThankYouLetterChat() {
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              返回英文科
+              Back to English
             </Link>
           </div>
           <div className="flex items-center gap-2">

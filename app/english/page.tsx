@@ -54,7 +54,7 @@ export default function EnglishPage() {
 
   return (
     <>
-      <Header backHref="/" backLabel="選科目" />
+      <Header backHref="/" backLabel="Select Subject" />
 
       <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
         <div className="absolute inset-0 bg-[linear-gradient(165deg,_#ffffff_0%,_#f7fbff_52%,_#ffffff_100%)]" />
