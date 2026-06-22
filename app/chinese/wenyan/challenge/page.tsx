@@ -57,7 +57,7 @@ export default function WenyanChallengePage() {
   remainingRef.current = remainingMs;
 
   useEffect(() => {
-    setBestScore(getProgress().bestTranslate);
+    getProgress().then((p) => setBestScore(p.bestTranslate));
   }, []);
 
   // Countdown timer for the current question.
@@ -120,17 +120,20 @@ export default function WenyanChallengePage() {
     }
   }
 
-  function next() {
+  async function next() {
     if (current + 1 < quiz.length) {
       setCurrent((c) => c + 1);
       setPicked(null);
       setAnswered(false);
       return;
     }
-    const earned = recordChallenge("translate", { score, maxStreak });
-    setNewBadges(earned);
-    setBestScore(getProgress().bestTranslate);
     setPhase("result");
+    const { progress, newBadges } = await recordChallenge("translate", {
+      score,
+      maxStreak,
+    });
+    setNewBadges(newBadges);
+    setBestScore(progress.bestTranslate);
   }
 
   return (

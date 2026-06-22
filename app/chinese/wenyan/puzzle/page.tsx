@@ -49,7 +49,7 @@ export default function WenyanPuzzlePage() {
   const [bestScore, setBestScore] = useState(0);
 
   useEffect(() => {
-    setBestScore(getProgress().bestPuzzle);
+    getProgress().then((p) => setBestScore(p.bestPuzzle));
   }, []);
 
   function startGame() {
@@ -63,7 +63,7 @@ export default function WenyanPuzzlePage() {
     setPhase("playing");
   }
 
-  function handlePassageDone(result: {
+  async function handlePassageDone(result: {
     correct: number;
     total: number;
     longestRun: number;
@@ -82,10 +82,13 @@ export default function WenyanPuzzlePage() {
 
     const score = newBlanks ? Math.round((newCorrect / newBlanks) * 100) : 0;
     setFinalScore(score);
-    const earned = recordChallenge("puzzle", { score, maxStreak: newStreak });
-    setNewBadges(earned);
-    setBestScore(getProgress().bestPuzzle);
     setPhase("result");
+    const { progress, newBadges } = await recordChallenge("puzzle", {
+      score,
+      maxStreak: newStreak,
+    });
+    setNewBadges(newBadges);
+    setBestScore(progress.bestPuzzle);
   }
 
   return (

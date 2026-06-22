@@ -59,7 +59,7 @@ export default function WenyanApplicationPage() {
   const [finalScore, setFinalScore] = useState(0);
 
   useEffect(() => {
-    setBestScore(getProgress().bestApplication);
+    getProgress().then((p) => setBestScore(p.bestApplication));
   }, []);
 
   const q = quiz[current];
@@ -138,11 +138,14 @@ export default function WenyanApplicationPage() {
     }
     // Round score = average of per-question totals (0–100).
     const score = Math.round(scoreSum / quiz.length);
-    const earned = recordChallenge("application", { score, maxStreak });
-    setNewBadges(earned);
     setFinalScore(score);
-    setBestScore(getProgress().bestApplication);
     setPhase("result");
+    recordChallenge("application", { score, maxStreak }).then(
+      ({ progress, newBadges }) => {
+        setNewBadges(newBadges);
+        setBestScore(progress.bestApplication);
+      }
+    );
   }
 
   return (
@@ -159,7 +162,7 @@ export default function WenyanApplicationPage() {
         <div className="flex items-center gap-2">
           <Rocket className="size-4" style={{ color: ACCENT }} />
           <span className="text-sm font-semibold text-[#080808]">
-            挑戰模式 - 理解應用
+            挑戰模式 - 主旨應用
           </span>
         </div>
         <div className="w-[112px]" />

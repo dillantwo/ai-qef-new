@@ -23,7 +23,7 @@ import {
 } from "@/lib/wenyan-theme";
 
 const ACCENT = "#6366f1";
-const POINTS_PER_Q = Math.round(100 / THEME_QUESTION_COUNT);
+const MAX_WRONG = 2; // each question allows up to two wrong attempts
 
 type Phase = "intro" | "playing" | "result";
 
@@ -31,9 +31,8 @@ export default function WenyanThemePage() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [quiz, setQuiz] = useState<ThemeQuestion[]>([]);
   const [current, setCurrent] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
-  const [score, setScore] = useState(0);
+  const [wrongPicks, setWrongPicks] = useState<number[]>([]);
+  const [solved, setSolved] = useState(false);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -41,17 +40,23 @@ export default function WenyanThemePage() {
   const [bestScore, setBestScore] = useState(0);
 
   useEffect(() => {
-    setBestScore(getProgress().bestTheme);
+    getProgress().then((p) => setBestScore(p.bestTheme));
   }, []);
 
   const q = quiz[current];
+  // Percentage-based score so a perfect round always equals 100.
+  const score = quiz.length
+    ? Math.round((correctCount / quiz.length) * 100)
+    : 0;
+
+  const failed = wrongPicks.length >= MAX_WRONG && !solved;
+  const resolved = solved || failed;
 
   function startGame() {
     setQuiz(buildThemeQuiz());
     setCurrent(0);
-    setPicked(null);
-    setAnswered(false);
-    setScore(0);
+    setWrongPicks([]);
+    setSolved(false);
     setStreak(0);
     setMaxStreak(0);
     setCorrectCount(0);
@@ -60,12 +65,10 @@ export default function WenyanThemePage() {
   }
 
   function pick(index: number) {
-    if (answered) return;
-    setPicked(index);
-    setAnswered(true);
+    if (resolved || solved || wrongPicks.includes(index)) return;
 
     if (index === q.answerIndex) {
-      setScore((s) => s + POINTS_PER_Q);
+      setSolved(true);
       setCorrectCount((c) => c + 1);
       setStreak((prev) => {
         const nextStreak = prev + 1;
@@ -73,21 +76,27 @@ export default function WenyanThemePage() {
         return nextStreak;
       });
     } else {
-      setStreak(0);
+      const nextWrong = [...wrongPicks, index];
+      setWrongPicks(nextWrong);
+      // Out of chances → question fails, streak resets. (Answer is not revealed.)
+      if (nextWrong.length >= MAX_WRONG) setStreak(0);
     }
   }
 
-  function next() {
+  async function next() {
     if (current + 1 < quiz.length) {
       setCurrent((c) => c + 1);
-      setPicked(null);
-      setAnswered(false);
+      setWrongPicks([]);
+      setSolved(false);
       return;
     }
-    const earned = recordChallenge("theme", { score, maxStreak });
-    setNewBadges(earned);
-    setBestScore(getProgress().bestTheme);
     setPhase("result");
+    const { progress, newBadges } = await recordChallenge("theme", {
+      score,
+      maxStreak,
+    });
+    setNewBadges(newBadges);
+    setBestScore(progress.bestTheme);
   }
 
   return (
@@ -123,8 +132,10 @@ export default function WenyanThemePage() {
               q={q}
               index={current}
               total={quiz.length}
-              picked={picked}
-              answered={answered}
+              wrongPicks={wrongPicks}
+              solved={solved}
+              resolved={resolved}
+              maxWrong={MAX_WRONG}
               score={score}
               streak={streak}
               onPick={pick}
@@ -179,7 +190,7 @@ function Intro({
           <span className="font-semibold" style={{ color: ACCENT }}>
             主旨
           </span>
-          （隱含的道理）。題目選自學習模式的四篇文章，共 {THEME_QUESTION_COUNT}{" "}
+          （隱含的道理）。題目選自學習模式的四篇文章（《論語四則》四則各自獨立成題），共 {THEME_QUESTION_COUNT}{" "}
           題，全對得 100 分。
         </p>
       </div>
@@ -214,8 +225,10 @@ function Playing({
   q,
   index,
   total,
-  picked,
-  answered,
+  wrongPicks,
+  solved,
+  resolved,
+  maxWrong,
   score,
   streak,
   onPick,
@@ -224,15 +237,17 @@ function Playing({
   q: ThemeQuestion;
   index: number;
   total: number;
-  picked: number | null;
-  answered: boolean;
+  wrongPicks: number[];
+  solved: boolean;
+  resolved: boolean;
+  maxWrong: number;
   score: number;
   streak: number;
   onPick: (i: number) => void;
   onNext: () => void;
 }) {
-  const isCorrect = answered && picked === q.answerIndex;
-  const progressPct = Math.round(((index + (answered ? 1 : 0)) / total) * 100);
+  const remaining = maxWrong - wrongPicks.length;
+  const progressPct = Math.round(((index + (resolved ? 1 : 0)) / total) * 100);
 
   return (
     <div className="space-y-5">
@@ -314,41 +329,42 @@ function Playing({
       <div className="grid gap-3">
         {q.options.map((opt, i) => {
           const correct = i === q.answerIndex;
-          const chosen = i === picked;
+          const isWrongPick = wrongPicks.includes(i);
 
           let cls =
             "border-[#dfe2fb] bg-white hover:border-[#6366f1] hover:bg-[#f7f8ff] hover:-translate-y-0.5";
           let anim = "";
-          if (answered) {
-            if (correct) {
-              cls = "border-[#16a34a]/50 bg-[#f0fdf4]";
-              anim = "wyt-pop";
-            } else if (chosen) {
-              cls = "border-[#dc2626]/50 bg-[#fef2f2]";
-              anim = "wyt-shake";
-            } else {
-              cls = "border-[#ececec] bg-[#fafafa] opacity-70";
-            }
+          if (isWrongPick) {
+            // Mark the options the student already tried (without revealing answer).
+            cls = "border-[#dc2626]/50 bg-[#fef2f2]";
+            anim = "wyt-shake";
+          } else if (solved && correct) {
+            cls = "border-[#16a34a]/50 bg-[#f0fdf4]";
+            anim = "wyt-pop";
+          } else if (resolved) {
+            cls = "border-[#ececec] bg-[#fafafa] opacity-70";
           }
+
+          const disabled = resolved || isWrongPick;
 
           return (
             <button
               key={i}
               onClick={() => onPick(i)}
-              disabled={answered}
-              style={{ animationDelay: answered ? "0ms" : `${i * 60}ms` }}
+              disabled={disabled}
+              style={{ animationDelay: resolved ? "0ms" : `${i * 60}ms` }}
               className={[
                 "wyt-fade-in-up flex items-center justify-between gap-3 rounded-[14px] border px-4 py-4 text-left text-[15px] font-medium leading-7 text-[#1a1330] transition",
                 cls,
                 anim,
-                answered ? "cursor-default" : "cursor-pointer",
+                disabled ? "cursor-default" : "cursor-pointer",
               ].join(" ")}
             >
               <span>{opt}</span>
-              {answered && correct && (
+              {solved && correct && (
                 <CheckCircle2 className="size-5 shrink-0 text-[#16a34a]" />
               )}
-              {answered && chosen && !correct && (
+              {isWrongPick && (
                 <XCircle className="size-5 shrink-0 text-[#dc2626]" />
               )}
             </button>
@@ -356,22 +372,27 @@ function Playing({
         })}
       </div>
 
-      {/* Feedback + next */}
-      {answered && (
+      {/* Retry hint between attempts — no answer is revealed */}
+      {!resolved && wrongPicks.length > 0 && (
+        <div className="wyt-fade-in-up rounded-[14px] border border-[#f59e0b]/30 bg-[#fffbeb] p-4 text-sm leading-7 text-[#b45309]">
+          答錯了，再想想看！還剩 <span className="font-semibold">{remaining}</span> 次機會。
+        </div>
+      )}
+
+      {/* Feedback + next (only once the question is resolved) */}
+      {resolved && (
         <div className="space-y-4 wyt-fade-in-up">
           <div
             className={[
               "rounded-[14px] border p-4 text-sm leading-7",
-              isCorrect
+              solved
                 ? "border-[#16a34a]/30 bg-[#f0fdf4] text-[#15803d]"
                 : "border-[#6366f1]/30 bg-[#eef2ff] text-[#4338ca]",
             ].join(" ")}
           >
-            {isCorrect
-              ? `答對了！+${POINTS_PER_Q} 分 🎉`
-              : "答錯了，再讀一次文章想想吧！"}
-            　本文主旨是：「
-            <span className="font-semibold">{q.options[q.answerIndex]}</span>」
+            {solved
+              ? "答對了！🎉 你讀懂了這篇文章的道理。"
+              : "兩次機會都用完了。再多讀幾遍文章，慢慢體會當中的道理吧！"}
           </div>
           <div className="flex justify-end">
             <Button

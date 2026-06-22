@@ -77,7 +77,7 @@ export default function WenyanLearnPage() {
   const selectedText = selectedId ? getWenyanText(selectedId) : undefined;
 
   useEffect(() => {
-    setCompletedIds(getProgress().completedTexts);
+    getProgress().then((p) => setCompletedIds(p.completedTexts));
   }, []);
 
   // Task 4 (完整翻譯) only unlocks once every sentence has been AI-checked.
@@ -87,8 +87,9 @@ export default function WenyanLearnPage() {
   // When the student reaches the final task, the text counts as completed.
   useEffect(() => {
     if (selectedText && task === 4) {
-      markTextCompleted(selectedText.id);
-      setCompletedIds(getProgress().completedTexts);
+      markTextCompleted(selectedText.id).then((r) =>
+        setCompletedIds(r.progress.completedTexts)
+      );
     }
   }, [selectedText, task]);
 

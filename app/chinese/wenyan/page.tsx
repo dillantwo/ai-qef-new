@@ -28,9 +28,9 @@ export default function WenyanDashboard() {
   const router = useRouter();
   const [progress, setProgress] = useState<ProgressSnapshot | null>(null);
 
-  // localStorage is client-only, so read after mount.
+  // Progress lives in the database now; fetch it after mount.
   useEffect(() => {
-    setProgress(getProgress());
+    getProgress().then(setProgress);
   }, []);
 
   const totalTexts = WENYAN_TEXTS.length;
@@ -252,7 +252,7 @@ export default function WenyanDashboard() {
                 </div>
                 <h2 className="mt-5 font-serif font-semibold tracking-[-0.02em] text-[#1a1330]">
                   <span className="block text-[24px]">挑戰模式</span>
-                  <span className="block text-[24px]">理解應用</span>
+                  <span className="block text-[24px]">主旨應用</span>
                 </h2>
                 <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
                   讀懂文章主旨後，想想生活中類似道理的例子，寫出你的生活隱喻。AI 老師會從「主旨理解」和「應用場景」兩方面評分並給建議！
