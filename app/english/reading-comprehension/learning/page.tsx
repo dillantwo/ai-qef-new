@@ -249,7 +249,7 @@ export default function EnglishReadingComprehensionLearningPage() {
               </ul>
               <div className="hint-row">
                 <button type="button" className="hint-btn" onClick={() => toggleHint(q)}>
-                  <Lightbulb className="size-3.5" /> Show Hint
+                  <Lightbulb className="size-3.5" /> Show Clue
                 </button>
                 <button
                   type="button"
@@ -689,13 +689,8 @@ export default function EnglishReadingComprehensionLearningPage() {
                             </div>
                             <p className="comment-text">
                               I like chocolate and strawberry flavours more. I prefer the{" "}
-                              <span className="vocab-word" tabIndex={0}>
-                                <span className={clueClass("q4")} ref={setClueRef("q4")}>
-                                  ordinary
-                                </span>
-                                <span className="vocab-tip">
-                                  💡 <strong>ordinary</strong> = common, usual, not special
-                                </span>
+                              <span className={clueClass("q4")} ref={setClueRef("q4")}>
+                                ordinary
                               </span>{" "}
                               flavours to the{" "}
                               <span className={clueClass("q4b")} ref={setClueRef("q4b")}>
@@ -729,14 +724,8 @@ export default function EnglishReadingComprehensionLearningPage() {
                             </div>
                             <p className="comment-text">
                               I ordered a family pack online. When I opened the delivery bag…{" "}
-                              <span className="vocab-word" tabIndex={0}>
-                                <span className={clueClass("q5")} ref={setClueRef("q5")}>
-                                  Yuck!
-                                </span>
-                                <span className="vocab-tip">
-                                  💡 <strong>Yuck!</strong> = a sound expressing disgust or
-                                  displeasure
-                                </span>
+                              <span className={clueClass("q5")} ref={setClueRef("q5")}>
+                                Yuck!
                               </span>{" "}
                               <span className={clueClass("q5c")} ref={setClueRef("q5c")}>
                                 What a mess!
