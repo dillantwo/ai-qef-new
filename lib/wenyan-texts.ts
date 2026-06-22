@@ -4,8 +4,8 @@
 // 第二學習階段（小三至小六） / Key Stage 2:
 //   https://www.edb.gov.hk/tc/curriculum-development/kla/chi-edu/key-stage2.html
 // The KS2 classical-prose (文言) passages are: 論語四則、二子學弈、鄭人買履、
-// 鷸蚌相爭、折箭、朱子家訓（節錄）. This topic currently covers 折箭、
-// 朱子家訓（節錄）與鷸蚌相爭.
+// 鷸蚌相爭、折箭、朱子家訓（節錄）. This topic currently covers 論語四則、
+// 二子學弈、鄭人買履與鷸蚌相爭.
 //
 // Each text is broken into sentences. Every sentence carries:
 //   - original: the classical Chinese sentence
@@ -32,6 +32,18 @@ export interface WenyanSentence {
   translation: string;
 }
 
+/** A key vocabulary annotation (常用詞), shown like a textbook footnote. */
+export interface WenyanVocab {
+  /** The word / phrase being annotated, e.g. 「慍」 or 「不亦說乎」. */
+  term: string;
+  /** Plain explanation of the meaning. */
+  meaning: string;
+  /** 粵音 hint (a same-sound character), e.g. 「悅」. */
+  jyutping?: string;
+  /** 普通話拼音, e.g. 「yuè」. */
+  pinyin?: string;
+}
+
 export interface WenyanText {
   id: string;
   title: string;
@@ -40,116 +52,259 @@ export interface WenyanText {
   summary: string;
   /** A short intro / moral shown at the top of the reading task. */
   intro: string;
+  /** Optional key-vocabulary annotations (常用詞), shown in the reading task. */
+  vocab?: WenyanVocab[];
   sentences: WenyanSentence[];
 }
 
 export const WENYAN_TEXTS: WenyanText[] = [
   {
-    id: "zhe-jian",
-    title: "折箭",
-    source: "《魏書》",
-    summary: "阿豺用折一支箭和折一束箭，教二十個兒子明白團結的道理。",
+    id: "lun-yu-si-ze",
+    title: "論語四則",
+    source: "《論語》",
+    summary: "孔子四則語錄，教人學習與溫習、學思並重、溫故知新，以及向身邊的人學習。",
     intro:
-      "這是香港教育局建議小學閱讀的篇章，出自《魏書》。首領阿豺用「折箭」這個小實驗，教兒子們一個大道理：一個人的力量單薄，大家齊心合力才會強大。",
+      "這是香港教育局建議小學閱讀的篇章，選自《論語》。「子」指孔子。這四則語錄談的都是學習的道理。要特別掌握幾個常用詞：「說」通「悅」（愉快）、「慍」（生氣）、「罔」通「惘」（迷惘）、「殆」（疑惑）、「焉」（於此）。",
+    vocab: [
+      {
+        term: "不亦說乎",
+        meaning:
+          "不也很愉快嗎？「不亦……乎」是表示反問的句式。說：通「悅」，愉悅。",
+        jyutping: "悅",
+        pinyin: "yuè",
+      },
+      { term: "慍", meaning: "生氣。", jyutping: "縕", pinyin: "yùn" },
+      { term: "罔", meaning: "通「惘」，迷惘。", jyutping: "網", pinyin: "wǎng" },
+      { term: "殆", meaning: "疑惑。", jyutping: "怠", pinyin: "dài" },
+      { term: "焉", meaning: "於此。" },
+    ],
     sentences: [
       {
         id: "s1",
-        original: "阿豺有子二十人。",
+        original:
+          "子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」",
         segments: [
-          { text: "阿豺", meaning: "吐谷渾的首領，名叫阿豺（人名）" },
-          { text: "有子二十人", meaning: "有二十個兒子" },
+          { text: "子曰", meaning: "孔子說（子＝對老師的尊稱，這裏指孔子）" },
+          { text: "學而時習之", meaning: "學過之後按時溫習（時＝按時，習＝溫習）" },
+          {
+            text: "不亦說乎",
+            meaning:
+              "不也很愉快嗎？（說 yuè＝通「悅」，愉快；「不亦……乎」是反問的句式）",
+          },
+          { text: "有朋自遠方來", meaning: "有志同道合的朋友從遠方來" },
+          { text: "不亦樂乎", meaning: "不也很快樂嗎？" },
+          { text: "人不知而不慍", meaning: "別人不了解自己，也不生氣（慍 yùn＝生氣、惱怒）" },
+          { text: "不亦君子乎", meaning: "不也是一位君子嗎？（君子＝有修養的人）" },
         ],
-        translation: "阿豺有二十個兒子。",
+        translation:
+          "孔子說：「學習過後按時溫習，不也是很愉快嗎？有志同道合的朋友從遠方來，不也是很快樂嗎？別人不了解自己，自己卻不生氣，不也是一位君子嗎？」",
       },
       {
         id: "s2",
-        original: "阿豺謂曰：「汝等各奉吾一隻箭，折之地下。」",
+        original: "子曰：「學而不思則罔，思而不學則殆。」",
         segments: [
-          { text: "謂曰", meaning: "對他們說（謂＝告訴、對……說）" },
-          { text: "汝等", meaning: "你們（汝＝你）" },
-          { text: "各奉吾一隻箭", meaning: "每人交給我一支箭（奉＝獻上、交給）" },
-          { text: "折之地下", meaning: "把它折斷，扔在地上（折＝折斷）" },
+          { text: "子曰", meaning: "孔子說" },
+          {
+            text: "學而不思則罔",
+            meaning: "只學習而不思考，就會迷惘無所得（罔 wǎng＝通「惘」，迷惘）",
+          },
+          {
+            text: "思而不學則殆",
+            meaning: "只空想而不學習，就會疑惑不踏實（殆 dài＝疑惑）",
+          },
         ],
-        translation: "阿豺對兒子們說：「你們每人拿一支箭，把它折斷扔在地上。」",
+        translation:
+          "孔子說：「只學習而不思考，就會迷惘而無所得；只空想而不學習，就會疑惑而不踏實。」",
       },
       {
         id: "s3",
-        original: "俄而命母弟慕利延曰：「汝取一隻箭折之。」慕利延折之。",
+        original: "子曰：「溫故而知新，可以為師矣。」",
         segments: [
-          { text: "俄而", meaning: "不久、一會兒" },
-          { text: "命", meaning: "吩咐、命令" },
-          { text: "母弟慕利延", meaning: "同母的弟弟慕利延（人名）" },
-          { text: "汝取一隻箭折之", meaning: "你拿一支箭把它折斷" },
-          { text: "慕利延折之", meaning: "慕利延就把箭折斷了" },
+          { text: "子曰", meaning: "孔子說" },
+          { text: "溫故", meaning: "溫習學過的舊知識（故＝舊的、學過的）" },
+          { text: "而知新", meaning: "從而領悟新的道理" },
+          { text: "可以為師矣", meaning: "就可以做老師了（為＝做、當；矣＝了）" },
         ],
         translation:
-          "不久，阿豺吩咐同母的弟弟慕利延說：「你拿一支箭把它折斷。」慕利延就把箭折斷了。",
+          "孔子說：「溫習學過的舊知識，能從中領悟新的道理，這樣就可以做老師了。」",
       },
       {
         id: "s4",
-        original: "又曰：「汝取十九隻箭折之。」慕利延不能折。",
+        original:
+          "子曰：「三人行，必有我師焉，擇其善者而從之，其不善者而改之。」",
         segments: [
-          { text: "又曰", meaning: "又說" },
-          { text: "汝取十九隻箭折之", meaning: "你拿十九支箭一起折斷" },
-          { text: "不能折", meaning: "折不斷（能＝能夠）" },
-        ],
-        translation: "阿豺又說：「你拿十九支箭一起折斷它們。」慕利延卻折不斷。",
-      },
-      {
-        id: "s5",
-        original: "阿豺曰：「汝曹知否？單者易折，眾則難摧。戮力一心，然後社稷可固。」",
-        segments: [
-          { text: "汝曹知否", meaning: "你們知道嗎（汝曹＝你們）" },
-          { text: "單者易折", meaning: "單獨一支容易折斷" },
-          { text: "眾則難摧", meaning: "數量多就難以折斷（摧＝折斷、毀壞）" },
-          { text: "戮力一心", meaning: "齊心合力（戮力 lù lì＝合力）" },
-          { text: "然後社稷可固", meaning: "這樣國家才能穩固（社稷＝國家）" },
+          { text: "子曰", meaning: "孔子說" },
+          { text: "三人行", meaning: "幾個人一起走（三＝泛指多數，不一定剛好三人）" },
+          { text: "必有我師焉", meaning: "當中一定有可以做我老師的人（焉＝於此，在這裏面）" },
+          { text: "擇其善者而從之", meaning: "選擇他們的優點來學習（擇＝選擇，善者＝好的地方）" },
+          { text: "其不善者而改之", meaning: "看到他們的缺點就反省、改正自己（不善者＝不好的地方）" },
         ],
         translation:
-          "阿豺說：「你們明白嗎？一支箭容易折斷，許多支就難以折斷。大家齊心合力，國家才能穩固。」",
+          "孔子說：「幾個人一起走，當中一定有可以做我老師的人。選擇他們的優點來學習，看到他們的缺點就反省、改正自己。」",
       },
     ],
   },
   {
-    id: "zhu-zi-jia-xun",
-    title: "朱子家訓（節錄）",
-    source: "朱柏廬",
-    summary: "幾句治家格言，教人勤勞、整潔，懂得珍惜每一口飯、每一根線。",
+    id: "er-zi-xue-yi",
+    title: "二子學弈",
+    source: "《孟子》",
+    summary: "弈秋教兩個人下棋，一個專心、一個分心，結果高下立見，說明學習貴在專心。",
     intro:
-      "《朱子家訓》是香港教育局建議小學閱讀的篇章，作者是清代的朱柏廬。它用簡短的句子教導做人和持家的道理。以下節錄幾句，想一想：你平日有沒有做到呢？",
+      "這是香港教育局建議小學閱讀的篇章，選自《孟子》。弈秋是全國最會下棋的人，他同時教兩個人下棋：一個專心致志，一個卻想着射天鵝。結果兩人成績差很遠。原來分別不在天資高低，而在於是否用心。要特別掌握的常用詞見下。",
+    vocab: [
+      { term: "弈", meaning: "下棋。", jyutping: "亦", pinyin: "yì" },
+      { term: "使", meaning: "假使。" },
+      { term: "誨", meaning: "教導。" },
+      { term: "惟弈秋之為聽", meaning: "只（專心）聽弈秋（的教導）。" },
+      {
+        term: "鴻鵠",
+        meaning: "俗稱天鵝。「鵠」字讀音如下。",
+        jyutping: "酷",
+        pinyin: "hú",
+      },
+      { term: "援", meaning: "以手牽引、握持。" },
+      {
+        term: "弓繳",
+        meaning: "弓箭。「繳」指繫着幼繩的箭，讀音如下。",
+        jyutping: "雀",
+        pinyin: "zhuó",
+      },
+      {
+        term: "弗若之",
+        meaning:
+          "不如他。弗：通「不」。之：代詞，「他」的意思，指那個專心致志的人。",
+      },
+      {
+        term: "智、與",
+        meaning: "智：智力。與：通「歟」，疑問語氣詞，相當於「嗎」。",
+      },
+    ],
     sentences: [
       {
         id: "s1",
-        original: "黎明即起，灑掃庭除，要內外整潔。",
+        original: "弈秋，通國之善弈者也。",
         segments: [
-          { text: "黎明即起", meaning: "天剛亮就起床（黎明＝天快亮的時候）" },
-          { text: "灑掃庭除", meaning: "打掃庭院（庭除＝庭院、台階）" },
-          { text: "要內外整潔", meaning: "要使屋內屋外都乾淨整齊" },
+          { text: "弈秋", meaning: "一個名叫「秋」的下棋高手（弈＝下棋）" },
+          { text: "通國", meaning: "全國" },
+          { text: "之善弈者也", meaning: "最擅長下棋的人（善＝擅長，者也＝……的人）" },
         ],
-        translation: "天一亮就起床，打掃庭院，使屋裏屋外都保持整潔。",
+        translation: "弈秋，是全國最擅長下棋的人。",
       },
       {
         id: "s2",
-        original: "既昏便息，關鎖門戶，必親自檢點。",
+        original: "使弈秋誨二人弈，其一人專心致志，惟弈秋之為聽。",
         segments: [
-          { text: "既昏", meaning: "天黑以後（既＝已經，昏＝天黑）" },
-          { text: "便息", meaning: "就休息（息＝休息）" },
-          { text: "關鎖門戶", meaning: "關好、鎖好門窗" },
-          { text: "必親自檢點", meaning: "一定要親自檢查清楚（檢點＝查看）" },
+          { text: "使弈秋誨二人弈", meaning: "假使弈秋教兩個人下棋（使＝假使，誨＝教導）" },
+          { text: "其一人專心致志", meaning: "其中一個人專心一意（致志＝集中心思）" },
+          { text: "惟弈秋之為聽", meaning: "只專心聽弈秋的教導（惟＝只）" },
         ],
-        translation: "天黑了就休息，關鎖好門窗，一定要親自檢查清楚。",
+        translation:
+          "假使弈秋教兩個人下棋，其中一個人專心一意，只聽弈秋的教導。",
       },
       {
         id: "s3",
-        original: "一粥一飯，當思來處不易；半絲半縷，恆念物力維艱。",
+        original:
+          "一人雖聽之，一心以為有鴻鵠將至，思援弓繳而射之，雖與之俱學，弗若之矣。",
         segments: [
-          { text: "一粥一飯", meaning: "每一口粥、每一碗飯" },
-          { text: "當思來處不易", meaning: "應當想到它得來不容易（當＝應該）" },
-          { text: "半絲半縷", meaning: "半根絲、半條線，指一點點布料" },
-          { text: "恆念物力維艱", meaning: "要常常想到物資得來艱難（恆＝經常，維艱＝艱難）" },
+          { text: "一人雖聽之", meaning: "另一個人雖然也在聽（雖＝雖然）" },
+          { text: "一心以為有鴻鵠將至", meaning: "卻一心以為有天鵝快要飛來（鴻鵠＝天鵝）" },
+          { text: "思援弓繳而射之", meaning: "想着拿起弓箭去射牠（援＝拿起，弓繳＝弓箭）" },
+          { text: "雖與之俱學", meaning: "雖然跟前一個人一起學習（俱＝一起）" },
+          { text: "弗若之矣", meaning: "卻比不上他了（弗若＝不如，之＝他）" },
         ],
         translation:
-          "每一口粥、每一碗飯，都應想到它得來不易；半根絲、半條線，也要常想到物力是多麼艱難得來的。",
+          "另一個人雖然也在聽，心裏卻以為有天鵝快要飛來，想着拿起弓箭去射牠；這樣他雖然和前一個人一起學習，成績卻比不上人家了。",
+      },
+      {
+        id: "s4",
+        original: "為是其智弗若與？曰：「非然也。」",
+        segments: [
+          { text: "為是其智弗若與", meaning: "是因為他的智力比不上人家嗎？（智＝智力，與＝嗎）" },
+          { text: "曰", meaning: "回答說" },
+          { text: "非然也", meaning: "並不是這樣（然＝這樣）" },
+        ],
+        translation: "是因為他的智力比不上人家嗎？回答說：「並不是這樣的。」",
+      },
+    ],
+  },
+  {
+    id: "zheng-ren-mai-lyu",
+    title: "鄭人買履",
+    source: "《韓非子》",
+    summary: "鄭國人量好腳碼卻忘了帶，寧願回家拿尺碼也不肯用腳試鞋，結果買不到鞋。",
+    intro:
+      "這是香港教育局建議小學閱讀的篇章，選自《韓非子》。有個鄭國人想買鞋，先量好腳的尺碼，卻忘了帶在身上；他寧願跑回家拿尺碼，也不肯用自己的腳試穿，結果買不到鞋。故事諷刺那些死守規矩、不懂變通的人。要特別掌握的常用詞見下。",
+    vocab: [
+      { term: "鄭人", meaning: "鄭國的人。" },
+      { term: "且", meaning: "將要。" },
+      { term: "置（買）", meaning: "動詞，購買。" },
+      { term: "履", meaning: "鞋。", jyutping: "里", pinyin: "lǚ" },
+      {
+        term: "度（量度）",
+        meaning: "動詞，量度（量長短）。",
+        jyutping: "踱",
+        pinyin: "duó",
+      },
+      { term: "其", meaning: "他的。" },
+      { term: "置（擱）", meaning: "擱在。之：代詞，指量度好的尺寸。" },
+      { term: "坐", meaning: "通「座」，座位。" },
+      { term: "之（往）", meaning: "動詞，前往。市：市集。" },
+      { term: "操", meaning: "執持，即拿取。" },
+      {
+        term: "度（尺碼）",
+        meaning: "名詞，量度好的尺寸。",
+        jyutping: "杜",
+        pinyin: "dù",
+      },
+      { term: "反", meaning: "通「返」，返回。" },
+    ],
+    sentences: [
+      {
+        id: "s1",
+        original: "鄭人有且置履者，先自度其足而置之其坐。",
+        segments: [
+          { text: "鄭人有且置履者", meaning: "有個鄭國人將要買鞋（且＝將要，置＝購買，履＝鞋）" },
+          { text: "先自度其足", meaning: "先自己量好腳的尺碼（度 duó＝量度）" },
+          { text: "而置之其坐", meaning: "把量好的尺碼擱在座位上（置＝擱，之＝尺碼，坐＝通「座」）" },
+        ],
+        translation: "有個鄭國人想買鞋，先自己量好腳的尺碼，把量好的尺碼擱在座位上。",
+      },
+      {
+        id: "s2",
+        original: "至之市，而忘操之，已得履，乃曰：「吾忘持度。」",
+        segments: [
+          { text: "至之市", meaning: "等到前往市集時（之＝前往，市＝市集）" },
+          { text: "而忘操之", meaning: "卻忘了帶尺碼（操＝拿取，之＝尺碼）" },
+          { text: "已得履", meaning: "已經拿到鞋子" },
+          { text: "乃曰", meaning: "才說（乃＝才）" },
+          { text: "吾忘持度", meaning: "我忘了帶量好的尺碼（持＝拿，度 dù＝尺碼）" },
+        ],
+        translation:
+          "等到前往市集，卻忘了帶尺碼。已經拿到鞋子，他才說：「我忘了帶量好的尺碼。」",
+      },
+      {
+        id: "s3",
+        original: "反歸取之，及反，市罷，遂不得履。",
+        segments: [
+          { text: "反歸取之", meaning: "於是返回家去拿尺碼（反＝通「返」，歸＝回家）" },
+          { text: "及反", meaning: "等到他再返回（及＝等到）" },
+          { text: "市罷", meaning: "市集已經散了（罷＝結束、散）" },
+          { text: "遂不得履", meaning: "結果買不到鞋（遂＝終於、結果）" },
+        ],
+        translation:
+          "於是他返回家去拿尺碼，等到再回到市集，集市已經散了，結果買不到鞋。",
+      },
+      {
+        id: "s4",
+        original: "人曰：「何不試之以足？」曰：「寧信度，無自信也。」",
+        segments: [
+          { text: "人曰", meaning: "有人說" },
+          { text: "何不試之以足", meaning: "為甚麼不用腳直接試穿呢？（何不＝為甚麼不，以足＝用腳）" },
+          { text: "寧信度", meaning: "寧願相信量好的尺碼（寧＝寧願）" },
+          { text: "無自信也", meaning: "也不相信自己的腳（自信＝相信自己）" },
+        ],
+        translation:
+          "有人說：「為甚麼不用腳直接試穿呢？」他說：「我寧願相信量好的尺碼，也不相信自己的腳。」",
       },
     ],
   },
@@ -157,25 +312,48 @@ export const WENYAN_TEXTS: WenyanText[] = [
     id: "yu-bang-xiang-zheng",
     title: "鷸蚌相爭",
     source: "《戰國策》",
-    summary: "鷸鳥和河蚌互不相讓，結果一起被漁夫捉去。",
+    summary: "鷸鳥和河蚌互不相讓，結果一起被漁夫捉去，比喻雙方爭執讓第三者得利。",
     intro:
-      "這是香港教育局建議小學閱讀的篇章，出自《戰國策》，後來變成成語「鷸蚌相爭，漁人得利」。它提醒我們：雙方爭執不肯退讓，往往會讓第三者佔了便宜。",
+      "這是香港教育局建議小學閱讀的篇章，選自《戰國策》，後來變成成語「鷸蚌相爭，漁人得利」。它提醒我們：雙方爭執不肯退讓，往往會讓第三者佔了便宜。要特別掌握的常用詞見下。",
+    vocab: [
+      {
+        term: "蚌",
+        meaning: "河蚌，生活在淡水中的軟體動物，有堅硬的貝殼，肉味鮮美。",
+      },
+      { term: "方", meaning: "正在。" },
+      { term: "曝", meaning: "曬太陽。", jyutping: "僕", pinyin: "pù" },
+      {
+        term: "鷸",
+        meaning: "水鳥，以捕食昆蟲、水生動物為生。",
+        jyutping: "核",
+        pinyin: "yù",
+      },
+      { term: "拑", meaning: "把東西夾住。", jyutping: "鉗", pinyin: "qián" },
+      { term: "喙", meaning: "鳥嘴。", jyutping: "悔", pinyin: "huì" },
+      { term: "不出", meaning: "指鷸的嘴拔不出來。" },
+      { term: "舍", meaning: "通「捨」，這裏解作讓步。" },
+    ],
     sentences: [
       {
         id: "s1",
-        original: "蚌方出曝，而鷸啄其肉，蚌合而箝其喙。",
+        original: "蚌方出曝，而鷸啄其肉。",
         segments: [
-          { text: "蚌方出曝", meaning: "河蚌正出來曬太陽（蚌 bàng，曝 pù＝曬）" },
-          { text: "鷸", meaning: "一種長嘴的水鳥（鷸 yù）" },
-          { text: "啄其肉", meaning: "啄食蚌的肉" },
-          { text: "蚌合", meaning: "河蚌合上殼" },
-          { text: "箝其喙", meaning: "夾住鷸的嘴（箝 qián＝夾住，喙 huì＝鳥嘴）" },
+          { text: "蚌方出曝", meaning: "河蚌正出來曬太陽（方＝正在，曝 pù＝曬太陽）" },
+          { text: "而鷸啄其肉", meaning: "一隻鷸鳥來啄牠的肉（鷸 yù＝水鳥，啄＝用嘴啄食）" },
         ],
-        translation:
-          "河蚌正出來曬太陽，一隻鷸鳥來啄牠的肉，河蚌立刻合上殼，夾住了鷸的嘴。",
+        translation: "河蚌正出來曬太陽，一隻鷸鳥就來啄牠的肉。",
       },
       {
         id: "s2",
+        original: "蚌合而拑其喙。",
+        segments: [
+          { text: "蚌合", meaning: "河蚌立刻合上殼" },
+          { text: "而拑其喙", meaning: "夾住了鷸的嘴（拑 qián＝夾住，喙 huì＝鳥嘴）" },
+        ],
+        translation: "河蚌立刻合上殼，夾住了鷸的嘴。",
+      },
+      {
+        id: "s3",
         original: "鷸曰：「今日不雨，明日不雨，即有死蚌。」",
         segments: [
           { text: "鷸曰", meaning: "鷸鳥說" },
@@ -186,27 +364,27 @@ export const WENYAN_TEXTS: WenyanText[] = [
         translation: "鷸鳥說：「今天不下雨，明天不下雨，就會有一隻乾死的河蚌。」",
       },
       {
-        id: "s3",
+        id: "s4",
         original: "蚌亦謂鷸曰：「今日不出，明日不出，即有死鷸。」",
         segments: [
           { text: "蚌亦謂鷸曰", meaning: "河蚌也對鷸鳥說（亦＝也，謂＝對……說）" },
-          { text: "今日不出", meaning: "今天不放開你（鷸的嘴抽不出來）" },
-          { text: "明日不出", meaning: "明天也不放開" },
+          { text: "今日不出", meaning: "今天你的嘴拔不出來（不出＝指鷸的嘴拔不出來）" },
+          { text: "明日不出", meaning: "明天也拔不出來" },
           { text: "即有死鷸", meaning: "就會有一隻餓死的鷸鳥" },
         ],
         translation:
-          "河蚌也對鷸鳥說：「今天不放你出來，明天不放你出來，就會有一隻餓死的鷸鳥。」",
+          "河蚌也對鷸鳥說：「今天你的嘴拔不出，明天你的嘴拔不出，就會有一隻餓死的鷸鳥。」",
       },
       {
-        id: "s4",
-        original: "兩者不肯相舍，漁者得而並禽之。",
+        id: "s5",
+        original: "兩者不肯相舍，漁者得而并擒之。",
         segments: [
           { text: "兩者", meaning: "鷸和蚌雙方" },
-          { text: "不肯相舍", meaning: "都不肯互相放開（舍＝捨，放開）" },
+          { text: "不肯相舍", meaning: "都不肯互相讓步（舍＝通「捨」，讓步）" },
           { text: "漁者", meaning: "漁夫" },
-          { text: "得而並禽之", meaning: "趁機把牠們一起捉住（並＝一起，禽＝擒，捉住）" },
+          { text: "得而并擒之", meaning: "趁機把牠們一起捉住（并＝一起，擒＝捉住）" },
         ],
-        translation: "雙方都不肯放開對方，漁夫便趁機把牠們一起捉住了。",
+        translation: "雙方都不肯互相讓步，漁夫便趁機把牠們一起捉住了。",
       },
     ],
   },

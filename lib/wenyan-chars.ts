@@ -1,10 +1,9 @@
-// Common classical-Chinese characters bank for the 挑戰模式 (Challenge mode)
-// of the 學習文言文 topic.
+// Common classical-Chinese characters bank for the 挑戰模式 - 常用詞翻譯
+// (translation challenge) of the 學習文言文 topic.
 //
-// Every example sentence is drawn from a Hong Kong EDB Key Stage 2 recommended
-// 文言 passage (論語四則、二子學弈、鄭人買履、鷸蚌相爭、折箭、朱子家訓), so the
-// game stays aligned with the local primary-school curriculum:
-//   https://www.edb.gov.hk/tc/curriculum-development/kla/chi-edu/key-stage2.html
+// Every word and example sentence is drawn from the four passages currently in
+// the 學習模式 (see `wenyan-texts.ts`): 論語四則、二子學弈、鄭人買履、鷸蚌相爭.
+// This keeps the challenge in sync with what the student studies.
 //
 // The challenge picks a character, shows one of its example sentences (the
 // "片段") with the character highlighted, and asks the student to choose the
@@ -13,65 +12,96 @@
 export interface WenyanChar {
   /** Stable id. */
   id: string;
-  /** The single character being tested. */
+  /** The single character (or short word) being tested. */
   char: string;
   /** Pinyin hint. */
   pinyin: string;
   /** The plain-Chinese meaning (correct answer). */
   meaning: string;
-  /** Short example sentences (from EDB KS2 passages) that contain `char`. */
+  /** Short example sentences (from the four articles) that contain `char`. */
   examples: string[];
 }
 
 export const WENYAN_CHARS: WenyanChar[] = [
+  /* ----------------------------------------------------------- 論語四則 */
   {
-    id: "yue",
-    char: "曰",
-    pinyin: "yuē",
-    meaning: "說",
-    examples: ["子曰：「學而時習之，不亦說乎？」", "人曰：「何不試之以足？」"],
+    id: "yue-happy",
+    char: "說",
+    pinyin: "yuè",
+    meaning: "愉快（通「悅」）",
+    examples: ["學而時習之，不亦說乎？"],
   },
   {
-    id: "gu",
+    id: "yun-angry",
+    char: "慍",
+    pinyin: "yùn",
+    meaning: "生氣、惱怒",
+    examples: ["人不知而不慍，不亦君子乎？"],
+  },
+  {
+    id: "wang-lost",
+    char: "罔",
+    pinyin: "wǎng",
+    meaning: "迷惘（通「惘」）",
+    examples: ["學而不思則罔，思而不學則殆。"],
+  },
+  {
+    id: "dai-doubt",
+    char: "殆",
+    pinyin: "dài",
+    meaning: "疑惑",
+    examples: ["學而不思則罔，思而不學則殆。"],
+  },
+  {
+    id: "yan-here",
+    char: "焉",
+    pinyin: "yān",
+    meaning: "於此、在這裏面",
+    examples: ["三人行，必有我師焉。"],
+  },
+  {
+    id: "gu-old",
     char: "故",
     pinyin: "gù",
-    meaning: "舊的",
+    meaning: "舊的、學過的",
     examples: ["溫故而知新，可以為師矣。"],
   },
+
+  /* ----------------------------------------------------------- 二子學弈 */
   {
-    id: "shan",
+    id: "yi-chess",
+    char: "弈",
+    pinyin: "yì",
+    meaning: "下棋",
+    examples: ["弈秋，通國之善弈者也。", "使弈秋誨二人弈。"],
+  },
+  {
+    id: "shan-good-at",
     char: "善",
     pinyin: "shàn",
     meaning: "擅長",
     examples: ["弈秋，通國之善弈者也。"],
   },
   {
-    id: "qi-his",
-    char: "其",
-    pinyin: "qí",
-    meaning: "他的、它的",
-    examples: ["先自度其足，而置之其坐。", "其一人專心致志，惟弈秋之為聽。"],
+    id: "hui-teach",
+    char: "誨",
+    pinyin: "huì",
+    meaning: "教導",
+    examples: ["使弈秋誨二人弈。"],
   },
   {
-    id: "shi-this",
-    char: "是",
-    pinyin: "shì",
-    meaning: "這、這樣",
-    examples: ["知之為知之，不知為不知，是知也。"],
-  },
-  {
-    id: "wei-do",
-    char: "為",
+    id: "wei-only",
+    char: "惟",
     pinyin: "wéi",
-    meaning: "做、當",
-    examples: ["溫故而知新，可以為師矣。"],
+    meaning: "只",
+    examples: ["其一人專心致志，惟弈秋之為聽。"],
   },
   {
-    id: "yi-also",
-    char: "亦",
-    pinyin: "yì",
-    meaning: "也",
-    examples: ["蚌亦謂鷸曰。", "學而時習之，不亦說乎？"],
+    id: "yuan-grasp",
+    char: "援",
+    pinyin: "yuán",
+    meaning: "拿起、握持",
+    examples: ["思援弓繳而射之。"],
   },
   {
     id: "sui-although",
@@ -88,11 +118,34 @@ export const WENYAN_CHARS: WenyanChar[] = [
     examples: ["雖與之俱學，弗若之矣。"],
   },
   {
-    id: "wei-only",
-    char: "惟",
-    pinyin: "wéi",
-    meaning: "只",
-    examples: ["其一人專心致志，惟弈秋之為聽。"],
+    id: "ju-together",
+    char: "俱",
+    pinyin: "jù",
+    meaning: "一起",
+    examples: ["雖與之俱學，弗若之矣。"],
+  },
+
+  /* --------------------------------------------------------- 鄭人買履 */
+  {
+    id: "lyu-shoe",
+    char: "履",
+    pinyin: "lǚ",
+    meaning: "鞋子",
+    examples: ["鄭人有且置履者。", "及反，市罷，遂不得履。"],
+  },
+  {
+    id: "du-size",
+    char: "度",
+    pinyin: "dù",
+    meaning: "量好的尺碼",
+    examples: ["寧信度，無自信也。"],
+  },
+  {
+    id: "qie-about-to",
+    char: "且",
+    pinyin: "qiě",
+    meaning: "將要",
+    examples: ["鄭人有且置履者。"],
   },
   {
     id: "fan-return",
@@ -102,46 +155,76 @@ export const WENYAN_CHARS: WenyanChar[] = [
     examples: ["及反，市罷，遂不得履。"],
   },
   {
-    id: "ji-reach",
-    char: "及",
-    pinyin: "jí",
-    meaning: "等到",
-    examples: ["及反，市罷，遂不得履。"],
-  },
-  {
-    id: "zhi-go",
-    char: "之",
-    pinyin: "zhī",
-    meaning: "前往、到……去",
+    id: "cao-hold",
+    char: "操",
+    pinyin: "cāo",
+    meaning: "拿、執持",
     examples: ["至之市，而忘操之。"],
   },
   {
-    id: "lyu-shoe",
-    char: "履",
-    pinyin: "lǚ",
-    meaning: "鞋子",
-    examples: ["鄭人有欲買履者。", "已得履，乃曰：「吾忘持度。」"],
+    id: "zuo-seat",
+    char: "坐",
+    pinyin: "zuò",
+    meaning: "座位（通「座」）",
+    examples: ["先自度其足，而置之其坐。"],
   },
   {
-    id: "du-size",
-    char: "度",
-    pinyin: "dù",
-    meaning: "量好的尺碼",
-    examples: ["寧信度，無自信也。", "已得履，乃曰：「吾忘持度。」"],
+    id: "ba-end",
+    char: "罷",
+    pinyin: "bà",
+    meaning: "結束、（市集）散了",
+    examples: ["及反，市罷，遂不得履。"],
   },
   {
-    id: "hui-teach",
-    char: "誨",
+    id: "ning-rather",
+    char: "寧",
+    pinyin: "nìng",
+    meaning: "寧願",
+    examples: ["寧信度，無自信也。"],
+  },
+
+  /* --------------------------------------------------------- 鷸蚌相爭 */
+  {
+    id: "bang-clam",
+    char: "蚌",
+    pinyin: "bàng",
+    meaning: "河蚌",
+    examples: ["蚌方出曝，而鷸啄其肉。"],
+  },
+  {
+    id: "fang-just",
+    char: "方",
+    pinyin: "fāng",
+    meaning: "正在",
+    examples: ["蚌方出曝，而鷸啄其肉。"],
+  },
+  {
+    id: "pu-bask",
+    char: "曝",
+    pinyin: "pù",
+    meaning: "曬太陽",
+    examples: ["蚌方出曝，而鷸啄其肉。"],
+  },
+  {
+    id: "yu-bird",
+    char: "鷸",
+    pinyin: "yù",
+    meaning: "一種長嘴的水鳥",
+    examples: ["蚌方出曝，而鷸啄其肉。"],
+  },
+  {
+    id: "qian-clamp",
+    char: "拑",
+    pinyin: "qián",
+    meaning: "夾住",
+    examples: ["蚌合而拑其喙。"],
+  },
+  {
+    id: "hui-beak",
+    char: "喙",
     pinyin: "huì",
-    meaning: "教導",
-    examples: ["使弈秋誨二人弈。"],
-  },
-  {
-    id: "zhe-break",
-    char: "折",
-    pinyin: "zhé",
-    meaning: "折斷",
-    examples: ["汝取一隻箭折之。", "單者易折，眾則難摧。"],
+    meaning: "鳥嘴",
+    examples: ["蚌合而拑其喙。"],
   },
   {
     id: "yu-rain",
@@ -151,32 +234,18 @@ export const WENYAN_CHARS: WenyanChar[] = [
     examples: ["今日不雨，明日不雨，即有死蚌。"],
   },
   {
-    id: "ji-already",
-    char: "既",
-    pinyin: "jì",
-    meaning: "已經",
-    examples: ["既昏便息，關鎖門戶，必親自檢點。"],
+    id: "she-release",
+    char: "舍",
+    pinyin: "shě",
+    meaning: "放開、讓步（通「捨」）",
+    examples: ["兩者不肯相舍，漁者得而并擒之。"],
   },
   {
-    id: "xi-rest",
-    char: "息",
-    pinyin: "xī",
-    meaning: "休息",
-    examples: ["既昏便息，關鎖門戶，必親自檢點。"],
-  },
-  {
-    id: "si-think",
-    char: "思",
-    pinyin: "sī",
-    meaning: "思考、想",
-    examples: ["學而不思則罔，思而不學則殆。"],
-  },
-  {
-    id: "ba-end",
-    char: "罷",
-    pinyin: "bà",
-    meaning: "結束、（市集）散了",
-    examples: ["及反，市罷，遂不得履。"],
+    id: "yi-also",
+    char: "亦",
+    pinyin: "yì",
+    meaning: "也",
+    examples: ["蚌亦謂鷸曰：「今日不出，明日不出，即有死鷸。」"],
   },
 ];
 

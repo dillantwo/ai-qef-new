@@ -166,7 +166,7 @@ export default function WenyanLearnPage() {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_12%_8%,rgba(122,61,255,0.10),transparent_38%),radial-gradient(circle_at_88%_10%,rgba(255,174,19,0.12),transparent_36%),linear-gradient(180deg,#fbfaff_0%,#f7f7fb_100%)] px-4 py-6 md:px-6">
+        <div className="flex-1 overflow-y-auto bg-white px-4 py-6 md:px-6">
           <div className="mx-auto w-full max-w-4xl">
             {!selectedText ? (
               <TextPicker onSelect={selectText} completedIds={completedIds} />
@@ -372,8 +372,45 @@ function Task1({ text }: { text: WenyanText }) {
         </p>
       </div>
 
+      {text.vocab && text.vocab.length > 0 && (
+        <div className="rounded-[16px] border border-[#e6e1f3] bg-white/92 p-5 shadow-[0_10px_28px_rgba(122,61,255,0.08)] md:p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="inline-flex size-7 items-center justify-center rounded-[8px] bg-[#fff3d6] text-[#b45309]">
+              <BookOpen className="size-4" />
+            </span>
+            <h3 className="font-serif text-[18px] font-semibold text-[#1a1330]">常用詞</h3>
+          </div>
+          <ol className="space-y-2.5">
+            {text.vocab.map((v, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 rounded-[10px] border border-[#f0edf8] bg-[#fbfaff] px-3 py-2.5"
+              >
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#7a3dff]/10 text-xs font-semibold text-[#5a25d6]">
+                  {i + 1}
+                </span>
+                <p className="text-sm leading-7 text-[#3f3a52]">
+                  <span className="font-serif text-[17px] font-semibold text-[#1a1330]">
+                    {v.term}
+                  </span>
+                  <span className="mx-1.5 text-[#cbc3e3]">：</span>
+                  {v.meaning}
+                  {(v.jyutping || v.pinyin) && (
+                    <span className="ml-1 whitespace-nowrap text-[13px] text-[#9a8fb5]">
+                      {v.jyutping && `粵［${v.jyutping}］`}
+                      {v.jyutping && v.pinyin && "　"}
+                      {v.pinyin && `普［${v.pinyin}］`}
+                    </span>
+                  )}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       <p className="text-center text-sm text-[#9a8fb5]">
-        先細心讀一遍原文，讀完後按「下一個任務」學習句子拆解。
+        先細心讀一遍原文，留意上面的常用詞，讀完後按「下一個任務」學習句子拆解。
       </p>
     </div>
   );

@@ -57,7 +57,7 @@ export default function WenyanChallengePage() {
   remainingRef.current = remainingMs;
 
   useEffect(() => {
-    setBestScore(getProgress().bestScore);
+    setBestScore(getProgress().bestTranslate);
   }, []);
 
   // Countdown timer for the current question.
@@ -127,9 +127,9 @@ export default function WenyanChallengePage() {
       setAnswered(false);
       return;
     }
-    const earned = recordChallenge({ score, maxStreak });
+    const earned = recordChallenge("translate", { score, maxStreak });
     setNewBadges(earned);
-    setBestScore(getProgress().bestScore);
+    setBestScore(getProgress().bestTranslate);
     setPhase("result");
   }
 
@@ -146,13 +146,13 @@ export default function WenyanChallengePage() {
         </Link>
         <div className="flex items-center gap-2">
           <Swords className="size-4 text-[#f59e0b]" />
-          <span className="text-sm font-semibold text-[#080808]">挑戰模式</span>
+          <span className="text-sm font-semibold text-[#080808]">挑戰模式 - 常用詞翻譯</span>
         </div>
         <div className="w-[112px]" />
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_12%_8%,rgba(245,158,11,0.12),transparent_38%),radial-gradient(circle_at_88%_10%,rgba(122,61,255,0.10),transparent_36%),linear-gradient(180deg,#fffdf7_0%,#f7f7fb_100%)] px-4 py-8 md:px-6">
+      <div className="flex-1 overflow-y-auto bg-white px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-2xl">
           {phase === "intro" && <Intro bestScore={bestScore} onStart={startGame} />}
 
@@ -204,9 +204,9 @@ function Intro({ bestScore, onStart }: { bestScore: number; onStart: () => void 
           常用字大挑戰
         </h1>
         <p className="mx-auto max-w-md text-sm leading-7 text-[#6b6385]">
-          每題會給你一句文言文，當中有一個 <span className="font-semibold text-[#f59e0b]">黃色</span> 的常用字。
+          每題會給你一句文言文，當中有一個 <span className="font-semibold text-[#f59e0b]">黃色</span> 的常用詞。
           在 <span className="font-semibold text-[#f59e0b]">15 秒</span> 內選出它的正確意思，
-          答得越快分數越高！共 {QUESTION_COUNT} 題，滿分 100 分。
+          答得越快分數越高！題目全部選自學習模式的四篇文章，共 {QUESTION_COUNT} 題，滿分 100 分。
         </p>
       </div>
 

@@ -8,6 +8,7 @@ import {
   ScrollText,
   BookOpen,
   Swords,
+  Puzzle as PuzzleIcon,
   Trophy,
   Star,
   ArrowRight,
@@ -17,6 +18,7 @@ import { WENYAN_TEXTS } from "@/lib/wenyan-texts";
 import {
   BADGES,
   getProgress,
+  MAX_TOTAL_SCORE,
   type ProgressSnapshot,
 } from "@/lib/wenyan-progress";
 
@@ -32,8 +34,11 @@ export default function WenyanDashboard() {
   const totalTexts = WENYAN_TEXTS.length;
   const completed = progress?.completedTexts.length ?? 0;
   const learnPct = totalTexts ? Math.round((completed / totalTexts) * 100) : 0;
-  const bestScore = progress?.bestScore ?? 0;
-  const plays = progress?.plays ?? 0;
+  const bestTranslate = progress?.bestTranslate ?? 0;
+  const bestPuzzle = progress?.bestPuzzle ?? 0;
+  const playsTranslate = progress?.playsTranslate ?? 0;
+  const playsPuzzle = progress?.playsPuzzle ?? 0;
+  const totalScore = progress?.totalScore ?? 0;
   const ownedBadges = new Set(progress?.badges ?? []);
 
   return (
@@ -55,7 +60,7 @@ export default function WenyanDashboard() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_12%_8%,rgba(122,61,255,0.10),transparent_38%),radial-gradient(circle_at_88%_10%,rgba(255,174,19,0.12),transparent_36%),linear-gradient(180deg,#fbfaff_0%,#f7f7fb_100%)] px-4 py-8 md:px-6">
+      <div className="flex-1 overflow-y-auto bg-white px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-4xl space-y-8">
           {/* Hero */}
           <div className="text-center space-y-3">
@@ -63,7 +68,7 @@ export default function WenyanDashboard() {
               文言文小遊戲
             </h1>
             <p className="mx-auto max-w-xl text-sm leading-7 text-[#6b6385]">
-              一邊玩一邊學文言文！「學習模式」帶你慢慢讀懂經典故事，「挑戰模式」考考你常用字的意思，賺取分數和獎章。
+              一邊玩一邊學文言文！「學習模式」帶你慢慢讀懂經典故事，「挑戰模式」有兩種玩法：考考你常用詞的意思，或者把常用詞拼回原文，賺取分數和獎章。
             </p>
             <a
               href="https://www.edb.gov.hk/tc/curriculum-development/kla/chi-edu/key-stage2.html"
@@ -85,8 +90,8 @@ export default function WenyanDashboard() {
             />
             <StatCard
               icon={Trophy}
-              label="挑戰最高分"
-              value={`${bestScore}`}
+              label="挑戰總分"
+              value={`${totalScore}/${MAX_TOTAL_SCORE}`}
               accent="#f59e0b"
             />
             <StatCard
@@ -98,71 +103,106 @@ export default function WenyanDashboard() {
           </div>
 
           {/* Mode cards */}
-          <div className="grid gap-5 sm:grid-cols-2">
-            {/* Learning mode */}
+          <div className="space-y-5">
+            {/* Learning mode — full-width hero */}
             <button
               onClick={() => router.push("/chinese/wenyan/learn")}
-              className="group flex flex-col rounded-[20px] border border-[#e6e1f3] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(122,61,255,0.10)] transition duration-200 hover:-translate-y-1 hover:border-[#7a3dff]/50"
+              className="group flex w-full flex-col gap-5 rounded-[20px] border border-[#e6e1f3] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(122,61,255,0.10)] transition duration-200 hover:-translate-y-1 hover:border-[#7a3dff]/50 sm:flex-row sm:items-center sm:gap-6"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#7a3dff] text-white shadow-[5px_5px_0px_#1a1330]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#7a3dff] text-white shadow-[5px_5px_0px_#1a1330]">
                 <BookOpen className="size-6" />
               </div>
-              <h2 className="mt-5 font-serif text-[26px] font-semibold tracking-[-0.02em] text-[#1a1330]">
-                學習模式
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[#6b6385]">
-                跟着任務一步步讀通文言文：讀原文、拆解字詞、練習翻譯。完成後解鎖「勤學書生」獎章。
-              </p>
-
-              {/* Learn progress bar */}
-              <div className="mt-5 space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-[#9a8fb5]">
-                  <span>學習進度</span>
-                  <span className="font-semibold text-[#7a3dff]">{learnPct}%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-[#efeafb]">
-                  <div
-                    className="h-full rounded-full bg-[#7a3dff] transition-all"
-                    style={{ width: `${learnPct}%` }}
-                  />
-                </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-serif text-[26px] font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  學習模式
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#6b6385]">
+                  跟着任務一步步讀通文言文：讀原文、拆解字詞、練習翻譯。完成後解鎖「勤學書生」獎章。
+                </p>
               </div>
 
-              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#7a3dff] transition-transform duration-200 group-hover:translate-x-1">
-                進入學習模式
-                <ArrowRight className="size-4" />
-              </span>
-            </button>
-
-            {/* Challenge mode */}
-            <button
-              onClick={() => router.push("/chinese/wenyan/challenge")}
-              className="group flex flex-col rounded-[20px] border border-[#f6d9a8] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(245,158,11,0.12)] transition duration-200 hover:-translate-y-1 hover:border-[#f59e0b]/60"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#f59e0b] text-white shadow-[5px_5px_0px_#1a1330]">
-                <Swords className="size-6" />
-              </div>
-              <h2 className="mt-5 font-serif text-[26px] font-semibold tracking-[-0.02em] text-[#1a1330]">
-                挑戰模式
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[#6b6385]">
-                從文言文片段抽出常用字，用選擇題猜猜它的意思。答得越準，分數越高，還能贏取獎章！
-              </p>
-
-              <div className="mt-5 flex items-center gap-4 text-xs text-[#9a8fb5]">
-                <span>
-                  最高分　<span className="font-semibold text-[#f59e0b]">{bestScore}</span>
-                </span>
-                <span>
-                  已挑戰　<span className="font-semibold text-[#f59e0b]">{plays}</span> 次
+              <div className="w-full shrink-0 space-y-3 sm:w-60">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-[#9a8fb5]">
+                    <span>學習進度</span>
+                    <span className="font-semibold text-[#7a3dff]">{learnPct}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#efeafb]">
+                    <div
+                      className="h-full rounded-full bg-[#7a3dff] transition-all"
+                      style={{ width: `${learnPct}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#7a3dff] transition-transform duration-200 group-hover:translate-x-1">
+                  進入學習模式
+                  <ArrowRight className="size-4" />
                 </span>
               </div>
-
-              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#f59e0b] transition-transform duration-200 group-hover:translate-x-1">
-                開始挑戰
-                <ArrowRight className="size-4" />
-              </span>
             </button>
+
+            {/* Challenge modes */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              {/* Challenge mode — translation */}
+              <button
+                onClick={() => router.push("/chinese/wenyan/challenge")}
+                className="group flex flex-col rounded-[20px] border border-[#f6d9a8] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(245,158,11,0.12)] transition duration-200 hover:-translate-y-1 hover:border-[#f59e0b]/60"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#f59e0b] text-white shadow-[5px_5px_0px_#1a1330]">
+                  <Swords className="size-6" />
+                </div>
+                <h2 className="mt-5 font-serif text-[24px] font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  挑戰模式 - 常用詞翻譯
+                </h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
+                  從文言文片段抽出常用詞，用選擇題猜猜它的意思。答得越準、越快，分數越高，還能贏取獎章！
+                </p>
+
+                <div className="mt-5 flex items-center gap-4 text-xs text-[#9a8fb5]">
+                  <span>
+                    最高分　<span className="font-semibold text-[#f59e0b]">{bestTranslate}</span>
+                  </span>
+                  <span>
+                    已挑戰　<span className="font-semibold text-[#f59e0b]">{playsTranslate}</span> 次
+                  </span>
+                </div>
+
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#f59e0b] transition-transform duration-200 group-hover:translate-x-1">
+                  開始挑戰
+                  <ArrowRight className="size-4" />
+                </span>
+              </button>
+
+              {/* Challenge mode — puzzle */}
+              <button
+                onClick={() => router.push("/chinese/wenyan/puzzle")}
+                className="group flex flex-col rounded-[20px] border border-[#bdeae3] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(13,148,136,0.12)] transition duration-200 hover:-translate-y-1 hover:border-[#0d9488]/60"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#0d9488] text-white shadow-[5px_5px_0px_#1a1330]">
+                  <PuzzleIcon className="size-6" />
+                </div>
+                <h2 className="mt-5 font-serif text-[24px] font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  挑戰模式 - 常用詞拼圖
+                </h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
+                  文言文段落抽走了常用詞，每個詞語都附有意思，把正確的拖放回空格，小心混在其中的干擾項，全對得 100 分！
+                </p>
+
+                <div className="mt-5 flex items-center gap-4 text-xs text-[#9a8fb5]">
+                  <span>
+                    最高分　<span className="font-semibold text-[#0d9488]">{bestPuzzle}</span>
+                  </span>
+                  <span>
+                    已挑戰　<span className="font-semibold text-[#0d9488]">{playsPuzzle}</span> 次
+                  </span>
+                </div>
+
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#0d9488] transition-transform duration-200 group-hover:translate-x-1">
+                  開始拼圖
+                  <ArrowRight className="size-4" />
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Badge shelf */}
