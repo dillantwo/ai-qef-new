@@ -397,6 +397,8 @@ export function AppSidebar() {
           className={`mt-4 w-full ${
             isChineseLikeChat || isEnglishDashboard
               ? 'bg-[#146ef5] text-white hover:bg-[#0055d4]'
+              : isMathDashboard
+              ? 'bg-[#16a34a] text-white hover:bg-[#15803d]'
               : ''
           }`}
           size="lg"
@@ -421,7 +423,7 @@ export function AppSidebar() {
           }
           router.push(`/${subject}`);
         }}>
-          {isChineseLikeChat || isEnglishDashboard ? '+ New Chat' : '+ Add New Question'}
+          {isChineseLikeChat || isEnglishDashboard ? '+ New Chat' : isMathDashboard ? '加入題目' : '+ Add New Question'}
         </Button>
         {isMathDashboard && isTeacher && (
           <Button

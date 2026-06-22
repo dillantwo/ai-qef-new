@@ -9,6 +9,8 @@ import {
   BookOpen,
   Swords,
   Puzzle as PuzzleIcon,
+  Lightbulb,
+  Rocket,
   Trophy,
   Star,
   ArrowRight,
@@ -36,8 +38,12 @@ export default function WenyanDashboard() {
   const learnPct = totalTexts ? Math.round((completed / totalTexts) * 100) : 0;
   const bestTranslate = progress?.bestTranslate ?? 0;
   const bestPuzzle = progress?.bestPuzzle ?? 0;
+  const bestTheme = progress?.bestTheme ?? 0;
+  const bestApplication = progress?.bestApplication ?? 0;
   const playsTranslate = progress?.playsTranslate ?? 0;
   const playsPuzzle = progress?.playsPuzzle ?? 0;
+  const playsTheme = progress?.playsTheme ?? 0;
+  const playsApplication = progress?.playsApplication ?? 0;
   const totalScore = progress?.totalScore ?? 0;
   const ownedBadges = new Set(progress?.badges ?? []);
 
@@ -68,7 +74,7 @@ export default function WenyanDashboard() {
               文言文小遊戲
             </h1>
             <p className="mx-auto max-w-xl text-sm leading-7 text-[#6b6385]">
-              一邊玩一邊學文言文！「學習模式」帶你慢慢讀懂經典故事，「挑戰模式」有兩種玩法：考考你常用詞的意思，或者把常用詞拼回原文，賺取分數和獎章。
+              一邊玩一邊學文言文！「學習模式」帶你慢慢讀懂經典故事，「挑戰模式」有四種玩法：考考你常用詞的意思、把常用詞拼回原文、讀懂文章的主旨道理，或者把道理應用到生活上，賺取分數和獎章。
             </p>
             <a
               href="https://www.edb.gov.hk/tc/curriculum-development/kla/chi-edu/key-stage2.html"
@@ -142,7 +148,7 @@ export default function WenyanDashboard() {
             </button>
 
             {/* Challenge modes */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {/* Challenge mode — translation */}
               <button
                 onClick={() => router.push("/chinese/wenyan/challenge")}
@@ -151,8 +157,9 @@ export default function WenyanDashboard() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#f59e0b] text-white shadow-[5px_5px_0px_#1a1330]">
                   <Swords className="size-6" />
                 </div>
-                <h2 className="mt-5 font-serif text-[24px] font-semibold tracking-[-0.02em] text-[#1a1330]">
-                  挑戰模式 - 常用詞翻譯
+                <h2 className="mt-5 font-serif font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  <span className="block text-[24px]">挑戰模式</span>
+                  <span className="block text-[24px]">常用詞翻譯</span>
                 </h2>
                 <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
                   從文言文片段抽出常用詞，用選擇題猜猜它的意思。答得越準、越快，分數越高，還能贏取獎章！
@@ -181,8 +188,9 @@ export default function WenyanDashboard() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#0d9488] text-white shadow-[5px_5px_0px_#1a1330]">
                   <PuzzleIcon className="size-6" />
                 </div>
-                <h2 className="mt-5 font-serif text-[24px] font-semibold tracking-[-0.02em] text-[#1a1330]">
-                  挑戰模式 - 常用詞拼圖
+                <h2 className="mt-5 font-serif font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  <span className="block text-[24px]">挑戰模式</span>
+                  <span className="block text-[24px]">常用詞拼圖</span>
                 </h2>
                 <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
                   文言文段落抽走了常用詞，每個詞語都附有意思，把正確的拖放回空格，小心混在其中的干擾項，全對得 100 分！
@@ -199,6 +207,68 @@ export default function WenyanDashboard() {
 
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#0d9488] transition-transform duration-200 group-hover:translate-x-1">
                   開始拼圖
+                  <ArrowRight className="size-4" />
+                </span>
+              </button>
+
+              {/* Challenge mode — theme comprehension */}
+              <button
+                onClick={() => router.push("/chinese/wenyan/theme")}
+                className="group flex flex-col rounded-[20px] border border-[#c7d2fe] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(99,102,241,0.12)] transition duration-200 hover:-translate-y-1 hover:border-[#6366f1]/60"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#6366f1] text-white shadow-[5px_5px_0px_#1a1330]">
+                  <Lightbulb className="size-6" />
+                </div>
+                <h2 className="mt-5 font-serif font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  <span className="block text-[24px]">挑戰模式</span>
+                  <span className="block text-[24px]">主旨理解</span>
+                </h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
+                  讀一篇文言文的原文和翻譯，從五個選項中選出文章隱含的主旨道理。讀得明白，就能得分和贏取獎章！
+                </p>
+
+                <div className="mt-5 flex items-center gap-4 text-xs text-[#9a8fb5]">
+                  <span>
+                    最高分　<span className="font-semibold text-[#6366f1]">{bestTheme}</span>
+                  </span>
+                  <span>
+                    已挑戰　<span className="font-semibold text-[#6366f1]">{playsTheme}</span> 次
+                  </span>
+                </div>
+
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#6366f1] transition-transform duration-200 group-hover:translate-x-1">
+                  開始挑戰
+                  <ArrowRight className="size-4" />
+                </span>
+              </button>
+
+              {/* Challenge mode — application */}
+              <button
+                onClick={() => router.push("/chinese/wenyan/application")}
+                className="group flex flex-col rounded-[20px] border border-[#fbcfe8] bg-white/92 p-6 text-left shadow-[0_12px_32px_rgba(225,29,72,0.12)] transition duration-200 hover:-translate-y-1 hover:border-[#e11d48]/60"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#e11d48] text-white shadow-[5px_5px_0px_#1a1330]">
+                  <Rocket className="size-6" />
+                </div>
+                <h2 className="mt-5 font-serif font-semibold tracking-[-0.02em] text-[#1a1330]">
+                  <span className="block text-[24px]">挑戰模式</span>
+                  <span className="block text-[24px]">理解應用</span>
+                </h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-[#6b6385]">
+                  讀懂文章主旨後，想想生活中類似道理的例子，寫出你的生活隱喻。AI 老師會從「主旨理解」和「應用場景」兩方面評分並給建議！
+                </p>
+
+                <div className="mt-5 flex items-center gap-4 text-xs text-[#9a8fb5]">
+                  <span>
+                    最高分　<span className="font-semibold text-[#e11d48]">{bestApplication}</span>
+                  </span>
+                  <span>
+                    已挑戰　<span className="font-semibold text-[#e11d48]">{playsApplication}</span> 次
+                  </span>
+                </div>
+
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#e11d48] transition-transform duration-200 group-hover:translate-x-1">
+                  開始挑戰
                   <ArrowRight className="size-4" />
                 </span>
               </button>
@@ -280,3 +350,4 @@ function StatCard({
     </div>
   );
 }
+

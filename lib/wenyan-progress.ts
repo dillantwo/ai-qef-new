@@ -4,8 +4,9 @@
 // game self-contained. All functions are safe to call on the server (they
 // no-op without `window`).
 //
-// The two 挑戰模式 (常用詞翻譯 / 常用詞拼圖) keep their best score and play count
-// separately; the "總分" shown on the dashboard is the sum of both best scores.
+// The four 挑戰模式 (常用詞翻譯 / 常用詞拼圖 / 主旨理解 / 理解應用) keep their best
+// score and play count separately; the "總分" shown on the dashboard is the sum
+// of all four best scores.
 
 import { WENYAN_CHARS, type WenyanChar } from "./wenyan-chars";
 import { WENYAN_TEXTS } from "./wenyan-texts";
@@ -16,18 +17,22 @@ const BADGES_KEY = "wyt:badges";
 // Per-mode best score + play count.
 const BEST_TRANSLATE_KEY = "wyt:challenge:best:translate";
 const BEST_PUZZLE_KEY = "wyt:challenge:best:puzzle";
+const BEST_THEME_KEY = "wyt:challenge:best:theme";
+const BEST_APPLICATION_KEY = "wyt:challenge:best:application";
 const PLAYS_TRANSLATE_KEY = "wyt:challenge:plays:translate";
 const PLAYS_PUZZLE_KEY = "wyt:challenge:plays:puzzle";
+const PLAYS_THEME_KEY = "wyt:challenge:plays:theme";
+const PLAYS_APPLICATION_KEY = "wyt:challenge:plays:application";
 
 // Legacy (single-mode) keys, migrated into the translate slot on first read.
 const LEGACY_BEST_KEY = "wyt:challenge:best";
 const LEGACY_PLAYS_KEY = "wyt:challenge:plays";
 
-/** The two challenge games. */
-export type ChallengeMode = "translate" | "puzzle";
+/** The four challenge games. */
+export type ChallengeMode = "translate" | "puzzle" | "theme" | "application";
 
 /** Max possible total score (each mode caps at 100). */
-export const MAX_TOTAL_SCORE = 200;
+export const MAX_TOTAL_SCORE = 400;
 
 /* ----------------------------------------------------------------- badges */
 
@@ -39,17 +44,27 @@ export interface Badge {
 }
 
 export const BADGES: Badge[] = [
+  // —— 學習模式 ——
+  { id: "scholar", label: "勤學書生", description: "在學習模式完成第一篇文章", emoji: "📖" },
+  { id: "all-texts", label: "博覽群書", description: "學習模式完成全部四篇文章", emoji: "📚" },
+
+  // —— 挑戰里程碑（任何模式）——
   { id: "first-try", label: "初試啼聲", description: "完成第一場挑戰", emoji: "🌱" },
-  { id: "rising-star", label: "文言新星", description: "單場取得 60 分或以上", emoji: "⭐" },
-  { id: "expert", label: "文言高手", description: "單場取得 80 分或以上", emoji: "🏅" },
-  { id: "master", label: "文言大師", description: "單場取得滿分 100 分", emoji: "👑" },
-  { id: "streak", label: "連勝達人", description: "單場連續答對 5 題", emoji: "🔥" },
-  { id: "puzzle-ace", label: "拼圖高手", description: "拼圖單場取得 80 分或以上", emoji: "🧩" },
-  { id: "both-modes", label: "文武雙全", description: "兩種挑戰模式都玩過", emoji: "⚔️" },
+  { id: "rising-star", label: "文言新星", description: "任何挑戰單場取得 60 分或以上", emoji: "⭐" },
+  { id: "expert", label: "文言高手", description: "任何挑戰單場取得 80 分或以上", emoji: "🏅" },
+  { id: "master", label: "文言大師", description: "任何挑戰單場取得滿分 100 分", emoji: "👑" },
+
+  // —— 四種挑戰模式的專屬獎章（單場 80 分或以上）——
+  { id: "translate-ace", label: "識字高手", description: "常用詞翻譯取得 80 分或以上", emoji: "✍️" },
+  { id: "puzzle-ace", label: "拼圖高手", description: "常用詞拼圖取得 80 分或以上", emoji: "🧩" },
+  { id: "theme-ace", label: "明理達人", description: "主旨理解取得 80 分或以上", emoji: "💡" },
+  { id: "apply-ace", label: "活學活用", description: "理解應用取得 80 分或以上", emoji: "🌟" },
+
+  // —— 毅力與綜合成就 ——
   { id: "diligent", label: "持之以恆", description: "累積挑戰 10 次", emoji: "📅" },
-  { id: "grand-total", label: "登峰造極", description: "兩種模式總分達 180 分", emoji: "🏆" },
-  { id: "scholar", label: "勤學書生", description: "在學習模式完成一篇文章", emoji: "📖" },
-  { id: "all-texts", label: "博覽群書", description: "學習模式完成全部四篇", emoji: "📚" },
+  { id: "all-modes", label: "四項全能", description: "四種挑戰模式都玩過", emoji: "⚔️" },
+  { id: "grand-total", label: "登峰造極", description: "四種模式總分達 360 分", emoji: "🏆" },
+  { id: "perfect-all", label: "完美無瑕", description: "四種挑戰模式全部取得滿分 100 分", emoji: "💎" },
 ];
 
 export function getBadge(id: string): Badge | undefined {
@@ -116,10 +131,16 @@ export interface ProgressSnapshot {
   bestTranslate: number;
   /** Best score in the 常用詞拼圖 game (0–100). */
   bestPuzzle: number;
+  /** Best score in the 主旨理解 game (0–100). */
+  bestTheme: number;
+  /** Best score in the 理解應用 game (0–100). */
+  bestApplication: number;
   /** Play counts per mode. */
   playsTranslate: number;
   playsPuzzle: number;
-  /** Combined best score across both modes (0–200). */
+  playsTheme: number;
+  playsApplication: number;
+  /** Combined best score across all modes (0–400). */
   totalScore: number;
   badges: string[];
 }
@@ -128,13 +149,19 @@ export function getProgress(): ProgressSnapshot {
   migrateLegacy();
   const bestTranslate = readJSON<number>(BEST_TRANSLATE_KEY, 0);
   const bestPuzzle = readJSON<number>(BEST_PUZZLE_KEY, 0);
+  const bestTheme = readJSON<number>(BEST_THEME_KEY, 0);
+  const bestApplication = readJSON<number>(BEST_APPLICATION_KEY, 0);
   return {
     completedTexts: readJSON<string[]>(LEARN_KEY, []),
     bestTranslate,
     bestPuzzle,
+    bestTheme,
+    bestApplication,
     playsTranslate: readJSON<number>(PLAYS_TRANSLATE_KEY, 0),
     playsPuzzle: readJSON<number>(PLAYS_PUZZLE_KEY, 0),
-    totalScore: bestTranslate + bestPuzzle,
+    playsTheme: readJSON<number>(PLAYS_THEME_KEY, 0),
+    playsApplication: readJSON<number>(PLAYS_APPLICATION_KEY, 0),
+    totalScore: bestTranslate + bestPuzzle + bestTheme + bestApplication,
     badges: readJSON<string[]>(BADGES_KEY, []),
   };
 }
@@ -169,8 +196,22 @@ export function recordChallenge(
   result: ChallengeResult
 ): string[] {
   migrateLegacy();
-  const bestKey = mode === "translate" ? BEST_TRANSLATE_KEY : BEST_PUZZLE_KEY;
-  const playsKey = mode === "translate" ? PLAYS_TRANSLATE_KEY : PLAYS_PUZZLE_KEY;
+  const bestKey =
+    mode === "translate"
+      ? BEST_TRANSLATE_KEY
+      : mode === "puzzle"
+        ? BEST_PUZZLE_KEY
+        : mode === "theme"
+          ? BEST_THEME_KEY
+          : BEST_APPLICATION_KEY;
+  const playsKey =
+    mode === "translate"
+      ? PLAYS_TRANSLATE_KEY
+      : mode === "puzzle"
+        ? PLAYS_PUZZLE_KEY
+        : mode === "theme"
+          ? PLAYS_THEME_KEY
+          : PLAYS_APPLICATION_KEY;
 
   const best = readJSON<number>(bestKey, 0);
   if (result.score > best) writeJSON(bestKey, result.score);
@@ -179,19 +220,40 @@ export function recordChallenge(
   // Re-read everything for cross-mode / total badges.
   const bestTranslate = readJSON<number>(BEST_TRANSLATE_KEY, 0);
   const bestPuzzle = readJSON<number>(BEST_PUZZLE_KEY, 0);
+  const bestTheme = readJSON<number>(BEST_THEME_KEY, 0);
+  const bestApplication = readJSON<number>(BEST_APPLICATION_KEY, 0);
   const playsTranslate = readJSON<number>(PLAYS_TRANSLATE_KEY, 0);
   const playsPuzzle = readJSON<number>(PLAYS_PUZZLE_KEY, 0);
+  const playsTheme = readJSON<number>(PLAYS_THEME_KEY, 0);
+  const playsApplication = readJSON<number>(PLAYS_APPLICATION_KEY, 0);
 
   return awardBadges((award) => {
     award("first-try");
     if (result.score >= 60) award("rising-star");
     if (result.score >= 80) award("expert");
     if (result.score >= 100) award("master");
-    if (result.maxStreak >= 5) award("streak");
+    if (mode === "translate" && result.score >= 80) award("translate-ace");
     if (mode === "puzzle" && result.score >= 80) award("puzzle-ace");
-    if (playsTranslate > 0 && playsPuzzle > 0) award("both-modes");
-    if (playsTranslate + playsPuzzle >= 10) award("diligent");
-    if (bestTranslate + bestPuzzle >= 180) award("grand-total");
+    if (mode === "theme" && result.score >= 80) award("theme-ace");
+    if (mode === "application" && result.score >= 80) award("apply-ace");
+    if (
+      playsTranslate > 0 &&
+      playsPuzzle > 0 &&
+      playsTheme > 0 &&
+      playsApplication > 0
+    )
+      award("all-modes");
+    if (playsTranslate + playsPuzzle + playsTheme + playsApplication >= 10)
+      award("diligent");
+    if (bestTranslate + bestPuzzle + bestTheme + bestApplication >= 360)
+      award("grand-total");
+    if (
+      bestTranslate >= 100 &&
+      bestPuzzle >= 100 &&
+      bestTheme >= 100 &&
+      bestApplication >= 100
+    )
+      award("perfect-all");
   });
 }
 
