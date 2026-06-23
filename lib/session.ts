@@ -11,6 +11,10 @@ export interface SessionPayload {
   username: string;
   role: UserRole;
   displayName: string;
+  /** School id this user belongs to (null for admins) */
+  schoolId: string | null;
+  /** School display name (null for admins) */
+  schoolName: string | null;
   subjects: Subject[];
   expiresAt: Date;
 }

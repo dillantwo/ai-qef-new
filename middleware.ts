@@ -46,6 +46,22 @@ export async function middleware(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, getEncodedKey(), { algorithms: ["HS256"] });
 
+    const role = (payload as Record<string, unknown>).role as string | undefined;
+
+    // Admin area: only admins may enter /admin and /api/admin
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+      if (role !== "admin") {
+        if (pathname.startsWith("/api/")) {
+          return NextResponse.json({ error: "需要管理員權限" }, { status: 403 });
+        }
+        const homeUrl = req.nextUrl.clone();
+        homeUrl.pathname = "/";
+        homeUrl.searchParams.set("denied", "admin");
+        return NextResponse.redirect(homeUrl);
+      }
+      return NextResponse.next();
+    }
+
     // Check subject-level access
     const matchedPrefix = SUBJECT_PREFIXES.find(
       (p) => pathname === p || pathname.startsWith(p + "/")
@@ -54,7 +70,8 @@ export async function middleware(req: NextRequest) {
     if (matchedPrefix) {
       const subject = matchedPrefix.slice(1); // remove leading "/"
       const subjects: string[] = (payload as Record<string, unknown>).subjects as string[] ?? [];
-      if (!subjects.includes(subject)) {
+      // Admins bypass subject restrictions.
+      if (role !== "admin" && !subjects.includes(subject)) {
         // Redirect to home with an access-denied indicator
         const homeUrl = req.nextUrl.clone();
         homeUrl.pathname = "/";

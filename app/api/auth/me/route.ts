@@ -10,6 +10,8 @@ export async function GET() {
     username: session.username,
     role: session.role,
     displayName: session.displayName,
+    schoolId: session.schoolId ?? null,
+    schoolName: session.schoolName ?? null,
     subjects: session.subjects ?? [],
   });
 }

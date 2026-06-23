@@ -16,6 +16,8 @@ export interface AuthUser {
   username: string;
   role: UserRole;
   displayName: string;
+  schoolId: string | null;
+  schoolName: string | null;
   subjects: Subject[];
 }
 
