@@ -1226,7 +1226,9 @@ function MathDashboardContent() {
               ) : (
                 <iframe
                   srcDoc={sanitizeAiToolHtml(aiToolHtml)}
-                  sandbox="allow-scripts"
+                  sandbox="allow-scripts allow-fullscreen"
+                  allow="fullscreen"
+                  allowFullScreen
                   className="h-full min-h-0 w-full rounded-b-[8px]"
                   title={aiToolTitle ?? "AI Generated HTML Tool"}
                 />

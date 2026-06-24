@@ -200,6 +200,13 @@ export async function POST(req: Request) {
 7. 不要輸出 Markdown code fences。
 8. 如果提供了目前 HTML，代表這次是修改既有工具，不要無故重做成完全不同的工具；優先保留原本可用的互動結構，再按要求調整。
 
+版面與自適應要求（這個工具會被嵌入 iframe，請務必遵守）：
+9. html、body 設為 height:100%、margin:0，並用 box-sizing:border-box；最外層容器用 min-height:100vh，讓內容能填滿 iframe，全螢幕時也能正常撐開、置中。
+10. 嚴禁版面重疊：不要用會互相覆蓋的 position:absolute 來排版主要內容。請優先使用 flexbox 或 grid，元素之間用 gap / margin 預留足夠空間。標籤（例如棒形圖上的名稱與數值）必須各自佔有獨立空間，不可疊在一起或被裁切。
+11. 內容要能自適應不同尺寸：使用相對單位（%、rem、clamp()、min()、max()）與 flex-wrap，避免固定寬高造成在小視窗溢出或在全螢幕時出現大片空白。文字過長時要能換行，容器要 overflow 安全。
+12. 全螢幕支援：在介面右上角放一個「全螢幕 / 離開全螢幕」按鈕，使用 Fullscreen API（document.documentElement.requestFullscreen() 與 document.exitFullscreen()），並監聽 fullscreenchange 更新按鈕文字；若瀏覽器不支援則隱藏該按鈕。全螢幕時版面仍要置中且不重疊。
+13. 互動元素（按鈕、輸入框、滑桿）要有足夠的點擊區與間距，不可彼此重疊或貼邊。
+
 請同時提供：
 - title：工具名稱
 - html：完整 HTML 字串`,
