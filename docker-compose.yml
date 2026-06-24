@@ -44,6 +44,9 @@ services:
       AZURE_API_KEY: ${AZURE_API_KEY}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt-4.1}
       AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
+      # Math AI tool generator (generate-html) — separate codex deployment/version.
+      AZURE_OPENAI_HTML_DEPLOYMENT: ${AZURE_OPENAI_HTML_DEPLOYMENT:-gpt-5.3-codex}
+      AZURE_OPENAI_HTML_API_VERSION: ${AZURE_OPENAI_HTML_API_VERSION:-preview}
       SESSION_SECRET: ${SESSION_SECRET}
     healthcheck:
       test:
