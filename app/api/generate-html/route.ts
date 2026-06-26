@@ -119,11 +119,29 @@ function ensureHtmlDocument(html: string): string {
 
 export async function POST(req: Request) {
   try {
-    const { prompt, imageData, currentHtml, currentTitle } = (await req.json()) as {
+    const { prompt, imageData, currentHtml, currentTitle, targetedEdit } = (await req.json()) as {
       prompt?: string;
       imageData?: string;
       currentHtml?: string;
       currentTitle?: string;
+      targetedEdit?: boolean;
+    };
+
+    /**
+     * Build the user instruction. When `targetedEdit` is set, the supplied
+     * currentHtml contains exactly one element tagged with a `data-ai-target`
+     * attribute (added client-side when the teacher clicks an element). We ask
+     * the model to confine its changes to that element so unrelated parts of a
+     * large tool stay byte-for-byte stable.
+     */
+    const makeUserText = (p: string) => {
+      if (!currentHtml) {
+        return `請根據以下要求生成一個可直接執行的互動數學 HTML 工具：${p}`;
+      }
+      if (targetedEdit) {
+        return `請只修改下面 HTML 中被標記了 data-ai-target 屬性的那一個元素（以及為了滿足要求而必須連帶調整的最小範圍），其餘所有內容務必保持原樣、不要重做。修改要求：${p}。完成後請在輸出中移除 data-ai-target 這個臨時標記屬性。`;
+      }
+      return `請根據以下修改要求更新這個互動數學 HTML 工具：${p}`;
     };
 
     if (!prompt && !imageData) {
@@ -152,9 +170,7 @@ export async function POST(req: Request) {
         content: [
           {
             type: "text",
-            text: currentHtml
-              ? `請根據以下修改要求更新這個互動數學 HTML 工具：${prompt || "（見圖片）"}`
-              : `請根據以下要求生成一個可直接執行的互動數學 HTML 工具：${prompt || "（見圖片）"}`,
+            text: makeUserText(prompt || "（見圖片）"),
           },
           {
             type: "image",
@@ -166,9 +182,7 @@ export async function POST(req: Request) {
     } else {
       messages.push({
         role: "user",
-        content: currentHtml
-          ? `請根據以下修改要求更新這個互動數學 HTML 工具：${prompt}`
-          : `請根據以下要求生成一個可直接執行的互動數學 HTML 工具：${prompt}`,
+        content: makeUserText(prompt ?? ""),
       });
     }
 
@@ -199,6 +213,7 @@ export async function POST(req: Request) {
 6. 若題意不足，補上最合理的預設值，但仍要讓工具可運作。
 7. 不要輸出 Markdown code fences。
 8. 如果提供了目前 HTML，代表這次是修改既有工具，不要無故重做成完全不同的工具；優先保留原本可用的互動結構，再按要求調整。
+8b. 若 HTML 中有某個元素帶有 data-ai-target 屬性，代表老師只想修改「那一個元素」相關的部分，請把改動集中在它身上，其餘內容保持原樣；並且務必在最終輸出中移除 data-ai-target 這個臨時屬性。
 
 版面與自適應要求（這個工具會被嵌入 iframe，請務必遵守）：
 9. html、body 設為 height:100%、margin:0，並用 box-sizing:border-box；最外層容器用 min-height:100vh，讓內容能填滿 iframe，全螢幕時也能正常撐開、置中。

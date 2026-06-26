@@ -72,7 +72,7 @@ export async function POST(req: Request) {
         $set: setDoc,
         $setOnInsert: { sharedWithStudents: false },
       },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
 
     return Response.json({
@@ -195,7 +195,7 @@ export async function PATCH(req: Request) {
     const doc = await HtmlContent.findOneAndUpdate(
       { userId: session.userId, toolKey: toolKey.trim() },
       { $set: { sharedWithStudents } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!doc) {

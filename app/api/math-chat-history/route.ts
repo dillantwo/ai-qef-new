@@ -135,7 +135,7 @@ export async function POST(req: Request) {
       {
         $set: updateFields,
       },
-      { new: true, upsert: true },
+      { returnDocument: "after", upsert: true },
     );
 
     return Response.json({

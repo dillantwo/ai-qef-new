@@ -20,6 +20,7 @@ import {
   ImagePlus,
   Save,
   X,
+  MousePointerClick,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -28,8 +29,17 @@ import rehypeKatex from "rehype-katex";
 import { ChatAvatar } from "@/components/ChatAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToolbox, type ToolFromDB } from "@/contexts/ToolboxContext";
 import { basePath } from "@/lib/utils";
 import { DefaultChatTransport } from "ai";
@@ -62,6 +72,117 @@ function sanitizeAiToolHtml(html: string | null): string | undefined {
     )
     .replace(/<script\b[^>]*\bsrc\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, src) => (blocked.test(src) ? "" : m))
     .replace(/<link\b[^>]*\bhref\s*=\s*(['"])(.*?)\1[^>]*\/?>/gi, (m, _q, href) => (blocked.test(href) ? "" : m));
+}
+
+/**
+ * Small "element inspector" injected into the preview iframe. The iframe is
+ * sandboxed without allow-same-origin, so the parent cannot read its DOM — this
+ * script runs *inside* the iframe and talks to the parent purely via
+ * postMessage. When the parent enables select mode, hovering highlights
+ * elements and a click tags the chosen element with `data-ai-target`, serializes
+ * the full document (minus the inspector's own nodes) and posts it back so the
+ * parent can send it to the AI for a targeted edit.
+ */
+const INSPECTOR_SCRIPT = `<script data-mathai-inspector>
+(function(){
+  if (window.__mathaiInspector) return;
+  window.__mathaiInspector = true;
+  var enabled = false, hovered = null;
+  var style = document.createElement('style');
+  style.setAttribute('data-mathai-inspector','');
+  style.textContent = '.__mathai_hover{outline:2px solid #146ef5 !important;outline-offset:-2px !important;cursor:pointer !important;background:rgba(20,110,245,0.08) !important;}';
+  (document.head || document.documentElement).appendChild(style);
+
+  function clearHover(){ if(hovered){ try{ hovered.classList.remove('__mathai_hover'); }catch(e){} hovered=null; } }
+  function describe(el){
+    var tag = el.tagName ? el.tagName.toLowerCase() : 'node';
+    var id = el.id ? ('#'+el.id) : '';
+    var cls = (typeof el.className==='string' && el.className.trim()) ? ('.'+el.className.trim().split(/\\s+/).slice(0,2).join('.')) : '';
+    var txt = (el.textContent||'').trim().replace(/\\s+/g,' ').slice(0,24);
+    return '<'+tag+'>'+id+cls+(txt?(' "'+txt+'"'):'');
+  }
+  function serialize(){
+    var clone = document.documentElement.cloneNode(true);
+    clone.querySelectorAll('[data-mathai-inspector]').forEach(function(n){ n.remove(); });
+    clone.querySelectorAll('.__mathai_hover').forEach(function(n){ n.classList.remove('__mathai_hover'); });
+    return '<!doctype html>\\n' + clone.outerHTML;
+  }
+  function setEnabled(v){
+    enabled = v;
+    try{ document.body.style.cursor = v ? 'crosshair' : ''; }catch(e){}
+    if(!v) clearHover();
+    parent.postMessage({ source:'math-ai-inspector-tool', type:'mode', enabled: v }, '*');
+  }
+  document.addEventListener('mouseover', function(e){ if(!enabled) return; clearHover(); hovered=e.target; if(hovered && hovered.classList) hovered.classList.add('__mathai_hover'); }, true);
+  document.addEventListener('mouseout', function(e){ if(!enabled) return; if(e.target===hovered) clearHover(); }, true);
+  document.addEventListener('click', function(e){
+    if(!enabled) return;
+    e.preventDefault(); e.stopPropagation();
+    var el = e.target;
+    if(!el || el===document.documentElement || el===document.body) return;
+    document.querySelectorAll('[data-ai-target]').forEach(function(n){ n.removeAttribute('data-ai-target'); });
+    el.setAttribute('data-ai-target','1');
+    var label = describe(el);
+    clearHover();
+    setEnabled(false);
+    parent.postMessage({ source:'math-ai-inspector-tool', type:'selected', markedHtml: serialize(), label: label }, '*');
+  }, true);
+  window.addEventListener('message', function(e){
+    var d = e.data;
+    if(!d || d.source!=='math-ai-inspector') return;
+    if(d.type==='enable') setEnabled(true);
+    else if(d.type==='disable') setEnabled(false);
+  });
+})();
+</script>`;
+
+/**
+ * Fullscreen compatibility shim injected into the preview iframe.
+ *
+ * Generated tools call the standard `element.requestFullscreen()` /
+ * `document.exitFullscreen()` and listen for `fullscreenchange`. iPad/iOS
+ * Safari only exposes the webkit-prefixed variants (`webkitRequestFullscreen`,
+ * `webkitExitFullscreen`, `webkitfullscreenchange`, `webkitFullscreenElement`),
+ * so the unprefixed calls are `undefined` and the fullscreen button does
+ * nothing. This shim aliases the standard API onto the webkit one so the same
+ * generated code works on Safari too (covers both old saved tools and new ones).
+ */
+const FULLSCREEN_SHIM = `<script data-mathai-fsshim>
+(function(){
+  if (window.__mathaiFsShim) return;
+  window.__mathaiFsShim = true;
+  try {
+    var ep = Element.prototype;
+    if (!ep.requestFullscreen) {
+      ep.requestFullscreen = ep.webkitRequestFullscreen || ep.webkitRequestFullScreen || ep.mozRequestFullScreen || ep.msRequestFullscreen;
+    }
+    if (!document.exitFullscreen) {
+      document.exitFullscreen = document.webkitExitFullscreen || document.webkitCancelFullScreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    }
+    if (!('fullscreenElement' in document)) {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: function(){
+          return document.webkitFullscreenElement || document.webkitCurrentFullScreenElement || document.mozFullScreenElement || document.msFullscreenElement || null;
+        }
+      });
+    }
+    ['webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(function(evt){
+      document.addEventListener(evt, function(){
+        try { document.dispatchEvent(new Event('fullscreenchange')); } catch(e){}
+      });
+    });
+  } catch(e){}
+})();
+</script>`;
+
+/** Inject the inspector + fullscreen shim just before </body> (or </html>) for preview. */
+function injectInspector(html: string | undefined): string | undefined {
+  if (!html) return undefined;
+  const scripts = `${FULLSCREEN_SHIM}${INSPECTOR_SCRIPT}`;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${scripts}</body>`);
+  if (/<\/html>/i.test(html)) return html.replace(/<\/html>/i, `${scripts}</html>`);
+  return html + scripts;
 }
 
 interface ToolboxConfigFromDB {
@@ -149,7 +270,12 @@ function MathDashboardContent() {
   const [aiToolKey, setAiToolKey] = useState<string | null>(null);
   const [hasSavedAiTool, setHasSavedAiTool] = useState(false);
   const [isSavingAiTool, setIsSavingAiTool] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveNameDraft, setSaveNameDraft] = useState("");
   const [isGeneratingAiTool, setIsGeneratingAiTool] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<{ markedHtml: string; label: string } | null>(null);
+  const aiToolIframeRef = useRef<HTMLIFrameElement>(null);
   const [isExtractingParams, setIsExtractingParams] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -591,6 +717,8 @@ function MathDashboardContent() {
       setHasSavedAiTool(false);
       setIsSavingAiTool(false);
       setIsGeneratingAiTool(false);
+      setSelectMode(false);
+      setPendingSelection(null);
       setPreviewUrl(null);
       hasSentInitial.current = false;
       setQuestionInput("");
@@ -715,6 +843,8 @@ function MathDashboardContent() {
       setHasSavedAiTool(true);
       setIsSavingAiTool(false);
       setIsGeneratingAiTool(false);
+      setSelectMode(false);
+      setPendingSelection(null);
       setPreviewUrl(null);
       hasSentInitial.current = false;
       setQuestionInput("");
@@ -789,6 +919,42 @@ function MathDashboardContent() {
     });
   }, [currentChatId, entryMode, hasUserQuestion, messages, previewUrl, question, selectedTool, status, type]);
 
+  // Receive selection events from the sandboxed preview iframe. Origin is
+  // opaque ("null") for sandboxed srcDoc, so we authenticate by contentWindow
+  // identity instead of comparing event.origin.
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.source !== aiToolIframeRef.current?.contentWindow) return;
+      const d = e.data as {
+        source?: string;
+        type?: string;
+        markedHtml?: string;
+        label?: string;
+        enabled?: boolean;
+      };
+      if (d?.source !== "math-ai-inspector-tool") return;
+      if (d.type === "selected" && d.markedHtml) {
+        setPendingSelection({ markedHtml: d.markedHtml, label: d.label || "選取的元素" });
+        setSelectMode(false);
+      } else if (d.type === "mode") {
+        setSelectMode(!!d.enabled);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((prev) => {
+      const next = !prev;
+      aiToolIframeRef.current?.contentWindow?.postMessage(
+        { source: "math-ai-inspector", type: next ? "enable" : "disable" },
+        "*"
+      );
+      return next;
+    });
+  }, []);
+
   function fileToDataURL(file: File): Promise<string> {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -802,6 +968,7 @@ function MathDashboardContent() {
     imageData?: string;
     currentHtml?: string | null;
     currentTitle?: string | null;
+    targetedEdit?: boolean;
   }) {
     setIsGeneratingAiTool(true);
 
@@ -814,6 +981,7 @@ function MathDashboardContent() {
           imageData: options.imageData,
           currentHtml: options.currentHtml,
           currentTitle: options.currentTitle,
+          targetedEdit: options.targetedEdit,
         }),
       });
 
@@ -832,6 +1000,9 @@ function MathDashboardContent() {
       setAiToolHtml(json.html ?? null);
       setAiToolTitle(json.title ?? null);
       setHasSavedAiTool(false);
+      // A fresh tool replaces any pending element selection.
+      setPendingSelection(null);
+      setSelectMode(false);
     } catch (err) {
       console.error("[generate-html] regenerate error:", err);
       // Keep the current preview if regeneration fails.
@@ -840,8 +1011,15 @@ function MathDashboardContent() {
     }
   }
 
-  async function saveAiTool() {
-    if (!aiToolHtml || !aiToolTitle || isSavingAiTool) return;
+  function openSaveDialog() {
+    if (!aiToolHtml || isSavingAiTool || isGeneratingAiTool) return;
+    setSaveNameDraft(aiToolTitle ?? "");
+    setSaveDialogOpen(true);
+  }
+
+  async function saveAiTool(name: string) {
+    const finalName = name.trim();
+    if (!aiToolHtml || !finalName || isSavingAiTool) return;
 
     setIsSavingAiTool(true);
     try {
@@ -850,7 +1028,7 @@ function MathDashboardContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           toolKey: aiToolKey,
-          title: aiToolTitle,
+          title: finalName,
           html: aiToolHtml,
           chatMessages: serializeMessages(),
         }),
@@ -860,9 +1038,10 @@ function MathDashboardContent() {
 
       const json = await res.json();
       setAiToolKey(json.toolKey ?? null);
+      setAiToolTitle(finalName);
       setHasSavedAiTool(true);
+      setSaveDialogOpen(false);
       window.dispatchEvent(new CustomEvent("dashboard:ai-tool-saved"));
-      alert("工具已保存");
     } catch {
       alert("保存失敗，請稍後再試。");
     } finally {
@@ -888,13 +1067,16 @@ function MathDashboardContent() {
     // In AI-tool mode, once a tool exists, every follow-up message also refines
     // it. Passing the current HTML/title makes the backend modify the existing
     // tool (its prompt branches on currentHtml) instead of building a new one.
+    // If the teacher has an element selected, send the marked HTML so the edit
+    // is confined to that element.
     if (entryMode === "ai-tool" && aiToolHtml) {
       const imageData = fileParts.find((p) => p.mediaType?.startsWith("image/"))?.url;
       void regenerateAiTool({
         prompt,
         imageData,
-        currentHtml: aiToolHtml,
+        currentHtml: pendingSelection?.markedHtml ?? aiToolHtml,
         currentTitle: aiToolTitle,
+        targetedEdit: !!pendingSelection,
       });
     }
 
@@ -1213,11 +1395,26 @@ function MathDashboardContent() {
                   <p className="text-[10px] font-semibold uppercase tracking-[1px] text-[#ababab]">AI generated tool</p>
                   <p className="text-sm font-semibold text-[#080808]">{aiToolTitle ?? "正在生成互動工具"}</p>
                 </div>
+                <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={selectMode ? "default" : "outline"}
+                  onClick={toggleSelectMode}
+                  disabled={!aiToolHtml || isGeneratingAiTool}
+                  title="選取工具中的某個部分，再用下方對話框描述要怎麼修改"
+                  className={selectMode
+                    ? "rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
+                    : "rounded-[4px] border-[#d8d8d8] bg-white text-[#080808] hover:bg-[#f7f7f7]"}
+                >
+                  <MousePointerClick className="size-4" />
+                  {selectMode ? "點選元素中…" : "選取修改"}
+                </Button>
                 <Button
                   type="button"
                   size="sm"
                   variant={hasSavedAiTool ? "outline" : "default"}
-                  onClick={saveAiTool}
+                  onClick={openSaveDialog}
                   disabled={!aiToolHtml || isSavingAiTool || isGeneratingAiTool}
                   className={hasSavedAiTool
                     ? "rounded-[4px] border-[#d8d8d8] bg-white text-[#080808] hover:bg-[#f7f7f7]"
@@ -1230,20 +1427,45 @@ function MathDashboardContent() {
                   )}
                   {hasSavedAiTool ? "已保存" : "保存"}
                 </Button>
+                </div>
               </div>
-              {isGeneratingAiTool || !aiToolHtml ? (
+              {!aiToolHtml ? (
+                /* Initial generation — there is nothing to keep on screen yet. */
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[#5a5a5a]">
                   <Loader2 className="size-8 animate-spin text-[#146ef5]" />
                   <span className="text-sm font-medium">AI 正在根據你的要求生成 HTML 工具...</span>
                 </div>
               ) : (
-                <iframe
-                  srcDoc={sanitizeAiToolHtml(aiToolHtml)}
-                  sandbox="allow-scripts"
-                  allow="fullscreen"
-                  className="h-full min-h-0 w-full rounded-b-[8px]"
-                  title={aiToolTitle ?? "AI Generated HTML Tool"}
-                />
+                /* When modifying an existing tool, keep the current HTML rendered
+                   until the new version arrives — only swap it out once
+                   regeneration completes, so the preview never goes blank. */
+                <div className="relative min-h-0 flex-1">
+                  <iframe
+                    ref={aiToolIframeRef}
+                    srcDoc={injectInspector(sanitizeAiToolHtml(aiToolHtml))}
+                    sandbox="allow-scripts"
+                    allow="fullscreen"
+                    allowFullScreen
+                    className="h-full min-h-0 w-full rounded-b-[8px]"
+                    title={aiToolTitle ?? "AI Generated HTML Tool"}
+                  />
+                  {isGeneratingAiTool && (
+                    <>
+                      {/* Pulsing blue ring around the whole preview */}
+                      <div className="pointer-events-none absolute inset-0 z-10 animate-pulse rounded-b-[8px] ring-4 ring-inset ring-[#146ef5]/70" />
+                      {/* Dimmed backdrop + clear status card */}
+                      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-b-[8px] bg-white/55 backdrop-blur-[2px]">
+                        <div className="flex flex-col items-center gap-3 rounded-[12px] border border-[#146ef5]/30 bg-white px-7 py-5 text-center shadow-[0_8px_30px_rgba(20,110,245,0.18)]">
+                          <Loader2 className="size-9 animate-spin text-[#146ef5]" />
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-semibold text-[#080808]">AI 正在修改工具中…</p>
+                            <p className="text-xs text-[#5a5a5a]">完成後會自動替換，原本的工具會先保留</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -1595,6 +1817,22 @@ function MathDashboardContent() {
         {/* Chat input */}
         <div className="border-t border-[#d8d8d8] px-3 py-3 bg-white">
           <form onSubmit={handleSubmit}>
+            {pendingSelection && (
+              <div className="mb-2 flex items-center gap-2 rounded-[6px] border border-[#146ef5]/30 bg-[#146ef5]/5 px-2.5 py-1.5 text-xs text-[#146ef5]">
+                <MousePointerClick className="size-3.5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate font-medium" title={pendingSelection.label}>
+                  將修改：{pendingSelection.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPendingSelection(null)}
+                  className="flex size-4 shrink-0 items-center justify-center rounded-full text-[#146ef5] hover:bg-[#146ef5]/15"
+                  title="取消選取"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            )}
             <div className="relative w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px]">
               {/* Image preview thumbnails */}
               {chatFiles.length > 0 && (
@@ -1620,7 +1858,9 @@ function MathDashboardContent() {
 
               <Textarea
                 ref={textareaRef}
-                placeholder={entryMode === "ai-tool" ? "針對這個工具繼續提問...（可直接粘貼圖片）" : "繼續提問...（可直接粘貼圖片）"}
+                placeholder={pendingSelection
+                  ? "描述要怎麼修改選取的部分...（可直接粘貼圖片）"
+                  : entryMode === "ai-tool" ? "針對這個工具繼續提問...（可直接粘貼圖片）" : "繼續提問...（可直接粘貼圖片）"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -1693,6 +1933,49 @@ function MathDashboardContent() {
         </div>
       </div>
       ))}
+
+      {/* Save dialog — asks the teacher to name the tool before saving */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>保存工具</DialogTitle>
+            <DialogDescription>請為這個 AI 生成的工具命名，方便日後在工具箱中尋找。</DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={saveNameDraft}
+            onChange={(e) => setSaveNameDraft(e.target.value)}
+            placeholder="請輸入工具名稱"
+            maxLength={80}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && saveNameDraft.trim() && !isSavingAiTool) {
+                e.preventDefault();
+                saveAiTool(saveNameDraft);
+              }
+            }}
+          />
+          <DialogFooter className="flex-row justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSaveDialogOpen(false)}
+              disabled={isSavingAiTool}
+              className="rounded-[4px] border-[#d8d8d8] bg-white text-[#080808] hover:bg-[#f7f7f7]"
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              onClick={() => saveAiTool(saveNameDraft)}
+              disabled={!saveNameDraft.trim() || isSavingAiTool}
+              className="rounded-[4px] bg-[#146ef5] text-white hover:bg-[#0055d4]"
+            >
+              {isSavingAiTool ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

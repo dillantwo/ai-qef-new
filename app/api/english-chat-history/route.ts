@@ -115,7 +115,7 @@ export async function POST(req: Request) {
           messages: Array.isArray(messages) ? messages : [],
         },
       },
-      { new: true, upsert: true },
+      { returnDocument: "after", upsert: true },
     );
 
     return Response.json({

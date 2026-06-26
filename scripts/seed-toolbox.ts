@@ -187,7 +187,7 @@ async function seed() {
     await ToolboxConfig.findOneAndUpdate(
       { type: config.type },
       config,
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
     console.log(`Upserted toolbox: ${config.type} (${config.label})`);
   }
