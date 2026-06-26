@@ -140,37 +140,65 @@ const INSPECTOR_SCRIPT = `<script data-mathai-inspector>
  * Fullscreen compatibility shim injected into the preview iframe.
  *
  * Generated tools call the standard `element.requestFullscreen()` /
- * `document.exitFullscreen()` and listen for `fullscreenchange`. iPad/iOS
- * Safari only exposes the webkit-prefixed variants (`webkitRequestFullscreen`,
- * `webkitExitFullscreen`, `webkitfullscreenchange`, `webkitFullscreenElement`),
- * so the unprefixed calls are `undefined` and the fullscreen button does
- * nothing. This shim aliases the standard API onto the webkit one so the same
- * generated code works on Safari too (covers both old saved tools and new ones).
+ * `document.exitFullscreen()` and listen for `fullscreenchange`. The preview
+ * iframe is sandboxed *without* `allow-same-origin`, and iPad/iOS Safari does
+ * not reliably grant the native Fullscreen API to an element inside such an
+ * iframe — so the unprefixed call is either `undefined` or silently rejected,
+ * and the fullscreen button does nothing on iPad.
+ *
+ * Instead of relying on the native API, this shim makes
+ * `element.requestFullscreen()` / `document.exitFullscreen()` post a message to
+ * the parent page, which expands the *iframe element itself* to fill the
+ * browser viewport (pseudo-fullscreen). This is deterministic across iPad, iOS
+ * and desktop. It also keeps `document.fullscreenElement` and the
+ * `fullscreenchange` event working so the tool's own button label stays in
+ * sync (covers both old saved tools and new ones).
  */
 const FULLSCREEN_SHIM = `<script data-mathai-fsshim>
 (function(){
   if (window.__mathaiFsShim) return;
   window.__mathaiFsShim = true;
+  var isFs = false;
+  function fire(){
+    try { document.dispatchEvent(new Event('fullscreenchange')); } catch(e){}
+    try { document.dispatchEvent(new Event('webkitfullscreenchange')); } catch(e){}
+  }
+  function post(type){
+    try { parent.postMessage({ source:'math-ai-fullscreen', type:type }, '*'); } catch(e){}
+  }
+  function enter(){ if(!isFs){ isFs = true; post('enter'); fire(); } return Promise.resolve(); }
+  function exit(){ if(isFs){ isFs = false; post('exit'); fire(); } return Promise.resolve(); }
   try {
     var ep = Element.prototype;
-    if (!ep.requestFullscreen) {
-      ep.requestFullscreen = ep.webkitRequestFullscreen || ep.webkitRequestFullScreen || ep.mozRequestFullScreen || ep.msRequestFullscreen;
+    ep.requestFullscreen = function(){ return enter(); };
+    ep.webkitRequestFullscreen = ep.requestFullscreen;
+    ep.webkitRequestFullScreen = ep.requestFullscreen;
+    ep.mozRequestFullScreen = ep.requestFullscreen;
+    ep.msRequestFullscreen = ep.requestFullscreen;
+    document.exitFullscreen = function(){ return exit(); };
+    document.webkitExitFullscreen = document.exitFullscreen;
+    document.webkitCancelFullScreen = document.exitFullscreen;
+    document.mozCancelFullScreen = document.exitFullscreen;
+    document.msExitFullscreen = document.exitFullscreen;
+    function defEl(name){
+      try {
+        Object.defineProperty(document, name, {
+          configurable: true,
+          get: function(){ return isFs ? document.documentElement : null; }
+        });
+      } catch(e){}
     }
-    if (!document.exitFullscreen) {
-      document.exitFullscreen = document.webkitExitFullscreen || document.webkitCancelFullScreen || document.mozCancelFullScreen || document.msExitFullscreen;
-    }
-    if (!('fullscreenElement' in document)) {
-      Object.defineProperty(document, 'fullscreenElement', {
-        configurable: true,
-        get: function(){
-          return document.webkitFullscreenElement || document.webkitCurrentFullScreenElement || document.mozFullScreenElement || document.msFullscreenElement || null;
-        }
-      });
-    }
-    ['webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(function(evt){
-      document.addEventListener(evt, function(){
-        try { document.dispatchEvent(new Event('fullscreenchange')); } catch(e){}
-      });
+    defEl('fullscreenElement');
+    defEl('webkitFullscreenElement');
+    defEl('webkitCurrentFullScreenElement');
+    defEl('mozFullScreenElement');
+    defEl('msFullscreenElement');
+    try { Object.defineProperty(document, 'fullscreenEnabled', { configurable:true, get:function(){ return true; } }); } catch(e){}
+    try { Object.defineProperty(document, 'webkitFullscreenEnabled', { configurable:true, get:function(){ return true; } }); } catch(e){}
+    // The parent tells us when fullscreen ends from its side (Esc key, etc.).
+    window.addEventListener('message', function(e){
+      var d = e.data; if(!d || d.source!=='math-ai-fullscreen-parent') return;
+      if(d.type==='exited'){ if(isFs){ isFs = false; fire(); } }
     });
   } catch(e){}
 })();
@@ -276,6 +304,7 @@ function MathDashboardContent() {
   const [selectMode, setSelectMode] = useState(false);
   const [pendingSelection, setPendingSelection] = useState<{ markedHtml: string; label: string } | null>(null);
   const aiToolIframeRef = useRef<HTMLIFrameElement>(null);
+  const [isToolFullscreen, setIsToolFullscreen] = useState(false);
   const [isExtractingParams, setIsExtractingParams] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -932,6 +961,14 @@ function MathDashboardContent() {
         label?: string;
         enabled?: boolean;
       };
+      // Fullscreen requests are routed through the parent because iPad/iOS
+      // Safari won't grant the native Fullscreen API to a sandboxed iframe.
+      // We expand the iframe element itself to fill the viewport instead.
+      if (d?.source === "math-ai-fullscreen") {
+        if (d.type === "enter") setIsToolFullscreen(true);
+        else if (d.type === "exit") setIsToolFullscreen(false);
+        return;
+      }
       if (d?.source !== "math-ai-inspector-tool") return;
       if (d.type === "selected" && d.markedHtml) {
         setPendingSelection({ markedHtml: d.markedHtml, label: d.label || "選取的元素" });
@@ -943,6 +980,25 @@ function MathDashboardContent() {
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
+
+  // Allow leaving pseudo-fullscreen with the Escape key, and keep the iframe's
+  // own fullscreen button label in sync by notifying it that we exited.
+  const exitToolFullscreen = useCallback(() => {
+    setIsToolFullscreen(false);
+    aiToolIframeRef.current?.contentWindow?.postMessage(
+      { source: "math-ai-fullscreen-parent", type: "exited" },
+      "*"
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!isToolFullscreen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") exitToolFullscreen();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isToolFullscreen, exitToolFullscreen]);
 
   const toggleSelectMode = useCallback(() => {
     setSelectMode((prev) => {
@@ -1446,7 +1502,9 @@ function MathDashboardContent() {
                     sandbox="allow-scripts"
                     allow="fullscreen"
                     allowFullScreen
-                    className="h-full min-h-0 w-full rounded-b-[8px]"
+                    className={isToolFullscreen
+                      ? "fixed inset-0 z-[2147483647] h-screen w-screen border-0 bg-white"
+                      : "h-full min-h-0 w-full rounded-b-[8px]"}
                     title={aiToolTitle ?? "AI Generated HTML Tool"}
                   />
                   {isGeneratingAiTool && (
