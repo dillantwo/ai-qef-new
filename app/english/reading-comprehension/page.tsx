@@ -49,9 +49,11 @@ const cycles: Cycle[] = [
       {
         id: "reading-3",
         label: "Reading 3",
-        title: "Coming soon",
-        description: "This reading is being prepared.",
-        available: false,
+        title: "Pip the Dragon",
+        description:
+          "A story about a kind dragon, a troublesome swan, and a village that learns not to judge by looks.",
+        href: "/english/reading-comprehension/reading-3",
+        available: true,
       },
     ],
   },
