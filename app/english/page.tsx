@@ -17,9 +17,9 @@ const topics = [
   },
   {
     id: "thank-you-letter",
-    label: "Gratitude Letter",
+    label: "Thank-you Letter",
     subtitle: "Writing Practice",
-    description: "Learn to draft sincere gratitude letters with proper structure, tone, and polite expressions.",
+    description: "Learn to draft sincere thank-you letters with proper structure, tone, and polite expressions.",
     icon: Landmark,
     color: "#00d722",
     available: true,

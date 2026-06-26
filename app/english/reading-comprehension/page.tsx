@@ -1,49 +1,95 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, BookOpen, Drama } from "lucide-react";
+import { ArrowRight, BookOpen, Lock } from "lucide-react";
 import Header from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 
-const modes = [
+type Reading = {
+  id: string;
+  label: string;
+  title: string;
+  description: string;
+  /** Where selecting this reading takes the student. Required when available. */
+  href?: string;
+  available: boolean;
+};
+
+type Cycle = {
+  id: string;
+  label: string;
+  readings: Reading[];
+};
+
+// Only Cycle 1 · Reading 1 has content today. Add an `href` and flip
+// `available` to true as new readings are authored.
+const cycles: Cycle[] = [
   {
-    id: "learning",
-    label: "Learn Reading Comprehension",
-    subtitle: "Guided Learning",
-    description:
-      "Learn skimming, scanning, and inference skills through interactive web examples and step-by-step practice.",
-    icon: BookOpen,
-    color: "#ff6b00",
+    id: "cycle-1",
+    label: "Cycle 1",
+    readings: [
+      {
+        id: "reading-1",
+        label: "Reading 1",
+        title: "Sunshine Ice-cream Webpage",
+        description:
+          "An ice-cream shop webpage with an advertisement and a comments section.",
+        href: "/english/reading-comprehension/modes",
+        available: true,
+      },
+      {
+        id: "reading-2",
+        label: "Reading 2",
+        title: "Amazing Animals",
+        description:
+          "An encyclopedia entry about two amazing animals: a sea creature and a far-north bird.",
+        href: "/english/reading-comprehension/reading-2",
+        available: true,
+      },
+      {
+        id: "reading-3",
+        label: "Reading 3",
+        title: "Coming soon",
+        description: "This reading is being prepared.",
+        available: false,
+      },
+    ],
   },
   {
-    id: "roleplay",
-    label: "AI Role-Play Practice",
-    subtitle: "Reciprocal Reading",
-    description:
-      "Choose your role and join a reciprocal reading discussion with AI, taking turns to summarise, question, and explain new words.",
-    icon: Drama,
-    color: "#146ef5",
+    id: "cycle-2",
+    label: "Cycle 2",
+    readings: [
+      {
+        id: "reading-1",
+        label: "Reading 1",
+        title: "Coming soon",
+        description: "This reading is being prepared.",
+        available: false,
+      },
+      {
+        id: "reading-2",
+        label: "Reading 2",
+        title: "Coming soon",
+        description: "This reading is being prepared.",
+        available: false,
+      },
+    ],
   },
 ];
 
 export default function EnglishReadingComprehensionLandingPage() {
   const router = useRouter();
 
-  function navigateToMode(modeId: string) {
-    if (modeId === "roleplay") {
-      router.push("/english/reading-comprehension/roleplay");
-      return;
-    }
-    if (modeId === "learning") {
-      router.push("/english/reading-comprehension/learning");
-    }
+  function selectReading(reading: Reading) {
+    if (!reading.available || !reading.href) return;
+    router.push(reading.href);
   }
 
   return (
     <>
       <Header backHref="/english" backLabel="Back to English" />
 
-      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+      <main className="relative flex flex-1 overflow-y-auto bg-white text-[#080808]">
         <div className="absolute inset-0 bg-[linear-gradient(165deg,_#ffffff_0%,_#f7fbff_52%,_#ffffff_100%)]" />
         <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(20,110,245,0.14),_transparent_48%)]" />
         <div className="absolute right-0 top-20 h-56 w-56 translate-x-1/4 rounded-full bg-[#146ef5]/10 blur-3xl" />
@@ -55,56 +101,83 @@ export default function EnglishReadingComprehensionLandingPage() {
                 Reading Comprehension
               </p>
               <h1 className="text-[34px] leading-[1.04] font-semibold tracking-[-0.03em] text-[#080808] sm:text-[40px]">
-                Choose how you want to learn
+                Choose a reading to begin
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-[#5a5a5a]">
-                Start with guided practice to learn reading comprehension skills, or jump straight into an AI role-play to reinforce what you have learned.
+                Pick a reading article first. Then you can learn reading comprehension skills with guided practice or join an AI role-play discussion.
               </p>
             </section>
 
-            <section className="grid gap-4 px-2 sm:px-0 md:grid-cols-2">
-              {modes.map(({ id, label, subtitle, description, icon: Icon, color }) => (
-                <button
-                  key={id}
-                  onClick={() => navigateToMode(id)}
-                  className="group relative flex min-h-[320px] cursor-pointer flex-col overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white p-6 text-left transition duration-200 hover:translate-x-[6px] hover:-translate-y-[2px] hover:border-[#080808]"
-                >
-                  <div
-                    className="absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl"
-                    style={{ backgroundColor: `${color}22` }}
-                  />
+            {cycles.map((cycle) => (
+              <section key={cycle.id} className="space-y-4 px-2 sm:px-0">
+                <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-[#080808]">
+                  {cycle.label}
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {cycle.readings.map((reading) => {
+                    const Icon = reading.available ? BookOpen : Lock;
+                    return (
+                      <button
+                        key={reading.id}
+                        onClick={() => selectReading(reading)}
+                        disabled={!reading.available}
+                        className={`group relative flex min-h-[200px] flex-col overflow-hidden rounded-[8px] border p-6 text-left transition duration-200 ${
+                          reading.available
+                            ? "cursor-pointer border-[#d8d8d8] bg-white hover:translate-x-[6px] hover:-translate-y-[2px] hover:border-[#080808]"
+                            : "cursor-not-allowed border-dashed border-[#e2e2e2] bg-[#fafafa]"
+                        }`}
+                      >
+                        <div className="relative flex items-center justify-between gap-4">
+                          <div
+                            className={`flex h-11 w-11 items-center justify-center rounded-[4px] ${
+                              reading.available
+                                ? "bg-[#146ef5] text-white shadow-[6px_6px_0px_#080808]"
+                                : "bg-[#e2e2e2] text-[#9a9a9a]"
+                            }`}
+                          >
+                            <Icon className="size-5" />
+                          </div>
+                          {reading.available ? (
+                            <Badge className="rounded-[4px] border-0 bg-[#146ef5]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
+                              Live
+                            </Badge>
+                          ) : (
+                            <Badge className="rounded-[4px] border-0 bg-[#ededed] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[1px] text-[#9a9a9a]">
+                              Soon
+                            </Badge>
+                          )}
+                        </div>
 
-                  <div className="relative flex items-center justify-between gap-4">
-                    <div
-                      className="flex h-12 w-12 items-center justify-center rounded-[4px] text-white shadow-[6px_6px_0px_#080808]"
-                      style={{ backgroundColor: color }}
-                    >
-                      <Icon className="size-5" />
-                    </div>
-                    <Badge className="rounded-[4px] border-0 bg-[#146ef5]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[1px] text-[#146ef5]">
-                      Live
-                    </Badge>
-                  </div>
+                        <div className="relative mt-6 space-y-2">
+                          <p className="text-[12px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
+                            {reading.label}
+                          </p>
+                          <h3
+                            className={`text-[22px] leading-[1.1] font-semibold tracking-[-0.02em] ${
+                              reading.available ? "text-[#080808]" : "text-[#9a9a9a]"
+                            }`}
+                          >
+                            {reading.title}
+                          </h3>
+                          <p className="text-sm leading-6 text-[#5a5a5a]">
+                            {reading.description}
+                          </p>
+                        </div>
 
-                  <div className="relative mt-10 space-y-4">
-                    <p className="text-[12px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
-                      {subtitle}
-                    </p>
-                    <h2 className="text-[32px] leading-[1.04] font-semibold tracking-[-0.03em] text-[#080808]">
-                      {label}
-                    </h2>
-                    <p className="text-sm leading-7 text-[#5a5a5a]">{description}</p>
-                  </div>
-
-                  <div className="relative mt-auto border-t border-[#d8d8d8] pt-5">
-                    <span className="inline-flex items-center gap-2 text-sm font-medium text-[#080808] transition-transform duration-200 group-hover:translate-x-[6px]">
-                      Start
-                      <ArrowRight className="size-4 text-[#146ef5]" />
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </section>
+                        {reading.available && (
+                          <div className="relative mt-auto pt-5">
+                            <span className="inline-flex items-center gap-2 text-sm font-medium text-[#080808] transition-transform duration-200 group-hover:translate-x-[6px]">
+                              Select
+                              <ArrowRight className="size-4 text-[#146ef5]" />
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       </main>

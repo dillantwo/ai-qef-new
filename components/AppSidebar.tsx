@@ -44,6 +44,7 @@ import { deleteMathChatHistoryItem, getMathChatHistory, type MathChatHistoryItem
 import { getEnglishChatHistory, deleteEnglishChatHistoryItem, getEnglishStudents, getEnglishStudentChatHistory, type EnglishChatHistoryItem, type EnglishStudentSummary } from "@/lib/english-chat-history";
 import { getChineseChatHistory, deleteChineseChatHistoryItem, getChineseStudents, getChineseStudentChatHistory, getScienceStudents, getScienceStudentChatHistory, getHumanitiesStudents, getHumanitiesStudentChatHistory, type ChineseChatHistoryItem, type ChineseStudentSummary } from "@/lib/chinese-chat-history";
 import StudentHistoryDialog from "@/components/StudentHistoryDialog";
+import { VocabBank } from "@/components/VocabBank";
 
 const CHINESE_TOPIC_LABELS: Record<string, string> = {
   "scenery-description": "景物描寫",
@@ -166,6 +167,9 @@ export function AppSidebar() {
   const isHumanities = isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isChineseLikeChat = isChineseWriting || isScienceCircuit || isScienceAerospace || isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isEnglishDashboard = pathname.startsWith('/english/dashboard') || pathname.startsWith('/english/thankyouletter') || pathname.startsWith('/english/reading-comprehension');
+  // Reading-comprehension role-play pages get a draggable Word Bank.
+  const isReadingRoleplay =
+    pathname.startsWith('/english/reading-comprehension') && pathname.endsWith('/roleplay');
   const isTeacher = user?.role === "teacher";
   const isStudent = user?.role === "student";
 
@@ -620,6 +624,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
+        {/* Reading-comprehension role-play: draggable Word Bank, pinned at the bottom */}
+        {isReadingRoleplay && <VocabBank />}
+
         {/* Teacher: view each student's Chinese chat history (read-only popup) */}
         {isChineseWriting && isTeacher && (
           <Button

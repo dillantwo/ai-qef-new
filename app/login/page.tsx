@@ -37,7 +37,7 @@ const subjectHighlights = [
   },
   {
     name: "English Language",
-    description: "Location and direction、Gratitude letter、Reading Comprehension。",
+    description: "Location and direction、Thank-you Letter、Reading Comprehension。",
     icon: Languages,
   },
   {

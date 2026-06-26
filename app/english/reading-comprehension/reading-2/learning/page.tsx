@@ -4,34 +4,28 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Book,
+  Bird,
   BookOpen,
   BookOpenCheck,
   Brain,
   Eye,
   FastForward,
-  Globe,
+  Fish,
   GraduationCap,
-  Hash,
   HelpCircle,
   Info,
   Lightbulb,
   Link2,
-  MapPin,
-  Megaphone,
-  MessageCircle,
-  MessagesSquare,
   PenLine,
   Puzzle,
+  Replace,
   RotateCcw,
-  Scale,
   Search,
-  Network,
   Star,
   Trophy,
 } from "lucide-react";
 import Header from "@/components/Header";
-import { learningStyles } from "./styles";
+import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 
 type Section = "overview" | "part1" | "part2" | "summary";
@@ -45,12 +39,32 @@ interface ModalData {
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: Ad", icon: Megaphone },
-  { id: "part2", label: "Part 2: Comments", icon: MessagesSquare },
+  { id: "part1", label: "Part 1: From the Sea", icon: Fish },
+  { id: "part2", label: "Part 2: From the Far North", icon: Bird },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
-export default function EnglishReadingComprehensionLearningPage() {
+// Extra styles specific to the encyclopedia passage and dictionary entry.
+const reading2Styles = `
+.rc-learning .reading-doc { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.rc-learning .reading-doc.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
+.rc-learning .reading-doc .doc-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); padding: 14px 12px 8px; }
+.rc-learning .section-bar { color: #fff; font-weight: 700; text-align: center; padding: 8px 12px; font-size: 15px; letter-spacing: 0.3px; }
+.rc-learning .section-bar.sea { background: #12b5e5; }
+.rc-learning .section-bar.north { background: #8fb8e0; }
+.rc-learning .doc-text { font-size: 14px; line-height: 2; color: var(--text-primary); padding: 14px; margin: 0; }
+.rc-learning .doc-underline { text-decoration: underline; font-weight: 600; }
+.rc-learning .dict-entry { border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; background: var(--bg-article); }
+.rc-learning .dict-head { display: flex; align-items: baseline; gap: 8px; }
+.rc-learning .dict-word { font-weight: 800; font-size: 16px; color: var(--text-primary); }
+.rc-learning .dict-phon { font-size: 13px; color: var(--text-muted); }
+.rc-learning .dict-pos { font-style: italic; font-weight: 600; font-size: 13px; color: var(--accent-purple); margin-top: 8px; }
+.rc-learning .dict-list { margin: 4px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
+.rc-learning .dict-list li { margin-bottom: 6px; }
+.rc-learning .dict-eg { display: block; font-style: italic; color: var(--text-muted); font-size: 12px; }
+`;
+
+export default function EnglishReadingComprehensionReading2LearningPage() {
   const [section, setSection] = useState<Section>("overview");
   const [answered, setAnswered] = useState<Record<number, string>>({});
   const [hints, setHints] = useState<Record<number, boolean>>({});
@@ -179,7 +193,6 @@ export default function EnglishReadingComprehensionLearningPage() {
           ? "Good effort! Review the hints and try again."
           : "Keep practicing — use the hints to help you next time!";
 
-  // Render a clue span that glows when active.
   const clueClass = (id: string) =>
     `highlight-clue${activeClues.ids.includes(id) ? " glow" : ""}${
       activeClues.badge === id ? " clue-badge" : ""
@@ -187,10 +200,8 @@ export default function EnglishReadingComprehensionLearningPage() {
   const setClueRef = (id: string) => (el: HTMLElement | null) => {
     clueRefs.current[id] = el;
   };
-  const simActive = (part: "part1" | "part2") =>
-    `webpage-sim${
-      section === part && activeClues.ids.length > 0 ? " clue-active" : ""
-    }`;
+  const docActive = (part: "part1" | "part2") =>
+    `reading-doc${section === part && activeClues.ids.length > 0 ? " clue-active" : ""}`;
 
   function renderQuestions(part: "part1" | "part2") {
     const list = questions.filter((q) => q.part === part);
@@ -226,6 +237,7 @@ export default function EnglishReadingComprehensionLearningPage() {
             <div className={cardClass} key={q.id}>
               <div className="q-number">Question {q.id}</div>
               <div className="q-text">{q.text}</div>
+              {q.extra}
               <ul className="options-list">
                 {q.options.map((opt) => {
                   let cls = "option-btn";
@@ -300,13 +312,63 @@ export default function EnglishReadingComprehensionLearningPage() {
     );
   }
 
+  // Passage for Part 1 (the common cuttlefish). Clue spans glow when a question
+  // is hinted or answered.
+  const seaPassage = (
+    <div className={docActive("part1")}>
+      <div className="doc-title">Amazing Animals</div>
+      <div className="section-bar sea">From the Sea</div>
+      <p className="doc-text">
+        The common cuttlefish is a sea animal. It has eight arms and two longer arms called
+        tentacles. It can fire out the tentacles to catch its prey. It has three hearts and blue
+        blood. The common cuttlefish is an{" "}
+        <span className="doc-underline">intelligent</span> animal.{" "}
+        <span className={clueClass("q1")} ref={setClueRef("q1")}>
+          It can remember things and learn from its mistakes.
+        </span>{" "}
+        It is also a &quot;hiding master&quot;.{" "}
+        <span className={clueClass("q3")} ref={setClueRef("q3")}>
+          It can shoot ink when it is in danger.
+        </span>{" "}
+        <span className="doc-underline">This</span> helps it escape.{" "}
+        <span className={clueClass("q2")} ref={setClueRef("q2")}>
+          It can change its skin colour to look like the sand.
+        </span>{" "}
+        It can also hide in small spaces because it has a soft body.
+      </p>
+    </div>
+  );
+
+  // Passage for Part 2 (the bar-tailed godwit).
+  const northPassage = (
+    <div className={docActive("part2")}>
+      <div className="section-bar north">From the Far North</div>
+      <p className="doc-text">
+        The bar-tailed godwit is a bird with long beak and pointed wings. There are patterns of fine
+        bars on its tail.{" "}
+        <span className={clueClass("q4")} ref={setClueRef("q4")}>
+          It is well known for having one of the longest trips without stopping.
+        </span>{" "}
+        It always follows the warm weather. Every year, before winter comes, it leaves Alaska. It
+        flies south to enjoy the warm season in New Zealand. When the season changes, it returns to
+        Alaska.{" "}
+        <span className={clueClass("q5")} ref={setClueRef("q5")}>
+          There, it enjoys the warmest time of the year.
+        </span>{" "}
+        <span className={clueClass("q6")} ref={setClueRef("q6")}>
+          It often finds a dry, open place to nest and raise its babies.
+        </span>
+      </p>
+    </div>
+  );
+
   return (
     <>
-      <Header backHref="/english/reading-comprehension/modes" backLabel="Back" />
+      <Header backHref="/english/reading-comprehension/reading-2" backLabel="Back" />
 
       <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="rc-learning">
-          <style dangerouslySetInnerHTML={{ __html: learningStyles }} />
+          <style dangerouslySetInnerHTML={{ __html: learningStyles + reading2Styles }} />
 
           <div className="app-shell">
             {/* Header */}
@@ -314,7 +376,7 @@ export default function EnglishReadingComprehensionLearningPage() {
               <h1>
                 <BookOpenCheck className="size-6" /> Reading Scaffolding
               </h1>
-              <p>Cycle 1 — Reading 1: Sunshine Ice-cream Webpage</p>
+              <p>Cycle 1 — Reading 2: Amazing Animals (Encyclopedia)</p>
             </div>
 
             {/* Tabs */}
@@ -349,15 +411,11 @@ export default function EnglishReadingComprehensionLearningPage() {
                       </span>
                       About This Reading
                     </div>
-                    <p
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      The reading below is a <strong>webpage of an ice-cream shop</strong>. It has
-                      an advertisement and a comments section. Have a quick look at it!
+                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
+                      The reading below is an entry from an{" "}
+                      <strong>encyclopedia</strong> about animals. It has{" "}
+                      <strong>two parts</strong>: one animal from the sea and one from the far north.
+                      Have a quick look at it!
                     </p>
                   </div>
 
@@ -376,101 +434,53 @@ export default function EnglishReadingComprehensionLearningPage() {
                     </div>
                     <ul className="pre-reading-list">
                       <li>
-                        <HelpCircle className="size-4" /> How many parts are there in the webpage?
+                        <HelpCircle className="size-4" /> What is this entry of encyclopedia about?
                       </li>
                       <li>
-                        <HelpCircle className="size-4" /> Is the ice-cream shop in Hong Kong?
+                        <HelpCircle className="size-4" /> How many parts are there?
+                      </li>
+                      <li>
+                        <HelpCircle className="size-4" /> How many lines are there?
                       </li>
                     </ul>
                   </div>
 
-                  {/* Full article preview */}
+                  {/* Full passage preview */}
                   <div className="card">
                     <div className="card-title">
                       <span
                         className="icon"
                         style={{
                           background:
-                            "linear-gradient(135deg,var(--accent-pink),var(--accent-orange))",
+                            "linear-gradient(135deg,var(--accent-pink),var(--accent-mint))",
                         }}
                       >
-                        <Globe className="size-4" />
+                        <BookOpen className="size-4" />
                       </span>
-                      The Webpage
+                      The Encyclopedia Entry
                     </div>
-                    <div className="webpage-sim">
-                      <div className="webpage-topbar">
-                        <span className="browser-dot r" />
-                        <span className="browser-dot y" />
-                        <span className="browser-dot g" />
-                        <div className="url-bar">www.sunshineicecream.com.hk</div>
-                      </div>
-                      <div className="webpage-body">
-                        <div className="ad-header">
-                          <div className="ice-cream-deco">🌅🍦🏝️</div>
-                          <h2>Welcome to the Tropical Wonderland!</h2>
-                          <p className="ad-title">Enjoy the Tropical Sunshine Ice-cream</p>
-                          <p className="ad-subtitle">
-                            a mix of pineapple, banana, mango and passionfruit flavours
-                          </p>
-                        </div>
-                        <div className="price-grid">
-                          <div className="price-card">
-                            <div className="label">Minicup</div>
-                            <div className="price">$38</div>
-                          </div>
-                          <div className="price-card">
-                            <div className="label">Stickbar</div>
-                            <div className="price">$48</div>
-                          </div>
-                          <div className="price-card">
-                            <div className="label">Family Pack</div>
-                            <div className="price">$108</div>
-                          </div>
-                        </div>
-                        <div className="special-banner">
-                          <h3>Special Offer</h3>
-                          <p>
-                            (for the Tai Po branch only)
-                            <br />
-                            10–16 August
-                            <br />
-                            Buy 1 minicup and get 1 minicup FREE!
-                          </p>
-                        </div>
-                        <div className="gift-banner">
-                          🎁 <strong>FREE GIFT</strong> — Spend over $300 from 10–12 August to get a
-                          pair of sunglasses for FREE! 😎
-                        </div>
-                        <div style={{ marginTop: 14 }}>
-                          <div
-                            style={{
-                              fontWeight: 600,
-                              fontSize: 14,
-                              marginBottom: 6,
-                              color: "var(--text-primary)",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 5,
-                            }}
-                          >
-                            <MessageCircle
-                              className="size-3.5"
-                              style={{ color: "var(--accent-purple)" }}
-                            />
-                            Comments
-                          </div>
-                          {OVERVIEW_COMMENTS.map((c) => (
-                            <div className="comment-item" key={c.user}>
-                              <div className="comment-meta">
-                                <span className="comment-user">{c.user}</span>
-                                <span className="comment-date">{c.date}</span>
-                              </div>
-                              <p className="comment-text">{c.text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="reading-doc">
+                      <div className="doc-title">Amazing Animals</div>
+                      <div className="section-bar sea">From the Sea</div>
+                      <p className="doc-text">
+                        The common cuttlefish is a sea animal. It has eight arms and two longer arms
+                        called tentacles. It can fire out the tentacles to catch its prey. It has
+                        three hearts and blue blood. The common cuttlefish is an intelligent animal.
+                        It can remember things and learn from its mistakes. It is also a &quot;hiding
+                        master&quot;. It can shoot ink when it is in danger. This helps it escape. It
+                        can change its skin colour to look like the sand. It can also hide in small
+                        spaces because it has a soft body.
+                      </p>
+                      <div className="section-bar north">From the Far North</div>
+                      <p className="doc-text">
+                        The bar-tailed godwit is a bird with long beak and pointed wings. There are
+                        patterns of fine bars on its tail. It is well known for having one of the
+                        longest trips without stopping. It always follows the warm weather. Every
+                        year, before winter comes, it leaves Alaska. It flies south to enjoy the warm
+                        season in New Zealand. When the season changes, it returns to Alaska. There,
+                        it enjoys the warmest time of the year. It often finds a dry, open place to
+                        nest and raise its babies.
+                      </p>
                     </div>
                   </div>
 
@@ -495,16 +505,16 @@ export default function EnglishReadingComprehensionLearningPage() {
                         <Search className="size-3" /> Scanning
                       </span>
                       <span className="skill-tag">
-                        <Network className="size-3" /> Text Structure
-                      </span>
-                      <span className="skill-tag">
                         <Puzzle className="size-3" /> Inference
                       </span>
                       <span className="skill-tag">
-                        <Hash className="size-3" /> Numerical Reasoning
+                        <BookOpen className="size-3" /> Contextual Clues
                       </span>
                       <span className="skill-tag">
-                        <Book className="size-3" /> Contextual Clues
+                        <Link2 className="size-3" /> Reference Words
+                      </span>
+                      <span className="skill-tag">
+                        <Replace className="size-3" /> Synonyms
                       </span>
                     </div>
                   </div>
@@ -530,7 +540,6 @@ export default function EnglishReadingComprehensionLearningPage() {
             {section === "part1" && (
               <div className="section-panel">
                 <div className="split-layout">
-                  {/* LEFT: Article */}
                   <div className="split-left">
                     <div className="pane-label">
                       <BookOpen className="size-3.5" /> Reading Passage
@@ -541,84 +550,27 @@ export default function EnglishReadingComprehensionLearningPage() {
                           className="icon"
                           style={{
                             background:
-                              "linear-gradient(135deg,var(--accent-pink),var(--accent-orange))",
+                              "linear-gradient(135deg,var(--accent-blue),var(--accent-mint))",
                           }}
                         >
-                          <Megaphone className="size-4" />
+                          <Fish className="size-4" />
                         </span>
-                        Part 1: The Advertisement
+                        Part 1: From the Sea
                       </div>
                       <ul className="pre-reading-list">
                         <li>
-                          <HelpCircle className="size-4" /> Does the Tropical Sunshine Ice-cream
-                          taste fruity?
+                          <HelpCircle className="size-4" /> Is the cuttlefish from the sea?
                         </li>
                         <li>
-                          <HelpCircle className="size-4" /> Is there any special offer?
-                        </li>
-                        <li>
-                          <HelpCircle className="size-4" /> Is there any free gift?
+                          <HelpCircle className="size-4" /> To escape from danger, what can the
+                          cuttlefish shoot?
                         </li>
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className={simActive("part1")}>
-                        <div className="webpage-topbar">
-                          <span className="browser-dot r" />
-                          <span className="browser-dot y" />
-                          <span className="browser-dot g" />
-                          <div className="url-bar">www.sunshineicecream.com.hk</div>
-                        </div>
-                        <div className="webpage-body">
-                          <div className="ad-header">
-                            <div className="ice-cream-deco">🌅🍦🏝️</div>
-                            <h2>Welcome to the Tropical Wonderland!</h2>
-                            <p className="ad-title">Enjoy the Tropical Sunshine Ice-cream</p>
-                            <p className="ad-subtitle">
-                              a mix of{" "}
-                              <span className={clueClass("q1")} ref={setClueRef("q1")}>
-                                pineapple, banana, mango and passionfruit
-                              </span>{" "}
-                              flavours
-                            </p>
-                          </div>
-                          <div className="price-grid">
-                            <div className="price-card">
-                              <div className="label">Minicup</div>
-                              <div className="price">$38</div>
-                            </div>
-                            <div className="price-card">
-                              <div className="label">Stickbar</div>
-                              <div className="price">$48</div>
-                            </div>
-                            <div className="price-card">
-                              <div className="label">Family Pack</div>
-                              <div className="price">$108</div>
-                            </div>
-                          </div>
-                          <div className="special-banner">
-                            <h3>Special Offer</h3>
-                            <p>
-                              <span className={clueClass("q2")} ref={setClueRef("q2")}>
-                                (for the Tai Po branch only)
-                              </span>
-                              <br />
-                              <span className={clueClass("q3")} ref={setClueRef("q3")}>
-                                10–16 August
-                              </span>
-                              <br />
-                              Buy 1 minicup and get 1 minicup FREE!
-                            </p>
-                          </div>
-                          <div className="gift-banner">
-                            🎁 <strong>FREE GIFT</strong> — Spend over $300 from 10–12 August to get
-                            a pair of sunglasses for FREE! 😎
-                          </div>
-                        </div>
-                      </div>
+                      {seaPassage}
                     </div>
                   </div>
-                  {/* RIGHT: Questions */}
                   <div className="split-right">
                     <div className="pane-label questions">
                       <PenLine className="size-3.5" /> Questions
@@ -648,7 +600,6 @@ export default function EnglishReadingComprehensionLearningPage() {
             {section === "part2" && (
               <div className="section-panel">
                 <div className="split-layout">
-                  {/* LEFT: Comments */}
                   <div className="split-left">
                     <div className="pane-label">
                       <BookOpen className="size-3.5" /> Reading Passage
@@ -659,89 +610,26 @@ export default function EnglishReadingComprehensionLearningPage() {
                           className="icon"
                           style={{
                             background:
-                              "linear-gradient(135deg,var(--accent-purple),var(--accent-pink))",
+                              "linear-gradient(135deg,var(--accent-purple),var(--accent-blue))",
                           }}
                         >
-                          <MessagesSquare className="size-4" />
+                          <Bird className="size-4" />
                         </span>
-                        Part 2: The Comments
+                        Part 2: From the Far North
                       </div>
                       <ul className="pre-reading-list">
                         <li>
-                          <HelpCircle className="size-4" /> How many people have written comments on
-                          the webpage?
+                          <HelpCircle className="size-4" /> Is the bar-tailed godwit from the sea?
+                        </li>
+                        <li>
+                          <HelpCircle className="size-4" /> Can the bar-tailed godwit fly?
                         </li>
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className={simActive("part2")}>
-                        <div className="webpage-topbar">
-                          <span className="browser-dot r" />
-                          <span className="browser-dot y" />
-                          <span className="browser-dot g" />
-                          <div className="url-bar">www.sunshineicecream.com.hk — Comments</div>
-                        </div>
-                        <div className="webpage-body">
-                          <div className="comment-item">
-                            <div className="comment-meta">
-                              <span className="comment-user">Vicky2026</span>
-                              <span className="comment-date">20 Aug 2026</span>
-                            </div>
-                            <p className="comment-text">
-                              I like chocolate and strawberry flavours more. I prefer the{" "}
-                              <span className={clueClass("q4")} ref={setClueRef("q4")}>
-                                ordinary
-                              </span>{" "}
-                              flavours to the{" "}
-                              <span className={clueClass("q4b")} ref={setClueRef("q4b")}>
-                                strange
-                              </span>{" "}
-                              new mix.
-                            </p>
-                          </div>
-                          <div className="comment-item">
-                            <div className="comment-meta">
-                              <span className="comment-user">Rebecca01</span>
-                              <span className="comment-date">15 Aug 2026</span>
-                            </div>
-                            <p className="comment-text">
-                              <span className={clueClass("q6")} ref={setClueRef("q6")}>
-                                I&apos;m coming back for more!
-                              </span>
-                            </p>
-                          </div>
-                          <div className="comment-item">
-                            <div className="comment-meta">
-                              <span className="comment-user">Vera123</span>
-                              <span className="comment-date">11 Aug 2026</span>
-                            </div>
-                            <p className="comment-text">Smells good, but tastes...</p>
-                          </div>
-                          <div className="comment-item">
-                            <div className="comment-meta">
-                              <span className="comment-user">HappyPeter</span>
-                              <span className="comment-date">10 Aug 2026</span>
-                            </div>
-                            <p className="comment-text">
-                              I ordered a family pack online. When I opened the delivery bag…{" "}
-                              <span className={clueClass("q5")} ref={setClueRef("q5")}>
-                                Yuck!
-                              </span>{" "}
-                              <span className={clueClass("q5c")} ref={setClueRef("q5c")}>
-                                What a mess!
-                              </span>{" "}
-                              The ice-cream has already{" "}
-                              <span className={clueClass("q5b")} ref={setClueRef("q5b")}>
-                                melted
-                              </span>
-                              . It should be called &apos;Tropical Cyclone Ice-cream&apos; instead!
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      {northPassage}
                     </div>
                   </div>
-                  {/* RIGHT: Questions */}
                   <div className="split-right">
                     <div className="pane-label questions">
                       <PenLine className="size-3.5" /> Questions
@@ -753,8 +641,12 @@ export default function EnglishReadingComprehensionLearningPage() {
                           type="button"
                           className="restart-btn"
                           onClick={() => switchSection("summary")}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
+                          }}
                         >
-                          View Summary <Trophy className="size-4" />
+                          See Summary <ArrowRight className="size-4" />
                         </button>
                       </div>
                     )}
@@ -769,76 +661,97 @@ export default function EnglishReadingComprehensionLearningPage() {
                 <div className="narrow">
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
-                    <h2>Great Job!</h2>
-                    <p>You&apos;ve completed Reading 1 for Level 1!</p>
+                    <h2>Reading 2 Complete!</h2>
+                    <p>You have just completed Reading 2 — Amazing Animals.</p>
                     <div className="final-score">
-                      {score}/{TOTAL_QUESTIONS}
+                      {score} / {TOTAL_QUESTIONS}
                     </div>
-                    <p style={{ marginTop: 4, fontSize: 13, color: "var(--text-muted)" }}>
-                      {summaryMsg}
-                    </p>
+                    <p>{summaryMsg}</p>
+                    <button type="button" className="restart-btn" onClick={resetAll}>
+                      <RotateCcw className="size-4" /> Start Over
+                    </button>
                   </div>
+
                   <div className="card">
                     <div className="card-title">
                       <span
                         className="icon"
                         style={{
                           background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
+                            "linear-gradient(135deg,var(--accent-purple),var(--accent-blue))",
                         }}
                       >
                         <Star className="size-4" />
                       </span>
-                      Reading Skills You Practiced
+                      Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      {SKILLS_PRACTICED.map(({ color, icon: Icon, title, desc }) => (
-                        <li key={title}>
-                          <span className="skill-icon" style={{ background: color }}>
-                            <Icon className="size-3" />
-                          </span>
-                          <span>
-                            <strong>{title}</strong> — {desc}
-                          </span>
-                        </li>
-                      ))}
+                      <li>
+                        <span
+                          className="skill-icon"
+                          style={{ background: "var(--accent-blue)" }}
+                        >
+                          <FastForward className="size-3.5" />
+                        </span>
+                        <span>
+                          <strong>Skim</strong> the reading to get an overview and the main idea.
+                        </span>
+                      </li>
+                      <li>
+                        <span
+                          className="skill-icon"
+                          style={{ background: "var(--accent-mint)" }}
+                        >
+                          <Search className="size-3.5" />
+                        </span>
+                        <span>
+                          <strong>Scan</strong> to find the keyword and the information you need.
+                        </span>
+                      </li>
+                      <li>
+                        <span
+                          className="skill-icon"
+                          style={{ background: "var(--accent-orange)" }}
+                        >
+                          <BookOpen className="size-3.5" />
+                        </span>
+                        <span>
+                          Use <strong>contextual clues</strong> and find details to support your
+                          understanding.
+                        </span>
+                      </li>
+                      <li>
+                        <span
+                          className="skill-icon"
+                          style={{ background: "var(--accent-purple)" }}
+                        >
+                          <Link2 className="size-3.5" />
+                        </span>
+                        <span>
+                          Spot <strong>reference words</strong> (this, that, it) and{" "}
+                          <strong>synonyms</strong> (well known = famous).
+                        </span>
+                      </li>
+                      <li>
+                        <span
+                          className="skill-icon"
+                          style={{ background: "var(--accent-pink)" }}
+                        >
+                          <Puzzle className="size-3.5" />
+                        </span>
+                        <span>
+                          <strong>Make inferences</strong> by linking information and filling gaps
+                          with your background knowledge.
+                        </span>
+                      </li>
                     </ul>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
-                        }}
-                      >
-                        <Lightbulb className="size-4" />
-                      </span>
-                      Tips for Next Time
-                    </div>
-                    <ul className="summary-skills">
-                      {TIPS.map(({ color, icon: Icon, text }) => (
-                        <li key={text}>
-                          <span className="skill-icon" style={{ background: color }}>
-                            <Icon className="size-3" />
-                          </span>
-                          <span>{text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div style={{ textAlign: "center", marginTop: 6 }}>
-                    <button type="button" className="restart-btn" onClick={resetAll}>
-                      <RotateCcw className="size-4" /> Start Over
-                    </button>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Modal */}
+          {/* Feedback modal */}
           {modal && (
             <div className="modal-overlay" onClick={() => setModal(null)}>
               <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -850,7 +763,7 @@ export default function EnglishReadingComprehensionLearningPage() {
                   className={`modal-ok ${modal.ok ? "green" : "pink"}`}
                   onClick={() => setModal(null)}
                 >
-                  Got it!
+                  Got it
                 </button>
               </div>
             </div>
@@ -860,86 +773,3 @@ export default function EnglishReadingComprehensionLearningPage() {
     </>
   );
 }
-
-const OVERVIEW_COMMENTS = [
-  {
-    user: "Vicky2026",
-    date: "20 Aug 2026",
-    text: "I like chocolate and strawberry flavours more. I prefer the ordinary flavours to the strange new mix.",
-  },
-  { user: "Rebecca01", date: "15 Aug 2026", text: "I'm coming back for more!" },
-  { user: "Vera123", date: "11 Aug 2026", text: "Smells good, but tastes..." },
-  {
-    user: "HappyPeter",
-    date: "10 Aug 2026",
-    text: "I ordered a family pack online. When I opened the delivery bag… Yuck! What a mess! The ice-cream has already melted. It should be called 'Tropical Cyclone Ice-cream' instead!",
-  },
-];
-
-const SKILLS_PRACTICED = [
-  {
-    color: "var(--accent-blue)",
-    icon: FastForward,
-    title: "Skimming",
-    desc: "Get an overview and the main idea quickly.",
-  },
-  {
-    color: "var(--accent-mint)",
-    icon: Network,
-    title: "Text Structure",
-    desc: "Identify theme markers, structure and topic sentences.",
-  },
-  {
-    color: "var(--accent-orange)",
-    icon: Search,
-    title: "Scanning",
-    desc: "Find specific information you need in the reading.",
-  },
-  {
-    color: "var(--accent-pink)",
-    icon: Puzzle,
-    title: "Making Inferences",
-    desc: "Go beyond what is stated to understand implied meaning.",
-  },
-  {
-    color: "var(--accent-purple)",
-    icon: Hash,
-    title: "Numerical Reasoning",
-    desc: "Work out answers related to numbers and dates.",
-  },
-  {
-    color: "var(--accent-yellow)",
-    icon: Book,
-    title: "Contextual Inference",
-    desc: "Use surrounding words to figure out unknown meanings.",
-  },
-  {
-    color: "var(--accent-mint)",
-    icon: Link2,
-    title: "Coherence Inference",
-    desc: "Connect information to understand attitudes and feelings.",
-  },
-];
-
-const TIPS = [
-  {
-    color: "var(--accent-blue)",
-    icon: Eye,
-    text: "Activate your background knowledge about the topic before reading.",
-  },
-  {
-    color: "var(--accent-pink)",
-    icon: MapPin,
-    text: "Locate details in the reading to support your understanding.",
-  },
-  {
-    color: "var(--accent-purple)",
-    icon: RotateCcw,
-    text: "Reread relevant parts to confirm your interpretation.",
-  },
-  {
-    color: "var(--accent-mint)",
-    icon: Scale,
-    text: "Understand each answer choice and compare them to find the best one.",
-  },
-];

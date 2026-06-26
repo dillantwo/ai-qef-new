@@ -3,6 +3,7 @@ import { streamText } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
 import {
   getEnglishReadingComprehensionPrompt,
+  type ReadingId,
   type ReadingRole,
 } from "@/lib/english-prompts";
 import { after } from "next/server";
@@ -70,9 +71,10 @@ function toModelMessages(messages: InputMessage[]): ModelMessage[] {
 
 export async function POST(req: Request) {
   try {
-    const { messages, role } = (await req.json()) as {
+    const { messages, role, reading } = (await req.json()) as {
       messages: InputMessage[];
       role?: ReadingRole | null;
+      reading?: ReadingId | null;
     };
 
     const session = await getSession().catch(() => null);
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: azure(deploymentName),
-      system: getEnglishReadingComprehensionPrompt(role),
+      system: getEnglishReadingComprehensionPrompt(role, reading ?? "reading-1"),
       messages: toModelMessages(messages ?? []),
     });
 

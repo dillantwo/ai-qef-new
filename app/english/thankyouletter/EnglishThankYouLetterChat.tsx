@@ -41,12 +41,12 @@ type ChatMsg = {
 };
 
 const TOPIC_ID = "thank-you-letter";
-const TOPIC_LABEL = "Gratitude Letter";
+const TOPIC_LABEL = "Thank-you Letter";
 const SESSION_PREFIX = "english-thankyou";
 const API_ENDPOINT = "/api/english-thank-you-letter";
-const DEFAULT_TITLE = "Gratitude Letter Chat";
+const DEFAULT_TITLE = "Thank-you Letter Chat";
 const PLACEHOLDER = "Type your letter or question…";
-const EMPTY_HINT = "Start chatting with AI to practise your Gratitude Letter.";
+const EMPTY_HINT = "Start chatting with AI to practise your Thank-you Letter.";
 
 export default function EnglishThankYouLetterChat() {
   const makeSessionId = useCallback(

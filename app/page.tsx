@@ -38,7 +38,7 @@ const subjects = [
     id: "english",
     label: "英國語文科",
     labelEn: "English Language",
-    description: "Location and direction、Gratitude letter、Reading Comprehension。",
+    description: "Location and direction、Thank-you Letter、Reading Comprehension。",
     icon: Globe,
     href: "/english",
     available: true,

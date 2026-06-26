@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUp,
   Square,
@@ -17,7 +17,7 @@ import {
   PinOff,
 } from "lucide-react";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -28,6 +28,7 @@ import { basePath } from "@/lib/utils";
 import {
   READING_ROLES,
   READING_ROLE_LABELS,
+  type ReadingId,
   type ReadingRole,
 } from "@/lib/english-prompts";
 import {
@@ -84,15 +85,71 @@ function inferStudentRole(
   return null;
 }
 
+// The Vocab-Builder tags new words as Markdown links of the form
+// [word](vocab:word). We keep that scheme through react-markdown's url
+// transform and render the link as a draggable chip the student can drop into
+// the Word Bank in the sidebar.
+const vocabUrlTransform = (url: string) =>
+  url.startsWith("vocab:") ? url : defaultUrlTransform(url);
+
+function VocabChip({ word, children }: { word: string; children: ReactNode }) {
+  return (
+    <span
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/x-vocab-word", word);
+        e.dataTransfer.setData("text/plain", word);
+        e.dataTransfer.effectAllowed = "copy";
+      }}
+      className="not-prose inline-flex cursor-grab items-center gap-1 rounded-full border border-[#146ef5]/40 bg-[#146ef5]/10 px-2 py-0.5 text-[13px] font-semibold text-[#146ef5] no-underline active:cursor-grabbing"
+      title="Drag me to your Word Bank →"
+    >
+      {children}
+    </span>
+  );
+}
+
+function VocabAnchor({ href, children }: { href?: string; children?: ReactNode }) {
+  if (href && href.startsWith("vocab:")) {
+    const word = decodeURIComponent(href.slice("vocab:".length)).trim();
+    return <VocabChip word={word}>{children}</VocabChip>;
+  }
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="text-[#146ef5] underline">
+      {children}
+    </a>
+  );
+}
+
+const assistantMarkdownComponents = { a: VocabAnchor };
+
 const TOPIC_ID = "reading-comprehension";
-const TOPIC_LABEL = "Reading Comprehension";
 const SESSION_PREFIX = "english-reading";
 const API_ENDPOINT = "/api/english-reading-comprehension";
 const DEFAULT_TITLE = "Reading Comprehension Chat";
 const PLACEHOLDER = "Type your answer or question…";
 const EMPTY_HINT = "Start chatting with AI to practise your Reading Comprehension.";
 
-export default function EnglishReadingComprehensionChat() {
+export type EnglishReadingComprehensionChatProps = {
+  /** Which reading the discussion is based on. Drives the AI system prompt. */
+  reading?: ReadingId;
+  /** Label shown in the top bar. */
+  topicLabel?: string;
+  /** Where the "Back" link/button returns to. */
+  backHref?: string;
+  /**
+   * The reading shown as the first pinnable message when the student presses
+   * Start. Markdown — may contain an image or plain text.
+   */
+  startMessageText?: string;
+};
+
+export default function EnglishReadingComprehensionChat({
+  reading = "reading-1",
+  topicLabel = "Reading Comprehension",
+  backHref = "/english/reading-comprehension/modes",
+  startMessageText = `Here is our reading. Let's read it together!\n\n![Sunshine Ice-cream advertisement](${basePath}/english/reading-comprehension-article.png)`,
+}: EnglishReadingComprehensionChatProps = {}) {
   const makeSessionId = useCallback(
     () =>
       `${SESSION_PREFIX}-${
@@ -335,7 +392,7 @@ export default function EnglishReadingComprehensionChat() {
         const res = await fetch(`${basePath}${API_ENDPOINT}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: payloadMessages, sessionId, role: roleForRequest }),
+          body: JSON.stringify({ messages: payloadMessages, sessionId, role: roleForRequest, reading }),
           signal: controller.signal,
         });
 
@@ -405,7 +462,7 @@ export default function EnglishReadingComprehensionChat() {
         setStatus("idle");
       }
     },
-    [sessionId]
+    [sessionId, reading]
   );
 
   async function doSend() {
@@ -449,14 +506,14 @@ export default function EnglishReadingComprehensionChat() {
     const fullTextMsg: ChatMsg = {
       id: `a-fulltext-${Date.now()}`,
       role: "assistant",
-      text: `Here is our reading. Let's read it together!\n\n![Sunshine Ice-cream advertisement](${basePath}/english/reading-comprehension-article.png)`,
+      text: startMessageText,
     };
     setMessages([fullTextMsg]);
     await streamAssistant(
       [{ role: "user", text: "Let's begin our reading discussion." }],
       studentRole
     );
-  }, [studentRole, messages.length, isLoading, streamAssistant]);
+  }, [studentRole, messages.length, isLoading, streamAssistant, startMessageText]);
 
   function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) setChatFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
@@ -489,7 +546,7 @@ export default function EnglishReadingComprehensionChat() {
           <div className="flex items-center gap-1">
             <SidebarTrigger />
             <Link
-              href="/english/reading-comprehension"
+              href={backHref}
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
@@ -498,7 +555,7 @@ export default function EnglishReadingComprehensionChat() {
           </div>
           <div className="flex items-center gap-2">
             <BookOpen className="size-4 text-[#146ef5]" />
-            <span className="text-sm font-semibold text-[#080808]">{TOPIC_LABEL}</span>
+            <span className="text-sm font-semibold text-[#080808]">{topicLabel}</span>
           </div>
           <div className="flex items-center gap-2">
             {pinnedIds.length > 0 && (
@@ -603,7 +660,7 @@ export default function EnglishReadingComprehensionChat() {
                 <div className="min-w-0 flex-1">
                   {message.text && (
                     <div className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#fafafa] [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-2 [&_td]:py-1">
-                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]} urlTransform={vocabUrlTransform} components={assistantMarkdownComponents}>
                         {message.text}
                       </ReactMarkdown>
                     </div>
