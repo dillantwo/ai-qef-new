@@ -191,7 +191,7 @@ function MathDashboardContent() {
   const questionRecognitionRef = useRef<SpeechRecognition | null>(null);
 
   const isLoading = status === "submitted" || status === "streaming";
-  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
+  const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading && !isGeneratingAiTool;
 
   const selectedTool = toolbox?.selectedTool ?? null;
   const hideChatForTool = selectedTool === "journey-graph";
@@ -884,6 +884,19 @@ function MathDashboardContent() {
     const prompt = input.trim() || "（見圖片）";
 
     sendMessage({ text: prompt, ...(fileParts.length > 0 ? { files: fileParts } : {}) });
+
+    // In AI-tool mode, once a tool exists, every follow-up message also refines
+    // it. Passing the current HTML/title makes the backend modify the existing
+    // tool (its prompt branches on currentHtml) instead of building a new one.
+    if (entryMode === "ai-tool" && aiToolHtml) {
+      const imageData = fileParts.find((p) => p.mediaType?.startsWith("image/"))?.url;
+      void regenerateAiTool({
+        prompt,
+        imageData,
+        currentHtml: aiToolHtml,
+        currentTitle: aiToolTitle,
+      });
+    }
 
     setInput("");
     setChatFiles([]);
