@@ -27,6 +27,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { ChatAvatar } from "@/components/ChatAvatar";
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -247,6 +248,11 @@ export default function MathDashboardPage() {
 
 function MathDashboardContent() {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  // Only teachers may edit/save a tool. Students open shared tools read-only,
+  // so the "select to modify" and "save" controls are hidden for them. The
+  // backend also enforces this (saving/sharing returns 403 for students).
+  const isTeacher = user?.role === "teacher";
   const urlType = searchParams.get("type") || "other";
   const toolbox = useToolbox();
 
@@ -1452,6 +1458,8 @@ function MathDashboardContent() {
                   <p className="text-sm font-semibold text-[#080808]">{aiToolTitle ?? "正在生成互動工具"}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                {isTeacher && (
+                  <>
                 <Button
                   type="button"
                   size="sm"
@@ -1483,6 +1491,8 @@ function MathDashboardContent() {
                   )}
                   {hasSavedAiTool ? "已保存" : "保存"}
                 </Button>
+                  </>
+                )}
                 </div>
               </div>
               {!aiToolHtml ? (
