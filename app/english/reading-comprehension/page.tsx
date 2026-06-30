@@ -64,9 +64,11 @@ const cycles: Cycle[] = [
       {
         id: "reading-1",
         label: "Reading 1",
-        title: "Coming soon",
-        description: "This reading is being prepared.",
-        available: false,
+        title: "Story Day Poster",
+        description:
+          "A school poster for Story Day, with a dress code and a list of reading activities.",
+        href: "/english/reading-comprehension/cycle-2-reading-1",
+        available: true,
       },
       {
         id: "reading-2",
