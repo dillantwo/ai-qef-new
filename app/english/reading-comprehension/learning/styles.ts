@@ -31,22 +31,6 @@ export const learningStyles = `
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  .rc-learning {
-    --bg-card: #161b22;
-    --bg-article: #1c2128;
-    --text-primary: #f0f3f6;
-    --text-secondary: #b8c0c9;
-    --text-muted: #7a828c;
-    --border-light: #2a313a;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-    --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
-    --correct-bg: #0f2a1a;
-    --wrong-bg: #2a1416;
-    --hint-bg: #2a2014;
-  }
-}
 .rc-learning * { box-sizing: border-box; }
 
 .rc-learning .app-shell { width: 100%; max-width: 1400px; margin: 0 auto; padding: 12px clamp(16px, 4vw, 48px) 60px; position: relative; z-index: 1; }
@@ -95,7 +79,6 @@ export const learningStyles = `
 
 .rc-learning .webpage-sim { background: var(--bg-article); border-radius: var(--radius-sm); border: 2px solid var(--border-light); overflow: hidden; margin: 10px 0; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .webpage-topbar { background: linear-gradient(90deg, #f0f0f0, #e8e8e8); padding: 7px 12px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--border-light); }
-@media (prefers-color-scheme: dark) { .rc-learning .webpage-topbar { background: linear-gradient(90deg, #2a2538, #322d40); } }
 .rc-learning .browser-dot { width: 9px; height: 9px; border-radius: 50%; }
 .rc-learning .browser-dot.r { background: #ff6058; }
 .rc-learning .browser-dot.y { background: #ffbd2e; }
