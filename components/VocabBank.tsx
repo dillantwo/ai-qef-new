@@ -1,34 +1,88 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookMarked, Maximize2, Trash2, X } from "lucide-react";
 import { SidebarGroup, SidebarGroupLabel } from "@/components/ui/sidebar";
+import { basePath } from "@/lib/utils";
 
-// Words the student drags here are kept in localStorage so the bank survives
-// reloads. The drag source is the Vocab-Builder's tagged words in the chat
-// (see VocabChip in EnglishReadingComprehensionChat).
+// Words the student drags here are stored in MongoDB, tied to the logged-in
+// user (see app/api/english-vocab-bank/route.ts + models/VocabBank.ts), so the
+// bank syncs across devices. localStorage is kept as an offline fallback and to
+// migrate any words saved before the database existed. The drag source is the
+// Vocab-Builder's tagged words in the chat (see VocabChip in
+// EnglishReadingComprehensionChat).
 const STORAGE_KEY = "english-reading-vocab-bank";
+const ENDPOINT = `${basePath}/api/english-vocab-bank`;
+
+function readLocalWords(): string[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((w) => typeof w === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeWords(a: string[], b: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const word of [...a, ...b]) {
+    const key = word.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(word);
+  }
+  return out;
+}
 
 export function VocabBank() {
   const [words, setWords] = useState<string[]>([]);
   const [over, setOver] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // Skip the very first persist effect: it would just re-save what we loaded.
+  const skipNextSave = useRef(true);
 
-  // Load once on mount (client only) to avoid SSR hydration mismatch.
+  // Load once on mount (client only) to avoid SSR hydration mismatch. Prefer the
+  // database; fall back to localStorage when offline / not logged in, and
+  // migrate any local-only words up to the server on first load.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setWords(parsed.filter((w) => typeof w === "string"));
+    let cancelled = false;
+    (async () => {
+      const local = readLocalWords();
+      try {
+        const res = await fetch(ENDPOINT, { cache: "no-store" });
+        if (res.ok) {
+          const data = (await res.json()) as { words?: string[] };
+          const remote = Array.isArray(data.words) ? data.words : [];
+          const merged = mergeWords(remote, local);
+          if (!cancelled) {
+            setWords(merged);
+            // If local had words the server didn't, push the merged list back.
+            skipNextSave.current = merged.length === remote.length;
+          }
+        } else if (!cancelled) {
+          // Not logged in or server error: use local copy, don't try to save.
+          setWords(local);
+          skipNextSave.current = true;
+        }
+      } catch {
+        if (!cancelled) {
+          setWords(local);
+          skipNextSave.current = true;
+        }
+      } finally {
+        if (!cancelled) setLoaded(true);
       }
-    } catch {
-      // ignore malformed storage
-    }
-    setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Persist to both localStorage (offline cache) and the database.
   useEffect(() => {
     if (!loaded) return;
     try {
@@ -36,6 +90,20 @@ export function VocabBank() {
     } catch {
       // storage may be unavailable; keep the bank in memory only
     }
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    const controller = new AbortController();
+    fetch(ENDPOINT, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ words }),
+      signal: controller.signal,
+    }).catch(() => {
+      // Offline or not logged in: localStorage already holds the words.
+    });
+    return () => controller.abort();
   }, [words, loaded]);
 
   function addWord(raw: string) {
