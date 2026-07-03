@@ -37,6 +37,7 @@ import {
   type SavedChatMessage,
 } from "@/lib/english-chat-history";
 import { pickLocationPair, type LocationPair } from "@/lib/english-prompts";
+import LocationDirectionMap from "@/components/LocationDirectionMap";
 
 const API_ENDPOINT = "/api/english-location-direction";
 const TOPIC_ID = "location-direction";
@@ -50,14 +51,9 @@ type ChatMsg = {
   images?: ChatImage[];
 };
 
-// Map topic to its preview HTML file
-const previewMap: Record<string, string> = {
-  "location-direction": `${basePath}/english/preview-location-direction.html`,
-};
-
 // Builds the displayed task prompt for a concrete [A] → [B] pair.
 const taskTemplates: Record<number, (a: string, b: string) => string> = {
-  1: (a, b) => `Let us start Task 1. Look at the map. How can I go from ${a} to ${b}? Use prepositional phrases to describe the direction.`,
+  1: () => `Let us start Task 1. Look at the map. How can I go to the book shop from the post office? Use prepositional phrases to describe the direction.`,
   2: (a, b) => `Let us start Task 2. Look at the map. How can I go from ${a} to ${b}? Write short sentences with the prepositional phrases you learned.`,
   3: (a, b) => `Let us start Task 3. Look at the map. How can I go from ${a} to ${b}? Write more than one sentence and use linking words (First, Then, After that, Finally).`,
   4: (a, b) => `Let us start Task 4. Look at the map. How can I go from ${a} to ${b}? Write a complete paragraph with a topic sentence and linking words.`,
@@ -138,7 +134,7 @@ function EnglishDashboardContent() {
   const canSend = (!!input.trim() || chatFiles.length > 0) && !isLoading;
   const pinnedMessages = messages.filter((m) => pinnedIds.includes(m.id));
 
-  const previewSrc = previewMap[topic] || `${basePath}/english/preview-location-direction.html`;
+
 
   useEffect(() => {
     const container = chatScrollRef.current;
@@ -613,17 +609,12 @@ function EnglishDashboardContent() {
           )}
         </div>
 
-        {/* HTML Preview */}
+        {/* Interactive map preview */}
         <div className="flex-1 overflow-auto p-4 bg-transparent">
           <div
-            className="h-full mx-auto w-full rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] transition-all"
+            className="h-full mx-auto w-full overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] transition-all"
           >
-            <iframe
-              src={previewSrc}
-              className="h-full w-full rounded-[8px]"
-              sandbox="allow-scripts allow-same-origin"
-              title="HTML Preview"
-            />
+            <LocationDirectionMap task={selectedTask} />
           </div>
         </div>
       </div>

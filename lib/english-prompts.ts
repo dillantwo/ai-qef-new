@@ -133,11 +133,13 @@ const TASK_1 = `
 Opening sequence:
 1. Verify mode (if coming from Task 5, reset to default map mode)
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below. Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
-3. Ask: "Great! Let us start Task 1. Look at the map. How can I go from [A] to [B]? Use prepositional phrases to describe the direction."
+3. Ask: "Great! Let us start Task 1. Look at the map. How can I go to the [B] from the [A]? Use prepositional phrases to describe the direction."
+
+IMPORTANT — Task 1 route: The Task 1 map shows a MARKED route from the post office to the book shop (up West Street, then across at the zebra crossing). Do NOT use the shortest same-street path. The "Verified Correct Route" provided below is the ONLY ground truth for this task — verify the student strictly against it (including the zebra crossing and both right turns).
 
 When the student answers:
-1. Silently run the Route verification protocol with the SAME [A] and [B] you picked.
-2. Produce the correction table — left/right and turns must match the verified path. Mentioning the "walk past" buildings is OPTIONAL: do not add landmarks the student left out; only fix a landmark that is actually wrong.
+1. Silently run the Route verification protocol against the Verified Correct Route (NOT a self-traced shortest path).
+2. Produce the correction table — left/right and turns must match the verified route. Mentioning the "walk past" buildings is OPTIONAL: do not add landmarks the student left out; only fix a landmark that is actually wrong.
 
 Focus for this task:
 - Prepositional phrases only — complete sentences NOT required
@@ -253,7 +255,7 @@ export type LocationPair = { from: string; to: string };
 
 // Fixed [A] → [B] location pairs for Tasks 1–4 (Task 5 uses the student's own map).
 export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
-  1: { from: "Post Office", to: "Hospital" },
+  1: { from: "Post Office", to: "Book Shop" },
   2: { from: "Sports Centre", to: "Fire Station" },
   3: { from: "Book Shop", to: "Sports Centre" },
   4: { from: "Sports Centre", to: "Clinic" },
@@ -263,9 +265,11 @@ export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
 // in SHARED_CORE. Keyed by `${from}→${to}`. These are the canonical correct
 // answers the AI must verify the student against (no live tracing needed).
 export const LOCATION_FIXED_ROUTES: Record<string, string> = {
-  // Task 1 — same street (West Street), Post Office (south/west side) → Hospital (north/east side).
-  "Post Office→Hospital":
-    "Go out of the post office. Turn left. Walk along West Street. Walk past the train station and the book shop. The hospital is on your right.",
+  // Task 1 — Post Office → Book Shop. This follows the specific route DRAWN on
+  // the Task 1 map (up West Street, across at the zebra crossing), NOT the
+  // shortest same-street path. This exact answer is the ground truth.
+  "Post Office→Book Shop":
+    "Exit the post office and turn left. Walk straight ahead along West Street. Walk past the church. Turn right. Walk across the street at the zebra crossing. Turn right again. Walk past the hospital. The book shop is on your left.",
   // Task 2 — same street (North Street), Sports Centre (west) → Fire Station (east).
   "Sports Centre→Fire Station":
     "Go out of the sports centre. Turn left. Walk along North Street. Walk past the bank. The fire station is on your left.",
