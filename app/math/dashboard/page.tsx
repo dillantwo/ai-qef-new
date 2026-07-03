@@ -371,8 +371,8 @@ function MathDashboardContent() {
       "fraction-subtraction": "/math/FractionApp-Subtraction.html",
       "fraction-multiplication": "/math/FractionApp-Multiplication.html",
       "fraction-division": "/math/FractionApp-Division.html",
-      "fraction-comparison": "/math/FractionApp-comparison.html",
-      "fraction-expanding-simplifying": "/math/FractionApp-es.html",
+      "fraction-comparison": "/math/fraction-comparison",
+      "fraction-expanding-simplifying": "/math/fraction-es",
     };
 
     const expectedPath = expectedPathByTool[toolKey] ?? "/math/preview.html";
@@ -522,18 +522,24 @@ function MathDashboardContent() {
     const fractionOpHtml = fractionOpHtmlMap[selectedTool];
 
     // 直接帶參數的獨立工具頁（非「兩數運算」的版面），各自有專屬的參數組合
-    const standaloneHtmlMap: Record<string, string> = {
-      "fraction-expanding-simplifying": "FractionApp-es.html",
-      "fraction-comparison": "FractionApp-comparison.html",
-    };
+    const standaloneHtmlMap: Record<string, string> = {};
     const standaloneHtml = standaloneHtmlMap[selectedTool];
 
+    // 已改寫為 Next.js route 的獨立工具頁（TypeScript 重寫版）
+    const standaloneRouteMap: Record<string, string> = {
+      "fraction-expanding-simplifying": "fraction-es",
+      "fraction-comparison": "fraction-comparison",
+    };
+    const standaloneRoute = standaloneRouteMap[selectedTool];
+
     const buildFallbackUrl = () =>
-      standaloneHtml
-        ? `${basePath}/math/${standaloneHtml}`
-        : fractionOpHtml
-          ? `${basePath}/math/${fractionOpHtml}`
-          : `${basePath}/math/preview.html`;
+      standaloneRoute
+        ? `${basePath}/math/${standaloneRoute}`
+        : standaloneHtml
+          ? `${basePath}/math/${standaloneHtml}`
+          : fractionOpHtml
+            ? `${basePath}/math/${fractionOpHtml}`
+            : `${basePath}/math/preview.html`;
 
     if (suppressHistoryAnalysisRef.current) {
       setIsExtractingParams(false);
@@ -576,14 +582,14 @@ function MathDashboardContent() {
             denominator: String(params.denominator ?? 8),
             mode: params.mode ?? "expand",
           });
-          // 傳遞目標分數（null/-1 表示空格，不傳該參數讓 FractionApp-es.html 顯示 □）
+          // 傳遞目標分數（null/-1 表示空格，不傳該參數讓 fraction-es 顯示 □）
           if (params.targetNumerator != null && params.targetNumerator !== -1) {
             qs.set("targetNum", String(params.targetNumerator));
           }
           if (params.targetDenominator != null && params.targetDenominator !== -1) {
             qs.set("targetDen", String(params.targetDenominator));
           }
-          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-es.html?${qs.toString()}`);
+          if (!cancelled) setPreviewUrl(`${basePath}/math/fraction-es?${qs.toString()}`);
         } else if (selectedTool === "fraction-comparison") {
           const qs = new URLSearchParams();
           const count = params.count === 3 ? 3 : 2;
@@ -601,7 +607,7 @@ function MathDashboardContent() {
             if (f.whole != null) qs.set(`whole${idx}`, String(f.whole));
             if (f.format) qs.set(`format${idx}`, String(f.format));
           }
-          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-comparison.html?${qs.toString()}`);
+          if (!cancelled) setPreviewUrl(`${basePath}/math/fraction-comparison?${qs.toString()}`);
         } else if (fractionOpHtml) {
           const qs = new URLSearchParams();
           // 分子默認 1（AI 回傳 0 通常代表純整數題目，0/1 顯示醜，改用 1）

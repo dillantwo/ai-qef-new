@@ -334,6 +334,11 @@ body { font-family: 'PingFang HK', 'Microsoft JhengHei', 'Noto Sans TC', sans-se
 .divider-thick { flex: 0 0 3px; background: var(--grid-dark); z-index: 3; }
 .divider-thin { flex: 0 0 1px; position: relative; z-index: 3; }
 .divider-thin .anim-line { position: absolute; top: 0; left: 0; width: 100%; transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
+/* Keyframe-based reveal for the subdivision lines. Using @keyframes (instead of a
+   toggled transition) guarantees the growth/shrink plays every time the line is
+   inserted, so students can actually watch the bar being split / merged. */
+@keyframes fracGrowDown { from { height: 0%; } to { height: 100%; } }
+@keyframes fracShrinkUp { from { height: 100%; } to { height: 0%; } }
 
 /* 數線樣式 — 視覺樣式已移至 number-line.css；此處只留各 app 專屬行為 */
 .number-line-wrapper { padding: 0 2px; margin-top: 5px; transition: width 0.3s ease, opacity 0.3s ease; }
@@ -1074,16 +1079,13 @@ function drawProcess(n1, d1, n2, d2, fnVal, fdVal, op, anim) {
     let html = '<div class="grid-overlay">';
     
     let maxFactor = Math.max(fnVal, fdVal);
-    let baseAnimDuration = 4.0;
-    let baseBgTimeout = 3800; 
+    let baseAnimDuration = 6.0;
     if (maxFactor > 3) {
-        baseAnimDuration = 2.0;
-        baseBgTimeout = 1800;
+        baseAnimDuration = 4.0;
     }
 
     const speedVal = parseFloat(document.getElementById('speed_slider').value);
     let animDuration = (baseAnimDuration / speedVal) + 's';
-    let bgTimeout = baseBgTimeout / speedVal;
 
     for(let i=1; i <= drawSegments; i++) {
         html += `<div class="segment"></div>`;
@@ -1096,8 +1098,11 @@ function drawProcess(n1, d1, n2, d2, fnVal, fdVal, op, anim) {
                 if (isMainLine || fdVal === 1) {
                     html += `<div class="divider-thick"></div>`;
                 } else {
-                    const hS = anim ? '0%' : '100%';
-                    html += `<div class="divider-thin"><div class="anim-line" style="height:${hS}; background: var(--accent); transition: height ${animDuration} cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;"></div></div>`;
+                    // 擴分：新的分割線由上往下「畫」出來，用深色確保在填色與底色上都看得見
+                    const animStyle = anim
+                        ? `height:100%; background: var(--grid-dark); animation: fracGrowDown ${animDuration} cubic-bezier(0.4, 0, 0.2, 1) both;`
+                        : `height:100%; background: var(--grid-dark);`;
+                    html += `<div class="divider-thin"><div class="anim-line" style="${animStyle}"></div></div>`;
                 }
             } else {
                 if (fdVal === 1) {
@@ -1105,24 +1110,17 @@ function drawProcess(n1, d1, n2, d2, fnVal, fdVal, op, anim) {
                 } else if (isMainLine) {
                     html += `<div class="divider-thick"></div>`;
                 } else {
-                    const hS = anim ? '100%' : '0%';
-                    html += `<div class="divider-thin"><div class="anim-line" style="height:${hS}; background: var(--grid-dark); transition: height ${animDuration} cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;"></div></div>`;
+                    // 約分：被合併掉的分割線由下往上「縮」回去消失
+                    const animStyle = anim
+                        ? `height:0%; background: var(--grid-dark); animation: fracShrinkUp ${animDuration} cubic-bezier(0.4, 0, 0.2, 1) both;`
+                        : `height:0%; background: var(--grid-dark);`;
+                    html += `<div class="divider-thin"><div class="anim-line" style="${animStyle}"></div></div>`;
                 }
             }
         }
     }
     html += '</div>';
     g.innerHTML = html;
-
-    if (anim && fdVal !== 1) {
-        setTimeout(() => {
-            const lines = g.querySelectorAll('.anim-line');
-            lines.forEach(l => {
-                l.style.height = (op === '*') ? '100%' : '0%';
-                if(op === '*') setTimeout(() => l.style.background = 'var(--grid-dark)', bgTimeout); 
-            });
-        }, 50);
-    }
 }
 
 window.onload = function() {
