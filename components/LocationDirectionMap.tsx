@@ -55,7 +55,6 @@ type LocationDirectionMapProps = {
 export default function LocationDirectionMap({ task }: LocationDirectionMapProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLImageElement>(null);
-  const sideRef = useRef<HTMLDivElement>(null);
 
   // Sprite position as a percentage of the map (matches the original 5%..95%).
   const [spriteX, setSpriteX] = useState(() => startFor(task).x);
@@ -70,9 +69,9 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
     setFacing(start.facing);
   }, [task]);
 
-  // Pixel sizes derived from the rendered map width.
+  // Sprite size is derived from the rendered map width; the control buttons
+  // size themselves via CSS (see the grid below) so they always fit the column.
   const [spriteSize, setSpriteSize] = useState({ width: 0, height: 0 });
-  const [buttonSize, setButtonSize] = useState({ size: 0, fontSize: 0 });
 
   const move = useCallback((direction: Direction) => {
     setFacing(direction);
@@ -98,21 +97,6 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
     if (!mapWidth) return;
     const width = mapWidth / 15;
     setSpriteSize({ width, height: width * 2 });
-
-    // Sizing the buttons off the map alone can make them wider than the side
-    // column on small screens, so they spill over the map. When the side
-    // column is present, cap the size so the 3-button row (buttons + gaps)
-    // always fits inside it. The gap is ~0.45x a button, so a row of three is
-    // roughly 3 + 2 * 0.45 = 3.9 button widths.
-    let size = mapWidth / 12;
-    const sideWidth = sideRef.current?.offsetWidth ?? 0;
-    if (sideWidth) {
-      const fitToColumn = (sideWidth * 0.92) / 3.9;
-      size = Math.min(size, fitToColumn);
-    }
-    // Keep them tappable on iPad but never oversized.
-    size = Math.max(34, Math.min(size, 64));
-    setButtonSize({ size, fontSize: size * 0.4 });
   }, []);
 
   useLayoutEffect(() => {
@@ -142,25 +126,23 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
     [move],
   );
 
-  // Space the buttons apart relative to their size so it scales with the map.
-  const controlGap = Math.max(8, buttonSize.size * 0.45);
+  // A 3-column grid: each button is 1fr of the side column, so the whole pad
+  // always fits inside it and scales with the screen (no overlap with the map).
   const controls = (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
+        width: "100%",
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "12%",
         alignItems: "center",
-        gap: controlGap,
+        justifyItems: "center",
       }}
     >
-      <div style={{ display: "flex", gap: controlGap, alignItems: "center" }}>
-        <ControlButton size={buttonSize} label="↑" onPress={() => move("up")} />
-      </div>
-      <div style={{ display: "flex", gap: controlGap, alignItems: "center" }}>
-        <ControlButton size={buttonSize} label="←" onPress={() => move("left")} />
-        <ControlButton size={buttonSize} label="↓" onPress={() => move("down")} />
-        <ControlButton size={buttonSize} label="→" onPress={() => move("right")} />
-      </div>
+      <ControlButton label="↑" onPress={() => move("up")} style={{ gridColumn: 2, gridRow: 1 }} />
+      <ControlButton label="←" onPress={() => move("left")} style={{ gridColumn: 1, gridRow: 2 }} />
+      <ControlButton label="↓" onPress={() => move("down")} style={{ gridColumn: 2, gridRow: 2 }} />
+      <ControlButton label="→" onPress={() => move("right")} style={{ gridColumn: 3, gridRow: 2 }} />
     </div>
   );
 
@@ -215,7 +197,6 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
       </div>
 
       <div
-          ref={sideRef}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -235,13 +216,13 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
 }
 
 function ControlButton({
-  size,
   label,
   onPress,
+  style,
 }: {
-  size: { size: number; fontSize: number };
   label: string;
   onPress: () => void;
+  style?: React.CSSProperties;
 }) {
   return (
     <button
@@ -252,9 +233,12 @@ function ControlButton({
         onPress();
       }}
       style={{
-        width: size.size,
-        height: size.size,
-        fontSize: size.fontSize,
+        // Fill the grid cell and stay square; this makes the size adapt to the
+        // side column (and therefore the screen) without ever overflowing.
+        width: "100%",
+        aspectRatio: "1 / 1",
+        // Clamp keeps the glyph readable on small screens and big on iPad.
+        fontSize: "clamp(14px, 1.8vw, 26px)",
         backgroundColor: "rgba(76, 175, 80, 0.9)",
         border: "2px solid rgba(255, 255, 255, 0.8)",
         borderRadius: 8,
@@ -266,6 +250,7 @@ function ControlButton({
         justifyContent: "center",
         boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
         WebkitTapHighlightColor: "transparent",
+        ...style,
       }}
     >
       {label}
