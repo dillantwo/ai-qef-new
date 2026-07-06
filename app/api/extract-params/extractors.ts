@@ -156,6 +156,64 @@ const fractionComparison: Extractor = {
   },
 };
 
+// ---------- Fraction: 整數部分（因數分解 / 排列） ----------
+const fractionInteger: Extractor = {
+  schema: z.object({
+    num: z
+      .number()
+      .int()
+      .min(1)
+      .max(999)
+      .describe("要分解成因數排列的整數（1–999）"),
+    mode: z
+      .enum(["explore", "all"])
+      .describe("explore=互動探索（預設）、all=直接顯示全部因數排列"),
+  }),
+  system: `你是一位數學題目參數提取專家。從題目中提取「整數部分（因數分解／排列）」所需的參數。
+
+注意事項：
+- num 是題目要探討的整數（例如「把 12 排成長方形」→ num=12），範圍 1–999
+- 若題目要求「列出所有排列／所有因數組合」，mode 設為 "all"；否則預設 "explore"
+- 如果題目是圖片，請從圖片中識別題目`,
+  buildUserMessage: ({ question }) =>
+    `請從以下題目提取整數因數排列的參數。題目：${question || "（見圖片）"}`,
+  validate: (v) => {
+    if (v.num < 1) {
+      throw new Error("num 必須大於 0");
+    }
+    return v;
+  },
+};
+
+// ---------- Fraction: 整數與分數互換 ----------
+const fractionConverting: Extractor = {
+  schema: z.object({
+    whole: z.number().int().min(0).describe("整數部分（沒有則為 0）"),
+    num: z.number().int().min(0).describe("分子（純整數時為 0）"),
+    den: z.number().int().min(1).describe("分母（純整數時為 1）"),
+    mode: z
+      .enum(["whole", "fraction", "mixed"])
+      .describe("whole=整數、fraction=分數（真/假分數）、mixed=帶分數"),
+  }),
+  system: `你是一位數學題目參數提取專家。從題目中提取「整數與分數互換」所需的參數。
+
+注意事項：
+- 帶分數要拆成整數部分與分數部分，例如 2¾ → whole=2, num=3, den=4, mode="mixed"
+- 真分數或假分數（沒有整數部分），whole=0, mode="fraction"，例如 7/4 → whole=0, num=7, den=4
+- 純整數，num=0, den=1, mode="whole"，例如 3 → whole=3, num=0, den=1
+- mode 依題目要呈現的數值型態決定
+- 分母（den）不可為 0
+- 如果題目是圖片，請從圖片中識別題目`,
+  buildUserMessage: ({ question }) =>
+    `請從以下題目提取整數與分數互換的參數。題目：${question || "（見圖片）"}`,
+  validate: (v) => {
+    if (v.den === 0) {
+      throw new Error("分母不能為 0");
+    }
+    return v;
+  },
+};
+
 const exactMatches: Record<string, Extractor> = {
   "fraction-expanding-simplifying": fractionExpandingSimplifying,
   "fraction-addition": fractionOperation,
@@ -163,6 +221,8 @@ const exactMatches: Record<string, Extractor> = {
   "fraction-multiplication": fractionOperation,
   "fraction-division": fractionOperation,
   "fraction-comparison": fractionComparison,
+  "fraction-integer": fractionInteger,
+  "fraction-converting": fractionConverting,
 };
 
 const prefixMatches: Array<{ prefix: string; extractor: Extractor }> = [

@@ -373,6 +373,8 @@ function MathDashboardContent() {
       "fraction-division": "/math/FractionApp-Division.html",
       "fraction-comparison": "/math/fraction-comparison",
       "fraction-expanding-simplifying": "/math/fraction-es",
+      "fraction-integer": "/math/FractionApp-Integer.html",
+      "fraction-converting": "/math/FractionApp-Converting.html",
     };
 
     const expectedPath = expectedPathByTool[toolKey] ?? "/math/preview.html";
@@ -440,29 +442,54 @@ function MathDashboardContent() {
 
   // Fetch AI-recommended tools
   const [recommendedToolKeys, setRecommendedToolKeys] = useState<string[]>([]);
+  const [isAnalyzingTools, setIsAnalyzingTools] = useState(false);
   useEffect(() => {
     if (suppressHistoryAnalysisRef.current) {
       setRecommendedToolKeys([]);
+      setIsAnalyzingTools(false);
       return;
     }
 
-    if (!question || !toolboxConfig?.tools.length) {
+    // Recommend across every visible math tool (all groups), not just the
+    // matched group. After the fraction group was split into 四則運算 / 分數概念,
+    // scoping recommendations to a single 4-tool subgroup often returned nothing
+    // and left the sidebar stuck on "正在分析題目...".
+    const mathConfigs = allToolboxConfigs.filter(
+      (c) => c.type !== "english" && c.type !== "chinese" && c.type !== "classical-chinese"
+    );
+    const candidateTools = mathConfigs.flatMap((c) => c.tools);
+
+    if (!question || candidateTools.length === 0) {
       setRecommendedToolKeys([]);
+      setIsAnalyzingTools(false);
       return;
     }
 
+    let cancelled = false;
+    setIsAnalyzingTools(true);
     fetch(`${basePath}/api/recommend-tools`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question,
-        tools: toolboxConfig.tools.map((t) => ({ key: t.key, label: t.label, sub: t.sub })),
+        tools: candidateTools.map((t) => ({ key: t.key, label: t.label, sub: t.sub })),
       }),
     })
       .then((res) => res.json())
-      .then((data) => setRecommendedToolKeys(data.recommendedKeys ?? []))
-      .catch(() => {});
-  }, [question, toolboxConfig]);
+      .then((data) => {
+        if (!cancelled) setRecommendedToolKeys(data.recommendedKeys ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendedToolKeys([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsAnalyzingTools(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [question, toolboxConfig, allToolboxConfigs]);
 
   // Register tools into sidebar context
   const register = toolbox?.register;
@@ -478,9 +505,10 @@ function MathDashboardContent() {
         question,
         questionImage,
         recommendedToolKeys,
+        isAnalyzingTools,
       });
     }
-  }, [register, toolboxConfig, allToolboxConfigs, question, questionImage, recommendedToolKeys]);
+  }, [register, toolboxConfig, allToolboxConfigs, question, questionImage, recommendedToolKeys, isAnalyzingTools]);
 
   // React to tool selection from sidebar
   useEffect(() => {
@@ -522,7 +550,10 @@ function MathDashboardContent() {
     const fractionOpHtml = fractionOpHtmlMap[selectedTool];
 
     // 直接帶參數的獨立工具頁（非「兩數運算」的版面），各自有專屬的參數組合
-    const standaloneHtmlMap: Record<string, string> = {};
+    const standaloneHtmlMap: Record<string, string> = {
+      "fraction-integer": "FractionApp-Integer.html",
+      "fraction-converting": "FractionApp-Converting.html",
+    };
     const standaloneHtml = standaloneHtmlMap[selectedTool];
 
     // 已改寫為 Next.js route 的獨立工具頁（TypeScript 重寫版）
@@ -608,6 +639,22 @@ function MathDashboardContent() {
             if (f.format) qs.set(`format${idx}`, String(f.format));
           }
           if (!cancelled) setPreviewUrl(`${basePath}/math/fraction-comparison?${qs.toString()}`);
+        } else if (selectedTool === "fraction-integer") {
+          const qs = new URLSearchParams();
+          // num 預設 12（可整齊排成長方形，示範效果佳），限制 1–999
+          const n = Number(params.num);
+          qs.set("num", String(Number.isFinite(n) && n >= 1 ? Math.min(Math.floor(n), 999) : 12));
+          // extractor 回傳 explore/all，HTML 用 mode=1/2
+          if (params.mode === "all") qs.set("mode", "2");
+          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-Integer.html?${qs.toString()}`);
+        } else if (selectedTool === "fraction-converting") {
+          const qs = new URLSearchParams();
+          if (params.whole != null) qs.set("whole", String(params.whole));
+          if (params.num != null) qs.set("num", String(params.num));
+          // 分母預設 1，避免 HTML 除零
+          qs.set("den", String(params.den && params.den !== 0 ? params.den : 1));
+          if (params.mode) qs.set("mode", String(params.mode));
+          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-Converting.html?${qs.toString()}`);
         } else if (fractionOpHtml) {
           const qs = new URLSearchParams();
           // 分子默認 1（AI 回傳 0 通常代表純整數題目，0/1 顯示醜，改用 1）
@@ -806,7 +853,7 @@ function MathDashboardContent() {
       if (questionFileInputRef.current) questionFileInputRef.current.value = "";
 
       if (detail.kind === "general") {
-        const nextType = detail.type ?? "fraction";
+        const nextType = detail.type ?? "fraction-operations";
         const nextQuestion = detail.question ?? detail.title;
         const shouldRestoreQuestion = Boolean(detail.hasUserQuestion && detail.question);
         restoredToolUrlRef.current = shouldRestoreQuestion ? detail.toolUrl ?? null : null;
@@ -840,12 +887,12 @@ function MathDashboardContent() {
       suppressHistoryAnalysisRef.current = !shouldRestoreQuestion || Boolean(detail.toolUrl);
       if (shouldRestoreQuestion) {
         try {
-          sessionStorage.setItem("dashboard-data", JSON.stringify({ type: detail.type ?? "fraction", question: detail.question }));
+          sessionStorage.setItem("dashboard-data", JSON.stringify({ type: detail.type ?? "fraction-operations", question: detail.question }));
         } catch {}
       } else {
         try { sessionStorage.removeItem("dashboard-data"); } catch {}
       }
-      setDashboardData(shouldRestoreQuestion ? { type: detail.type ?? "fraction", question: detail.question! } : null);
+      setDashboardData(shouldRestoreQuestion ? { type: detail.type ?? "fraction-operations", question: detail.question! } : null);
       setHasUserQuestion(shouldRestoreQuestion);
       setEntryMode("ai-tool");
       setAiToolHtml(null);
@@ -1337,7 +1384,7 @@ function MathDashboardContent() {
         }),
       });
 
-      let nextType = "fraction";
+      let nextType = "fraction-operations";
       let nextQuestion = questionInput.trim() || "（見圖片）";
       if (res.ok) {
         const json = await res.json();
@@ -1362,11 +1409,11 @@ function MathDashboardContent() {
       const fallbackQuestion = questionInput.trim() || "（見圖片）";
       sessionStorage.setItem(
         "dashboard-data",
-        JSON.stringify({ type: "fraction", question: fallbackQuestion })
+        JSON.stringify({ type: "fraction-operations", question: fallbackQuestion })
       );
       hasSentInitial.current = false;
       setHasUserQuestion(true);
-      setDashboardData({ type: "fraction", question: fallbackQuestion });
+      setDashboardData({ type: "fraction-operations", question: fallbackQuestion });
       setQuestionInput("");
       setQuestionFiles(null);
       setIsEditingQuestion(false);

@@ -19,6 +19,8 @@ import {
   ArrowLeftRight,
   ArrowUpDown,
   Box,
+  Grid3x3,
+  Repeat,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +48,8 @@ export const toolIconMap: Record<string, LucideIcon> = {
   ArrowLeftRight,
   ArrowUpDown,
   Box,
+  Grid3x3,
+  Repeat,
 };
 
 export interface ToolGroup {
@@ -60,6 +64,8 @@ interface ToolboxData {
   question: string;
   questionImage: string | null;
   recommendedToolKeys: string[];
+  /** True while the AI is still analyzing the question for tool recommendations. */
+  isAnalyzingTools: boolean;
 }
 
 interface ToolboxContextValue extends ToolboxData {
@@ -82,6 +88,7 @@ export function ToolboxProvider({ children }: { children: ReactNode }) {
     question: "",
     questionImage: null,
     recommendedToolKeys: [],
+    isAnalyzingTools: false,
   });
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
 

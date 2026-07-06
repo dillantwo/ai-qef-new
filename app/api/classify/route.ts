@@ -136,7 +136,8 @@ export async function POST(req: Request) {
 
   // Hardcoded fallback descriptions in case DB is empty or missing entries
   const fallbackDescriptions: Record<string, string> = {
-    fraction: "分數相關題目（分數加減乘除、通分、約分、帶分數運算、分數應用題等）",
+    "fraction-operations": "分數四則運算題目（分數加減乘除、通分、約分、帶分數運算、分數應用題等）",
+    "fraction-concept": "分數概念題目（分數比較大小、相等分數/擴分約分、整數與分數互換、整數的因數排列等）",
     algebra: "代數相關題目（方程式、未知數、代數運算等）",
     journey: "行程圖相關題目（距離-時間圖、描述每段旅程、停留、折返、平行與相交路線等）",
   };

@@ -174,7 +174,11 @@ export function AppSidebar() {
   const isStudent = user?.role === "student";
 
   const allToolGroups = toolbox?.allToolGroups ?? [];
-  const recommendedTools = tools.filter((t) => recommendedToolKeys.includes(t.key));
+  const isAnalyzingTools = toolbox?.isAnalyzingTools ?? false;
+  // Recommended tools may come from any group (e.g. 四則運算 vs 分數概念), so match
+  // against every available tool, not just the current group's `tools`.
+  const recommendCandidates = allToolGroups.length > 0 ? allToolGroups.flatMap((g) => g.tools) : tools;
+  const recommendedTools = recommendCandidates.filter((t) => recommendedToolKeys.includes(t.key));
   const [savedAiTools, setSavedAiTools] = useState<Array<{
     toolKey: string;
     title: string;
@@ -468,9 +472,13 @@ export function AppSidebar() {
                   />
                 ))}
               </SidebarMenuSub>
-            ) : (
+            ) : isAnalyzingTools ? (
               <p className="text-xs text-muted-foreground px-2 py-1 animate-pulse">
                 正在分析題目...
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground px-2 py-1">
+                沒有特別推薦的工具，請從下方選擇。
               </p>
             )}
           </SidebarGroup>
