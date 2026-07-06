@@ -26,9 +26,13 @@ const STYLES = `
   --grid-thin-color:rgba(44,62,80,0.5);
   font-family:'PingFang HK','Microsoft JhengHei','Noto Sans TC',sans-serif;
   background:transparent; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:20px;
+  /* When the viewport (or iframe) is smaller than the tool, allow scrolling to
+     every part of it instead of clipping. Centered flex children would
+     otherwise overflow unreachably to the left. */
+  overflow:auto; -webkit-overflow-scrolling:touch;
 }
 .fcmp-root *{ margin:0; padding:0; box-sizing:border-box; }
-.fcmp-root .container{ background:transparent; padding:1.5rem; max-width:1100px; width:100%; }
+.fcmp-root .container{ background:transparent; padding:1.5rem; max-width:1100px; width:100%; margin:0 auto; }
 
 /* nav */
 .fcmp-root .header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;
@@ -51,7 +55,7 @@ const STYLES = `
 /* input area */
 .fcmp-root .math-engine{ position:relative; display:flex; align-items:center; justify-content:center; gap:14px;
   margin:15px 0 30px 0; padding:30px 12px 45px 12px; border-radius:20px; background:#fdfdfd; border:2px solid #eee;
-  flex-wrap:nowrap; min-height:200px; }
+  flex-wrap:wrap; min-height:200px; }
 .fcmp-root .input-card{ position:relative; display:flex; align-items:center; justify-content:center; background:#fff;
   padding:14px 16px; border-radius:12px; border:3px solid #ccc; box-shadow:0 4px 6px rgba(0,0,0,0.05);
   touch-action:none; user-select:none; transition:0.2s; min-height:120px; flex-wrap:wrap; }
