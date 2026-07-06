@@ -53,7 +53,7 @@ type ChatMsg = {
 
 // Builds the displayed task prompt for a concrete [A] → [B] pair.
 const taskTemplates: Record<number, (a: string, b: string) => string> = {
-  1: () => `Let us start Task 1. Look at the map. How can I go to the book shop from the post office? Use prepositional phrases to describe the direction.`,
+  1: () => `Let us start Task 1. Look at the map. How can I go to the train station from the book shop? Use prepositional phrases to describe the direction.`,
   2: (a, b) => `Let us start Task 2. Look at the map. How can I go from ${a} to ${b}? Write short sentences with the prepositional phrases you learned.`,
   3: (a, b) => `Let us start Task 3. Look at the map. How can I go from ${a} to ${b}? Write more than one sentence and use linking words (First, Then, After that, Finally).`,
   4: (a, b) => `Let us start Task 4. Look at the map. How can I go from ${a} to ${b}? Write a complete paragraph with a topic sentence and linking words.`,

@@ -31,16 +31,28 @@ const FACING: Record<Direction, string> = {
   right: `${basePath}/english/facingEast.png`,
 };
 
-// All tasks share the same map. It has no compass baked into the image, so the
-// reserved side column (recreated compass + relocated controls) is always shown.
-const MAP_SRC = `${basePath}/english/task 1 map.png`;
+// Each task has its own map image. None have a compass baked into the image, so
+// the reserved side column (recreated compass + relocated controls) is always
+// shown.
+const DEFAULT_MAP_SRC = `${basePath}/english/task 1 map.png`;
+const MAP_SRC_BY_TASK: Record<number, string> = {
+  1: `${basePath}/english/task 1 map.png`,
+  2: `${basePath}/english/task 2 map.png`,
+};
+
+function mapSrcFor(task: number | null) {
+  return (task != null && MAP_SRC_BY_TASK[task]) || DEFAULT_MAP_SRC;
+}
 
 // Where the sprite starts for each task, as a percentage of the map image,
-// plus the direction it initially faces.
-// Task 1 begins inside the "post office" box (bottom-left) facing east.
+// plus the direction it initially faces (see START_BY_TASK below).
 const DEFAULT_START: { x: number; y: number; facing: Direction } = { x: 50, y: 50, facing: "up" };
 const START_BY_TASK: Record<number, { x: number; y: number; facing: Direction }> = {
-  1: { x: 15, y: 86, facing: "right" },
+  // Task 1 starts inside the book shop box (West Street, east side, middle row),
+  // facing the street; the student walks south to the train station.
+  1: { x: 40, y: 63, facing: "left" },
+  // Task 2 starts inside the post office box (bottom-left) facing east.
+  2: { x: 15, y: 86, facing: "right" },
 };
 
 function startFor(task: number | null) {
@@ -174,7 +186,7 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={mapRef}
-          src={MAP_SRC}
+          src={mapSrcFor(task)}
           alt="Map of a specific location"
           onLoad={updateSizes}
           style={{ width: "100%", display: "block" }}

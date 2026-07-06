@@ -135,11 +135,13 @@ Opening sequence:
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below. Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 1. Look at the map. How can I go to the [B] from the [A]? Use prepositional phrases to describe the direction."
 
-IMPORTANT — Task 1 route: The Task 1 map shows a MARKED route from the post office to the book shop (up West Street, then across at the zebra crossing). Do NOT use the shortest same-street path. The "Verified Correct Route" provided below is the ONLY ground truth for this task — verify the student strictly against it (including the zebra crossing and both right turns).
+Reference answer (INTERNAL — never reveal before the student attempts the task):
+"Go out of the book shop. Turn left. Walk along West Street. The train station is on your left."
+This reference answer is a GUIDE to the expected route. The student does NOT have to match it word-for-word — wording, sentence style, and mentioning (or skipping) the "walk past" landmarks are all flexible. BUT the DIRECTIONS must still be correct: every turn (left/right), the walking direction, the street names, and the final side (your left / your right) MUST match this reference route. If the student's turn or direction contradicts the reference (e.g. writes "turn right" when the route turns left), you MUST correct it in the table — do NOT accept a wrong turn just because the rest is fine.
 
 When the student answers:
-1. Silently run the Route verification protocol against the Verified Correct Route (NOT a self-traced shortest path).
-2. Produce the correction table — left/right and turns must match the verified route. Mentioning the "walk past" buildings is OPTIONAL: do not add landmarks the student left out; only fix a landmark that is actually wrong.
+1. Silently run the Route verification protocol against the reference answer above (same street — walk along West Street to the destination).
+2. Produce the correction table — left/right and turns must match the reference route. Mentioning the "walk past" buildings is OPTIONAL: do not add landmarks the student left out; only fix a landmark that is actually wrong.
 
 Focus for this task:
 - Prepositional phrases only — complete sentences NOT required
@@ -147,7 +149,7 @@ Focus for this task:
 - Starting location MUST match the task
 - Left/right MUST match your verified path (except "walk across" steps)
 - Capitalize sentence starts and add "."
-- Example: "go out post office" → "Go out of the post office."
+- Example: "go out book shop" → "Go out of the book shop."
 - Do NOT suggest prepositions or phrases before the student answers
 `;
 
@@ -158,8 +160,14 @@ Opening sequence:
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below. Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 2. Look at the map. How can I go from [A] to [B]? Write short sentences with the prepositional phrases you learned."
 
+IMPORTANT — Task 2 route: The map shows a MARKED route from the post office to the book shop (up West Street, then across at the zebra crossing). Do NOT use the shortest same-street path — verify against the reference answer below (including the zebra crossing and both right turns).
+
+Reference answer (INTERNAL — never reveal before the student attempts the task):
+"Exit the post office and turn left. Walk straight ahead along West Street. Walk past the church. Turn right. Walk across the street at the zebra crossing. Turn right again. Walk past the hospital. The bookshop is on your left."
+This reference answer is a GUIDE to the expected route. The student does NOT have to match it word-for-word — wording, sentence style, and mentioning (or skipping) the "walk past" landmarks are all flexible. BUT the DIRECTIONS must still be correct: every turn (left/right), the walking direction, the street names, the zebra crossing, and the final side (your left / your right) MUST match this reference route. In particular, the FIRST step out of the post office is "turn left" — if the student writes "turn right" there (or any turn/direction that contradicts the reference), you MUST correct it in the table. Do NOT accept a wrong turn just because the rest is fine.
+
 When the student answers:
-1. Silently run the Route verification protocol with the SAME [A] and [B].
+1. Silently run the Route verification protocol against the reference answer above (NOT a self-traced shortest path).
 2. Produce the correction table.
 
 Focus for this task:
@@ -228,6 +236,7 @@ After the student finishes Task 5: "Congratulations! You have completed all task
 
 export const ENGLISH_LOCATION_DIRECTION_PROMPTS: Record<number, string> = {
   1: SHARED_CORE + TASK_1 + POST,
+  // Task 2 is a copy of Task 1 (see TASK_2), just labeled "Task 2".
   2: SHARED_CORE + TASK_2 + POST,
   3: SHARED_CORE + TASK_3 + POST,
   4: SHARED_CORE + TASK_4 + POST,
@@ -255,8 +264,8 @@ export type LocationPair = { from: string; to: string };
 
 // Fixed [A] → [B] location pairs for Tasks 1–4 (Task 5 uses the student's own map).
 export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
-  1: { from: "Post Office", to: "Book Shop" },
-  2: { from: "Sports Centre", to: "Fire Station" },
+  1: { from: "Book Shop", to: "Train Station" },
+  2: { from: "Post Office", to: "Book Shop" },
   3: { from: "Book Shop", to: "Sports Centre" },
   4: { from: "Sports Centre", to: "Clinic" },
 };
@@ -265,8 +274,13 @@ export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
 // in SHARED_CORE. Keyed by `${from}→${to}`. These are the canonical correct
 // answers the AI must verify the student against (no live tracing needed).
 export const LOCATION_FIXED_ROUTES: Record<string, string> = {
-  // Task 1 — Post Office → Book Shop. This follows the specific route DRAWN on
-  // the Task 1 map (up West Street, across at the zebra crossing), NOT the
+  // Task 1 — same street (West Street), Book Shop (east side, middle) → Train
+  // Station (east side, south end). Walk south; the train station is the next
+  // building down on the same side, so there is nothing to walk past.
+  "Book Shop→Train Station":
+    "Go out of the book shop. Turn left. Walk along West Street. The train station is on your left.",
+  // Task 2 — Post Office → Book Shop. This follows the specific route DRAWN on
+  // the Task 2 map (up West Street, across at the zebra crossing), NOT the
   // shortest same-street path. This exact answer is the ground truth.
   "Post Office→Book Shop":
     "Exit the post office and turn left. Walk straight ahead along West Street. Walk past the church. Turn right. Walk across the street at the zebra crossing. Turn right again. Walk past the hospital. The book shop is on your left.",
