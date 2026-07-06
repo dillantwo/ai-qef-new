@@ -10,6 +10,8 @@ export interface ITool {
   border: string;
   hover: string;
   text: string;
+  /** Whether this individual tool is live. Defaults to true (backwards compatible). */
+  isActive: boolean;
 }
 
 export interface IToolboxConfig extends Document {
@@ -33,6 +35,7 @@ const ToolSchema = new Schema<ITool>(
     border: { type: String, required: true },
     hover: { type: String, required: true },
     text: { type: String, required: true },
+    isActive: { type: Boolean, default: true },
   },
   { _id: false }
 );

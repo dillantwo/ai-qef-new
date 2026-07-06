@@ -183,13 +183,19 @@ Opening sequence:
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below (this is a cross-street route). Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 3. Look at the map. How can I go from [A] to [B]? Write more than one sentence and use linking words."
 
+IMPORTANT — Task 3 route: The map shows a MARKED route from the church to the bank (cross West Street at the zebra crossing, then cross North Street at the zebra crossing). Do NOT use the shortest path — verify against the reference answer below (including both zebra crossings and every turn).
+
+Reference answer (INTERNAL — never reveal before the student attempts the task):
+"First, exit the church. Then turn left and walk a few steps. After that, walk across West Street at the zebra crossing. Then turn left and walk a few steps. Next, turn right into North Street. After that, walk across North Street at the zebra crossing. Next, turn right. Then walk along North Street. Walk past the sports centre. Finally, the bank is on your left."
+This reference answer is a GUIDE to the expected route. The student does NOT have to match it word-for-word — wording, sentence style, and mentioning (or skipping) the "walk past" landmarks are all flexible. BUT the DIRECTIONS must still be correct: every turn (left/right), the walking direction, the street names, the zebra crossings, and the final side (your left) MUST match this reference route. If the student's turn or direction contradicts the reference, you MUST correct it in the table — do NOT accept a wrong turn just because the rest is fine.
+
 When the student answers:
-1. Silently run the Route verification protocol with the SAME [A] and [B] (use intersections for cross-street routes).
+1. Silently run the Route verification protocol against the reference answer above with the SAME [A] and [B] (use intersections and the zebra crossings for this cross-street route).
 2. Produce the correction table.
 
 Focus for this task:
 - Everything from Task 2 PLUS linking words (First, Then, After that, Finally — no strict order between "Then" and "After that")
-- Add missing linking words in revisions, e.g. "Exit the Bank." → "First, exit the Bank."
+- Add missing linking words in revisions, e.g. "Exit the church." → "First, exit the church."
 - If asked about linking words, teach them briefly and simply
 `;
 
@@ -200,8 +206,14 @@ Opening sequence:
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below (this is a cross-street route). Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 4. Look at the map. How can I go from [A] to [B]? Write a complete paragraph with linking words."
 
+IMPORTANT — Task 4 route: The map shows a MARKED route from the post office to the clinic (up West Street, cross West Street at the zebra crossing, along North Street, then cross East Street at the zebra crossing). Do NOT use the shortest path — verify against the reference answer below (including both zebra crossings and every turn).
+
+Reference answer (INTERNAL — never reveal before the student attempts the task):
+"Here are the directions to go from the post office to the clinic. First, exit the post office. Then walk along West Street. Stop when you pass the entrance of the church. Next, walk across West Street at the zebra crossing. Then walk along North Street. Walk past the hospital. After that, turn right into East Street. Walk across East Street at the zebra crossing. Next, turn right and walk along East Street. Walk past the bakery. Finally, the clinic is on your left. It is at the end of East Street."
+This reference answer is a GUIDE to the expected route. The student does NOT have to match it word-for-word — wording, sentence style, and mentioning (or skipping) the "walk past" landmarks are all flexible. BUT the DIRECTIONS must still be correct: every turn (left/right), the walking direction, the street names, the zebra crossings, and the final side (your left) MUST match this reference route. If the student's turn or direction contradicts the reference, you MUST correct it in the table — do NOT accept a wrong turn just because the rest is fine.
+
 When the student answers:
-1. Silently run the Route verification protocol with the SAME [A] and [B].
+1. Silently run the Route verification protocol against the reference answer above with the SAME [A] and [B] (use intersections and the zebra crossings for this cross-street route).
 2. Produce the correction table.
 
 Focus for this task:
@@ -216,15 +228,23 @@ Focus for this task:
 
 const TASK_5 = `
 ## Current Task: Task 5 — Student's Own Map
-Opening message:
-"Great! Let us start Task 5. Can you read my map? Please:
+The student uploads their OWN map in the map panel on the left of the screen (NOT the classroom map). That uploaded image becomes the map, and it is also sent to you in the chat so you can read it.
+
+Opening message (BEFORE any image is uploaded):
+"Great! Let us start Task 5. Please:
 1. Draw a map of the neighborhood from your home to school.
-2. Upload your drawing to the chatbot."
+2. Upload your drawing using the map panel on the left."
+Then STOP and wait. Do NOT invent a map and do NOT ask a direction question until the student's image arrives.
+
+WHEN THE STUDENT'S MAP IMAGE ARRIVES:
+1. Read the uploaded map carefully. Identify the START (home), the DESTINATION (school), the streets, and the buildings/landmarks the student actually drew.
+2. Briefly and warmly describe what you see on THEIR map (A1–A2 level), naming a few real landmarks from the drawing so the student knows you understood it.
+3. Ask ONE direction question grounded in THEIR map, e.g. "How can I go from your home to school? Look at your map and describe the way." Use the real place names the student drew — never use the classroom map's buildings (post office, book shop, etc.) unless the student drew them.
 
 STRICT RULES:
 - Do NOT use the default classroom map for verification — this task is about the student's drawing
-- Work ONLY with the student's uploaded image
-- Describe the student's map simply (A1–A2 level)
+- Work ONLY with the student's uploaded image; verify every turn, street, and landmark against what is actually drawn
+- If the drawing is unclear (missing home, school, or path), politely ask the student to clarify or re-upload a clearer map
 - Still produce the correction table for any written directions the student gives
 - If the student returns to Tasks 1–4 (no image), immediately switch back to default map mode and resume route verification with the map structure
 `;
@@ -266,8 +286,8 @@ export type LocationPair = { from: string; to: string };
 export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
   1: { from: "Book Shop", to: "Train Station" },
   2: { from: "Post Office", to: "Book Shop" },
-  3: { from: "Book Shop", to: "Sports Centre" },
-  4: { from: "Sports Centre", to: "Clinic" },
+  3: { from: "Church", to: "Bank" },
+  4: { from: "Post Office", to: "Clinic" },
 };
 
 // Pre-verified model routes for each fixed pair, traced against the Map Structure
@@ -287,12 +307,19 @@ export const LOCATION_FIXED_ROUTES: Record<string, string> = {
   // Task 2 — same street (North Street), Sports Centre (west) → Fire Station (east).
   "Sports Centre→Fire Station":
     "Go out of the sports centre. Turn left. Walk along North Street. Walk past the bank. The fire station is on your left.",
-  // Task 3 — cross street, Book Shop (West Street, east side) → Sports Centre (North Street, north side).
-  "Book Shop→Sports Centre":
-    "Go out of the book shop. Turn right. Walk along West Street. Walk past the hospital. At the corner, turn right into North Street. The sports centre is on your left.",
-  // Task 4 — cross street, Sports Centre (North Street) → Clinic (East Street, south end).
-  "Sports Centre→Clinic":
-    "Go out of the sports centre. Turn left. Walk along North Street. Walk past the bank and the fire station. At the corner, turn right into East Street. Walk past the supermarket and the bakery. The clinic is on your left.",
+  // Task 3 — cross street, Church (West Street, west side) → Bank (North Street,
+  // north side). This follows the specific route DRAWN on the Task 3 map (cross
+  // West Street at the zebra crossing, then cross North Street at the zebra
+  // crossing), NOT the shortest path. This exact answer is the ground truth.
+  "Church→Bank":
+    "First, exit the church. Then turn left and walk a few steps. After that, walk across West Street at the zebra crossing. Then turn left and walk a few steps. Next, turn right into North Street. After that, walk across North Street at the zebra crossing. Next, turn right. Then walk along North Street. Walk past the sports centre. Finally, the bank is on your left.",
+  // Task 4 — cross street, Post Office (West Street, west side, south end) →
+  // Clinic (East Street, south end). This follows the specific route DRAWN on
+  // the Task 4 map (cross West Street at the zebra crossing, along North Street,
+  // then cross East Street at the zebra crossing), NOT the shortest path. This
+  // exact answer is the ground truth.
+  "Post Office→Clinic":
+    "Here are the directions to go from the post office to the clinic. First, exit the post office. Then walk along West Street. Stop when you pass the entrance of the church. Next, walk across West Street at the zebra crossing. Then walk along North Street. Walk past the hospital. After that, turn right into East Street. Walk across East Street at the zebra crossing. Next, turn right and walk along East Street. Walk past the bakery. Finally, the clinic is on your left. It is at the end of East Street.",
 };
 
 /**

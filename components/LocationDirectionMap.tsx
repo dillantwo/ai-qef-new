@@ -38,6 +38,8 @@ const DEFAULT_MAP_SRC = `${basePath}/english/task 1 map.png`;
 const MAP_SRC_BY_TASK: Record<number, string> = {
   1: `${basePath}/english/task 1 map.png`,
   2: `${basePath}/english/task 2 map.png`,
+  3: `${basePath}/english/task 3 map.png`,
+  4: `${basePath}/english/task 4 map.png`,
 };
 
 function mapSrcFor(task: number | null) {
@@ -53,6 +55,13 @@ const START_BY_TASK: Record<number, { x: number; y: number; facing: Direction }>
   1: { x: 40, y: 63, facing: "left" },
   // Task 2 starts inside the post office box (bottom-left) facing east.
   2: { x: 15, y: 86, facing: "right" },
+  // Task 3 starts inside the church box (West Street, west side, middle-north)
+  // facing the street; the student crosses to North Street to reach the bank.
+  3: { x: 15, y: 40, facing: "right" },
+  // Task 4 starts inside the post office box (West Street, west side, south end)
+  // facing the street; the student walks up to North Street then over to the
+  // clinic at the end of East Street.
+  4: { x: 15, y: 86, facing: "right" },
 };
 
 function startFor(task: number | null) {
@@ -62,11 +71,42 @@ function startFor(task: number | null) {
 type LocationDirectionMapProps = {
   /** The active task id, or null when no task is selected yet. */
   task: number | null;
+  /**
+   * Task 5 only: the data URL of the map the student uploaded. When set, it is
+   * used as the map image instead of a built-in map so the sprite/controls are
+   * composed on top of the student's own drawing.
+   */
+  customMapSrc?: string | null;
+  /**
+   * Task 5 only: called with the file the student picked in the upload area so
+   * the parent can turn it into the map and forward it to the chatbot.
+   */
+  onUploadMap?: (file: File) => void;
 };
 
-export default function LocationDirectionMap({ task }: LocationDirectionMapProps) {
+export default function LocationDirectionMap({
+  task,
+  customMapSrc,
+  onUploadMap,
+}: LocationDirectionMapProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLImageElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  // Task 5 shows the student's own uploaded map. Before they upload one we show
+  // an upload dropzone instead of a built-in map.
+  const isTask5 = task === 5;
+  const resolvedMapSrc = isTask5 ? customMapSrc ?? null : mapSrcFor(task);
+
+  const handlePickFile = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file && onUploadMap) onUploadMap(file);
+      // Allow re-selecting the same file later.
+      event.target.value = "";
+    },
+    [onUploadMap],
+  );
 
   // Sprite position as a percentage of the map (matches the original 5%..95%).
   const [spriteX, setSpriteX] = useState(() => startFor(task).x);
@@ -176,53 +216,124 @@ export default function LocationDirectionMap({ task }: LocationDirectionMapProps
         outline: "none",
       }}
     >
-      <div
-        style={{
-          position: "relative",
-          width: "66%",
-          maxWidth: 720,
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={mapRef}
-          src={mapSrcFor(task)}
-          alt="Map of a specific location"
-          onLoad={updateSizes}
-          style={{ width: "100%", display: "block" }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: `${spriteY}%`,
-            left: `${spriteX}%`,
-            transform: "translate(-50%, -50%)",
-            width: spriteSize.width,
-            height: spriteSize.height,
-            backgroundImage: `url('${FACING[facing]}')`,
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            zIndex: 10,
-          }}
-        />
-      </div>
+      {/* Hidden input reused by both the empty dropzone and the "change" button. */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePickFile}
+        style={{ display: "none" }}
+      />
 
-      <div
+      {isTask5 && !resolvedMapSrc ? (
+        // Task 5, no map yet: prompt the student to upload their own map image.
+        <button
+          type="button"
+          onClick={() => uploadInputRef.current?.click()}
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            flex: "0 0 auto",
-            width: "20%",
-            maxWidth: 200,
-            gap: 24,
+            gap: 12,
+            width: "72%",
+            maxWidth: 640,
+            aspectRatio: "3 / 2",
+            padding: 24,
+            border: "3px dashed #9cc3f5",
+            borderRadius: 16,
+            backgroundColor: "#f5f9ff",
+            color: "#2f6fd0",
+            cursor: "pointer",
+            textAlign: "center",
           }}
         >
-        <CompassIndicator />
-        {controls}
-      </div>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span style={{ fontSize: "clamp(15px, 1.6vw, 20px)", fontWeight: 700 }}>
+            Upload your own map
+          </span>
+          <span style={{ fontSize: "clamp(12px, 1.2vw, 15px)", fontWeight: 500, opacity: 0.8 }}>
+            Draw a map from your home to school, then click here to upload the picture.
+          </span>
+        </button>
+      ) : (
+        <>
+          <div
+            style={{
+              position: "relative",
+              width: "66%",
+              maxWidth: 720,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={mapRef}
+              src={resolvedMapSrc ?? mapSrcFor(task)}
+              alt={isTask5 ? "Your uploaded map" : "Map of a specific location"}
+              onLoad={updateSizes}
+              style={{ width: "100%", display: "block" }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: `${spriteY}%`,
+                left: `${spriteX}%`,
+                transform: "translate(-50%, -50%)",
+                width: spriteSize.width,
+                height: spriteSize.height,
+                backgroundImage: `url('${FACING[facing]}')`,
+                backgroundSize: "cover",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                zIndex: 10,
+              }}
+            />
+            {isTask5 && (
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  zIndex: 20,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#2f6fd0",
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  border: "1px solid #9cc3f5",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                }}
+              >
+                Change map
+              </button>
+            )}
+          </div>
+
+          <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "0 0 auto",
+                width: "20%",
+                maxWidth: 200,
+                gap: 24,
+              }}
+            >
+            <CompassIndicator />
+            {controls}
+          </div>
+        </>
+      )}
     </div>
   );
 }

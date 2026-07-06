@@ -60,7 +60,7 @@ const taskTemplates: Record<number, (a: string, b: string) => string> = {
 };
 
 const TASK_5_PROMPT =
-  "Let us start Task 5. Can you read my map? Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing to the chatbot.";
+  "Let us start Task 5. Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing using the map panel on the left.";
 
 const tasks = [
   { id: 1, label: "Task 1" },
@@ -93,6 +93,9 @@ function EnglishDashboardContent() {
   const [taskPrompt, setTaskPrompt] = useState<string | null>(null);
   const [locationPair, setLocationPair] = useState<LocationPair | null>(null);
   const [chatFiles, setChatFiles] = useState<File[]>([]);
+  // Task 5: the map image the student uploaded (shown in the map panel and sent
+  // to the chatbot so its questions relate to the student's own drawing).
+  const [task5Map, setTask5Map] = useState<ChatImage | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [chatVisible, setChatVisible] = useState(true);
   const [currentChatId, setCurrentChatId] = useState(() => createEnglishChatId());
@@ -191,6 +194,7 @@ function EnglishDashboardContent() {
     setSelectedTask(null);
     setTaskPrompt(null);
     setLocationPair(null);
+    setTask5Map(null);
     setPinnedIds([]);
     setShowPinned(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -230,6 +234,17 @@ function EnglishDashboardContent() {
       // (possibly stale) task prompt card on reload.
       setTaskPrompt(null);
       setLocationPair(null);
+      // For Task 5, restore the uploaded map from the last user image so the
+      // map panel shows the student's own drawing again.
+      if (detail.selectedTask === 5) {
+        const lastImage = [...restored]
+          .reverse()
+          .find((m) => m.role === "user" && m.images && m.images.length > 0)
+          ?.images?.[0];
+        setTask5Map(lastImage ?? null);
+      } else {
+        setTask5Map(null);
+      }
       setInput("");
       setChatFiles([]);
       setStatus("idle");
@@ -428,6 +443,7 @@ function EnglishDashboardContent() {
     // Reset the chat for the new task.
     setInput("");
     setChatFiles([]);
+    setTask5Map(null);
     setPinnedIds([]);
     setShowPinned(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -443,7 +459,7 @@ function EnglishDashboardContent() {
 
     // Hidden trigger so the assistant produces the opening instructions.
     const triggerText = id === 5
-      ? "Please start Task 5 now. Greet me warmly and give me the Task 5 instructions."
+      ? "Please start Task 5 now. Greet me warmly and tell me to draw a map from my home to school and upload it using the map panel on the left. Do NOT ask any direction question yet — wait until I upload my map."
       : `Please start Task ${id} now. Greet me warmly and ask me how to go from ${pair!.from} to ${pair!.to}, following the Task ${id} instructions.`;
 
     await runStream(assistantMsg.id, [{ role: "user", text: triggerText }], controller, { taskId: id, pair });
@@ -487,6 +503,45 @@ function EnglishDashboardContent() {
       taskId: selectedTaskRef.current,
       pair: locationPairRef.current,
     });
+  }
+
+  // Task 5: the student uploads their own map in the map panel. We show it as
+  // the map, add it to the conversation as an image, and let the chatbot ask a
+  // direction question based on that specific drawing.
+  async function handleTask5MapUpload(file: File) {
+    if (isLoading) return;
+    if (isListening) stopListening();
+
+    const dataUrl = await fileToDataURL(file);
+    const image: ChatImage = { mediaType: file.type, dataUrl, filename: file.name };
+    setTask5Map(image);
+
+    abortRef.current?.abort();
+
+    const userMsg: ChatMsg = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      text: "Here is my map. It shows the way from my home to school.",
+      images: [image],
+    };
+    const assistantMsg: ChatMsg = { id: `a-${Date.now()}`, role: "assistant", text: "" };
+
+    const nextMessages = [...messages, userMsg];
+    setMessages([...nextMessages, assistantMsg]);
+    setStatus("submitted");
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const payloadMessages: PayloadMessage[] = nextMessages.map((message) => ({
+      role: message.role,
+      text: message.text,
+      ...(message.images && message.images.length > 0
+        ? { images: message.images.map((img) => ({ mediaType: img.mediaType, data: img.dataUrl })) }
+        : {}),
+    }));
+
+    await runStream(assistantMsg.id, payloadMessages, controller, { taskId: 5, pair: null });
   }
 
   function handleChatFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -614,7 +669,11 @@ function EnglishDashboardContent() {
           <div
             className="h-full mx-auto w-full overflow-hidden rounded-[8px] border border-[#d8d8d8] bg-white shadow-[rgba(0,0,0,0)_0px_84px_24px,rgba(0,0,0,0.01)_0px_54px_22px,rgba(0,0,0,0.04)_0px_30px_18px,rgba(0,0,0,0.08)_0px_13px_13px,rgba(0,0,0,0.09)_0px_3px_7px] transition-all"
           >
-            <LocationDirectionMap task={selectedTask} />
+            <LocationDirectionMap
+              task={selectedTask}
+              customMapSrc={task5Map?.dataUrl ?? null}
+              onUploadMap={handleTask5MapUpload}
+            />
           </div>
         </div>
       </div>
