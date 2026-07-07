@@ -5,6 +5,16 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -138,23 +148,23 @@ export default function SchoolsPage() {
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border bg-background">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">學校</th>
-                <th className="px-4 py-3 font-medium">代碼</th>
-                <th className="px-4 py-3 font-medium">開通科目</th>
-                <th className="px-4 py-3 font-medium">使用者</th>
-                <th className="px-4 py-3 font-medium">狀態</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="px-4">學校</TableHead>
+                <TableHead className="px-4">代碼</TableHead>
+                <TableHead className="px-4">開通科目</TableHead>
+                <TableHead className="px-4">使用者</TableHead>
+                <TableHead className="px-4">狀態</TableHead>
+                <TableHead className="px-4" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {schools.map((s) => (
-                <tr key={s.id} className="border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{s.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.code}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={s.id}>
+                  <TableCell className="px-4 py-3 font-medium">{s.name}</TableCell>
+                  <TableCell className="px-4 py-3 text-muted-foreground">{s.code}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {s.enabledSubjects.length === 0 ? (
                         <span className="text-muted-foreground">—</span>
@@ -166,14 +176,14 @@ export default function SchoolsPage() {
                         ))
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.userCount}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-muted-foreground">{s.userCount}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <Badge variant={s.active ? "default" : "outline"}>
                       {s.active ? "啟用" : "停用"}
                     </Badge>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(s)}>
                         編輯
@@ -187,11 +197,11 @@ export default function SchoolsPage() {
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -203,11 +213,11 @@ export default function SchoolsPage() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">學校名稱</label>
+              <Label>學校名稱</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：聖保羅書院" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">學校代碼</label>
+              <Label>學校代碼</Label>
               <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -216,7 +226,7 @@ export default function SchoolsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">開通科目</label>
+              <Label>開通科目</Label>
               <div className="flex flex-wrap gap-2">
                 {SUBJECTS.map((s) => {
                   const on = subjects.includes(s.value);
@@ -238,14 +248,14 @@ export default function SchoolsPage() {
                 })}
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Switch
+                id="school-active"
                 checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+                onCheckedChange={(checked) => setActive(checked)}
               />
-              啟用學校
-            </label>
+              <Label htmlFor="school-active">啟用學校</Label>
+            </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>

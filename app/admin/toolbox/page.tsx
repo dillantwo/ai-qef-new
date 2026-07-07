@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { basePath } from "@/lib/utils";
 
 interface AdminTool {
@@ -20,37 +21,6 @@ interface AdminToolboxGroup {
   description: string;
   isActive: boolean;
   tools: AdminTool[];
-}
-
-function Toggle({
-  on,
-  disabled,
-  onClick,
-}: {
-  on: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      disabled={disabled}
-      onClick={onClick}
-      className={
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 " +
-        (on ? "bg-primary" : "bg-muted-foreground/30")
-      }
-    >
-      <span
-        className={
-          "inline-block size-5 transform rounded-full bg-white shadow transition-transform " +
-          (on ? "translate-x-5" : "translate-x-0.5")
-        }
-      />
-    </button>
-  );
 }
 
 export default function AdminToolboxPage() {
@@ -158,10 +128,10 @@ export default function AdminToolboxPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {groupPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-                    <Toggle
-                      on={g.isActive}
+                    <Switch
+                      checked={g.isActive}
                       disabled={groupPending}
-                      onClick={() => patch({ type: g.type, isActive: !g.isActive }, g.type)}
+                      onCheckedChange={() => patch({ type: g.type, isActive: !g.isActive }, g.type)}
                     />
                   </div>
                 </div>
@@ -187,10 +157,10 @@ export default function AdminToolboxPage() {
                           {toolPending && (
                             <Loader2 className="size-4 animate-spin text-muted-foreground" />
                           )}
-                          <Toggle
-                            on={t.isActive}
+                          <Switch
+                            checked={t.isActive}
                             disabled={toolPending || !g.isActive}
-                            onClick={() =>
+                            onCheckedChange={() =>
                               patch(
                                 { type: g.type, toolKey: t.key, isActive: !t.isActive },
                                 toolPendingKey

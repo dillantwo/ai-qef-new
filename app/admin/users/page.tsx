@@ -5,6 +5,22 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -180,28 +196,36 @@ export default function UsersPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={filterSchool}
-          onChange={(e) => setFilterSchool(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-        >
-          <option value="">全部學校</option>
-          {schools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-        >
-          <option value="">全部角色</option>
-          <option value="admin">管理員</option>
-          <option value="teacher">老師</option>
-          <option value="student">學生</option>
-        </select>
+        <Select value={filterSchool} onValueChange={(v) => setFilterSchool(v as string)}>
+          <SelectTrigger className="h-9 w-44">
+            <SelectValue placeholder="全部學校">
+              {(v) => (!v ? "全部學校" : schools.find((s) => s.id === v)?.name ?? "全部學校")}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">全部學校</SelectItem>
+            {schools.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterRole} onValueChange={(v) => setFilterRole(v as string)}>
+          <SelectTrigger className="h-9 w-32">
+            <SelectValue placeholder="全部角色">
+              {(v) =>
+                !v ? "全部角色" : ROLE_LABELS[v as "admin" | "teacher" | "student"] ?? "全部角色"
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">全部角色</SelectItem>
+            <SelectItem value="admin">管理員</SelectItem>
+            <SelectItem value="teacher">老師</SelectItem>
+            <SelectItem value="student">學生</SelectItem>
+          </SelectContent>
+        </Select>
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -220,29 +244,29 @@ export default function UsersPage() {
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border bg-background">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">姓名</th>
-                <th className="px-4 py-3 font-medium">用戶名</th>
-                <th className="px-4 py-3 font-medium">角色</th>
-                <th className="px-4 py-3 font-medium">學校</th>
-                <th className="px-4 py-3 font-medium">科目權限</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="px-4">姓名</TableHead>
+                <TableHead className="px-4">用戶名</TableHead>
+                <TableHead className="px-4">角色</TableHead>
+                <TableHead className="px-4">學校</TableHead>
+                <TableHead className="px-4">科目權限</TableHead>
+                <TableHead className="px-4" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{u.displayName}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.username}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={u.id}>
+                  <TableCell className="px-4 py-3 font-medium">{u.displayName}</TableCell>
+                  <TableCell className="px-4 py-3 text-muted-foreground">{u.username}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <Badge variant={u.role === "admin" ? "default" : "secondary"}>
                       {ROLE_LABELS[u.role]}
                     </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.schoolName ?? "—"}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-muted-foreground">{u.schoolName ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {u.role === "admin" ? (
                         <span className="text-muted-foreground">全部</span>
@@ -256,8 +280,8 @@ export default function UsersPage() {
                         ))
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(u)}>
                         編輯
@@ -271,11 +295,11 @@ export default function UsersPage() {
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -288,7 +312,7 @@ export default function UsersPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">用戶名</label>
+                <Label>用戶名</Label>
                 <Input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -297,15 +321,13 @@ export default function UsersPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">顯示名稱</label>
+                <Label>顯示名稱</Label>
                 <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {editing ? "重設密碼（留空則不變）" : "密碼"}
-              </label>
+              <Label>{editing ? "重設密碼（留空則不變）" : "密碼"}</Label>
               <Input
                 type="password"
                 value={password}
@@ -315,42 +337,55 @@ export default function UsersPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">角色</label>
-              <select
+              <Label>角色</Label>
+              <Select
                 value={role}
-                onChange={(e) => setRole(e.target.value as typeof role)}
+                onValueChange={(v) => setRole(v as typeof role)}
                 disabled={Boolean(editing)}
-                className="h-9 w-full rounded-md border bg-background px-3 text-sm disabled:opacity-60"
               >
-                <option value="teacher">老師</option>
-                <option value="student">學生</option>
-                <option value="admin">管理員</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {(v) => ROLE_LABELS[v as "admin" | "teacher" | "student"] ?? "選擇角色"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teacher">老師</SelectItem>
+                  <SelectItem value="student">學生</SelectItem>
+                  <SelectItem value="admin">管理員</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {role !== "admin" && (
               <>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">學校</label>
-                  <select
+                  <Label>學校</Label>
+                  <Select
                     value={schoolId}
-                    onChange={(e) => {
-                      setSchoolId(e.target.value);
+                    onValueChange={(v) => {
+                      setSchoolId(v as string);
                       setSubjects([]);
                     }}
-                    className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                   >
-                    <option value="">選擇學校</option>
-                    {schools.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="選擇學校">
+                        {(v) =>
+                          !v ? "選擇學校" : schools.find((s) => s.id === v)?.name ?? "選擇學校"
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schools.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">科目權限</label>
+                  <Label>科目權限</Label>
                   {!schoolId ? (
                     <p className="text-sm text-muted-foreground">請先選擇學校。</p>
                   ) : availableSubjects.length === 0 ? (
