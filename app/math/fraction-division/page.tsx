@@ -274,6 +274,12 @@ export default function FractionDivisionPage() {
     let bar2Visible = false;
     let currentSpeed = 1.0;
     let isCommonDenomReady = false;
+    // true while a chunk is visiting #divisor-mold in handleDropChunk
+    let blueMoldBusy = false;
+    // chunks dropped while blueMoldBusy, processed one at a time
+    let divisionDropQueue: { chunkId: string; molds: HTMLElement[]; P1: number; P2: number; cd: number }[] = [];
+    // guard: each expand schedules checkCommonDenom; only start division once
+    let divisionAnimationStarted = false;
 
     const timers: number[] = [];
     const T = (fn: () => void, ms: number) => {
@@ -604,16 +610,20 @@ export default function FractionDivisionPage() {
       T(() => ($e("bottom-answer-zone")!.style.display = "none"), 300);
 
       if (isCommonDenomReady) {
+        // 通分成功：隱藏擴約分按鈕
         root!.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "none"));
+        // 鎖定數線開關，避免量測階段切換時重建長條圖而清除拖拉色塊與模具
         $i("show-nl-cb")!.disabled = true;
-        const nl2 = $e("bar2-nl");
-        if (nl2) {
-          nl2.style.display = "none";
-          nl2.innerHTML = "";
-        }
         $e("drag-instruction")!.innerHTML = `💡 分母相同了，開始做除法`;
-        T(() => startDivisionAnimation(cd1), 1800 / currentSpeed);
+        // 啟動除法動畫序列（通分成功後先暫停，讓學生閱讀）
+        // 每次擴分都會延遲呼叫 checkCommonDenom；快速連點時只啟動一次，避免多層 drag-overlay 疊成「三條紅色長條」
+        if (!divisionAnimationStarted) {
+          divisionAnimationStarted = true;
+          T(() => startDivisionAnimation(cd1), 1800 / currentSpeed);
+        }
       } else {
+        divisionAnimationStarted = false;
+        // 尚未通分：恢復顯示工具
         root!.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "flex"));
         $i("show-nl-cb")!.disabled = false;
         if ($i("show-nl-cb")!.checked) {
@@ -675,6 +685,9 @@ export default function FractionDivisionPage() {
     function setupManualDragAndFill(P1: number, P2: number, cd: number) {
       if (P2 === 0) return;
 
+      blueMoldBusy = false;
+      divisionDropQueue = [];
+
       const row3 = $e("bar3-row")!;
       row3.style.display = "flex";
       const wrap3 = $e("bar3-wrap")!;
@@ -724,7 +737,12 @@ export default function FractionDivisionPage() {
         molds.push(mold);
       }
 
-      wrap1.querySelectorAll(".bar-fill").forEach((f) => ((f as HTMLElement).style.visibility = "hidden"));
+      // 隱藏被除數底下的紅色填色（由拖拉色塊取代）；保留格線與數線
+      wrap1.querySelectorAll(".bar-fill").forEach((f) => ((f as HTMLElement).style.display = "none"));
+
+      // Defensive: remove stale overlay if division setup was triggered more than once
+      const staleOverlay = $e("drag-overlay");
+      if (staleOverlay) staleOverlay.remove();
 
       const overlay = document.createElement("div");
       overlay.id = "drag-overlay";
@@ -752,22 +770,26 @@ export default function FractionDivisionPage() {
         chunk.style.width = chunkWidthPct + "%";
         chunk.style.height = "100%";
         chunk.style.backgroundColor = "var(--red)";
-        chunk.style.opacity = "0.85";
+        chunk.style.opacity = "1";
         chunk.style.border = "2px solid white";
         chunk.style.borderRadius = "4px";
         chunk.style.boxSizing = "border-box";
         chunk.style.cursor = "grab";
         chunk.draggable = true;
         chunk.setAttribute("data-size", String(size));
+        chunk.setAttribute("data-mold-index", String(i));
 
         chunk.ondragstart = (e: DragEvent) => {
           e.dataTransfer!.setData("text/plain", chunk.id);
-          setTimeout(() => (chunk.style.opacity = "0.4"), 0);
+          setTimeout(() => (chunk.style.visibility = "hidden"), 0);
         };
         chunk.ondragend = () => {
           if (chunk.getAttribute("data-measured") === "1") return;
-          chunk.style.opacity = "0.85";
+          // 若未成功放入容器，恢復顯示
+          chunk.style.visibility = "visible";
+          chunk.style.opacity = "1";
         };
+        // 支援點擊直接送出量測
         chunk.onclick = () => {
           handleDropChunk(chunk.id, molds, P1, P2, cd);
         };
@@ -792,9 +814,29 @@ export default function FractionDivisionPage() {
       };
     }
 
+    // 若藍色容器正被佔用，將此次投遞排入佇列，待容器淨空後自動處理
+    function processDropQueue() {
+      if (blueMoldBusy || divisionDropQueue.length === 0) return;
+      const next = divisionDropQueue.shift()!;
+      handleDropChunk(next.chunkId, next.molds, next.P1, next.P2, next.cd);
+    }
+
+    // Post-drop flight animation. Only one chunk may visit #divisor-mold at a time
+    // (blueMoldBusy + divisionDropQueue below); extra drops wait their turn instead of stacking.
     function handleDropChunk(chunkId: string, molds: HTMLElement[], P1: number, P2: number, cd: number) {
       const chunk = $e(chunkId);
       if (!chunk || chunk.getAttribute("data-measured") === "1") return;
+
+      if (blueMoldBusy) {
+        if (chunk.getAttribute("data-queued") !== "1") {
+          chunk.setAttribute("data-queued", "1");
+          chunk.style.visibility = "hidden";
+          divisionDropQueue.push({ chunkId, molds, P1, P2, cd });
+        }
+        return;
+      }
+      chunk.removeAttribute("data-queued");
+      blueMoldBusy = true;
 
       const wrap3 = $e("bar3-wrap")!;
       let filledCount = parseInt(wrap3.getAttribute("data-filled") || "0") || 0;
@@ -802,48 +844,72 @@ export default function FractionDivisionPage() {
 
       const size = parseInt(chunk.getAttribute("data-size") || "0");
 
-      const targetMold = molds[filledCount];
-      if (!targetMold) return;
+      // 依 data-mold-index（而非投遞順序）選定目標模具，確保結果列順序與被除數上的色塊順序一致
+      const moldIndex = parseInt(chunk.getAttribute("data-mold-index") || "0", 10);
+      const targetMold = molds[moldIndex];
+      if (!targetMold) {
+        blueMoldBusy = false;
+        return;
+      }
+
+      // 先量測位置，再將同一個 drag-block 元素改為 fixed 飛行（不建立複本）
+      const startRect = chunk.getBoundingClientRect();
+      const containerEl = $e("divisor-mold") || $e("bar2-wrap")!;
+      const containerRect = containerEl.getBoundingClientRect();
+      const resultRect = targetMold.getBoundingClientRect();
 
       chunk.setAttribute("data-measured", "1");
-      chunk.style.backgroundColor = "transparent";
-      chunk.style.opacity = "1";
-      chunk.style.border = "2px dashed var(--red)";
-      chunk.style.cursor = "default";
       chunk.draggable = false;
       chunk.onclick = null;
+      chunk.ondragstart = null;
+      chunk.ondragend = null;
 
+      // 預先佔用位置
       filledCount++;
       wrap3.setAttribute("data-filled", String(filledCount));
 
-      const startRect = chunk.getBoundingClientRect();
-      const endRect = targetMold.getBoundingClientRect();
+      // -- 兩段式飛行：同一元素先飛入藍色容器，停留後再垂直落入結果模具 --
+      const flightSec = 1 / currentSpeed;
+      const pauseSec = 0.4 / currentSpeed;
+      const animWidth = (size / P2) * resultRect.width;
+      const transition = `top ${flightSec}s ease-in-out, left ${flightSec}s ease-in-out, width ${flightSec}s ease-in-out, height ${flightSec}s ease-in-out`;
 
-      const animBlock = document.createElement("div");
-      animBlock.className = "fa38-fly";
-      animBlock.style.position = "fixed";
-      animBlock.style.top = startRect.top + "px";
-      animBlock.style.left = startRect.left + "px";
-      const animWidth = (size / P2) * endRect.width;
-      animBlock.style.width = animWidth + "px";
-      animBlock.style.height = endRect.height + "px";
-      animBlock.style.backgroundColor = "var(--red)";
-      animBlock.style.opacity = "0.85";
-      animBlock.style.border = "2px solid white";
-      animBlock.style.borderRadius = "4px";
-      animBlock.style.boxSizing = "border-box";
-      animBlock.style.zIndex = "9999";
-      const flightSec = 2 / currentSpeed;
-      animBlock.style.transition = `top ${flightSec}s ease-in-out, left ${flightSec}s ease-in-out`;
+      chunk.style.visibility = "visible";
+      chunk.style.opacity = "1";
+      // The flyer is re-parented to document.body, outside the .fa38-root scope
+      // where --red is defined, so use an explicit colour to stay red mid-flight.
+      chunk.style.backgroundColor = "#e74c3c";
+      chunk.style.position = "fixed";
+      chunk.style.top = startRect.top + "px";
+      chunk.style.left = startRect.left + "px";
+      chunk.style.width = startRect.width + "px";
+      chunk.style.height = startRect.height + "px";
+      chunk.style.margin = "0";
+      chunk.style.cursor = "default";
+      chunk.style.zIndex = "9999";
+      chunk.style.transition = transition;
+      document.body.appendChild(chunk);
 
-      document.body.appendChild(animBlock);
-      void animBlock.offsetWidth;
+      void chunk.offsetWidth;
 
-      animBlock.style.top = endRect.top + "px";
-      animBlock.style.left = endRect.left + "px";
+      // 第一段：飛入藍色除數容器（z-index 9999 完全遮蓋模具內的隔線）
+      chunk.style.top = containerRect.top + "px";
+      chunk.style.left = containerRect.left + "px";
+      chunk.style.width = animWidth + "px";
+      chunk.style.height = containerRect.height + "px";
 
+      // 第二段：停留後，垂直落入下方結果模具
       T(() => {
-        animBlock.remove();
+        chunk.style.top = resultRect.top + "px";
+        chunk.style.left = resultRect.left + "px";
+        chunk.style.width = animWidth + "px";
+        chunk.style.height = resultRect.height + "px";
+      }, (flightSec + pauseSec) * 1000);
+
+      // 動畫結束後的處理（完成後才釋放藍色容器並處理佇列，避免多塊紅色重疊）
+      T(() => {
+        chunk.remove();
+        // 在結果區模具中生成顏色填充（z-index 6，蓋過模具內 z-index 5 的隔線）
         const fill = document.createElement("div");
         fill.style.position = "absolute";
         fill.style.top = "0";
@@ -851,20 +917,28 @@ export default function FractionDivisionPage() {
         fill.style.width = (size / P2) * 100 + "%";
         fill.style.height = "100%";
         fill.style.backgroundColor = "var(--red)";
-        fill.style.opacity = "0.85";
+        fill.style.opacity = "1";
+        fill.style.zIndex = "6";
         fill.style.borderRight = "1px solid rgba(255,255,255,0.4)";
         targetMold.appendChild(fill);
 
+        blueMoldBusy = false;
+        processDropQueue();
+
+        // 記錄有幾個動畫已完成
         let animsFinished = parseInt(wrap3.getAttribute("data-anims-finished") || "0") || 0;
         animsFinished++;
         wrap3.setAttribute("data-anims-finished", String(animsFinished));
 
+        // 如果全部拼圖都放完且動畫結束，清除上方拖拉層並顯示答案區
         if (animsFinished === totalChunks) {
+          const overlay = $e("drag-overlay");
+          if (overlay) overlay.remove();
           wrap3.style.outline = "none";
           wrap3.style.backgroundColor = "transparent";
           showAnswerZone(P1, P2, cd);
         }
-      }, flightSec * 1000);
+      }, (flightSec * 2 + pauseSec) * 1000);
     }
 
     function showAnswerZone(_P1: number, _P2: number, _cd: number) {
@@ -901,6 +975,7 @@ export default function FractionDivisionPage() {
       bar1Visible = false;
       bar2Visible = false;
       isCommonDenomReady = false;
+      divisionAnimationStarted = false;
 
       $i("show-nl-cb")!.disabled = false;
 
@@ -1081,7 +1156,10 @@ export default function FractionDivisionPage() {
       alive = false;
       timers.forEach((id) => clearTimeout(id));
       root.removeEventListener("contextmenu", onCtx);
-      document.querySelectorAll(".fa38-fly").forEach((el) => el.remove());
+      // Flying chunks are re-parented to document.body during handleDropChunk; remove any orphans.
+      document.querySelectorAll('[id^="div-chunk-"]').forEach((el) => {
+        if (el.parentElement === document.body) el.remove();
+      });
       if (window.__FA38 === api) delete window.__FA38;
       de.style.removeProperty("--max-wholes");
       de.style.removeProperty("--anim-time");
