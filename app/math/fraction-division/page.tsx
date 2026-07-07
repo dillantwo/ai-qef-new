@@ -874,6 +874,24 @@ export default function FractionDivisionPage() {
       const animWidth = (size / P2) * resultRect.width;
       const transition = `top ${flightSec}s ease-in-out, left ${flightSec}s ease-in-out, width ${flightSec}s ease-in-out, height ${flightSec}s ease-in-out`;
 
+      // 在原位置留下紅色虛線佔位，表示這裡原本有一份被除數
+      const originParent = chunk.parentElement;
+      if (originParent) {
+        const ghost = document.createElement("div");
+        ghost.className = "div-chunk-ghost";
+        ghost.style.position = "absolute";
+        ghost.style.top = "0";
+        ghost.style.left = chunk.style.left;
+        ghost.style.width = chunk.style.width;
+        ghost.style.height = "100%";
+        ghost.style.border = "2px dashed #e74c3c";
+        ghost.style.borderRadius = "4px";
+        ghost.style.boxSizing = "border-box";
+        ghost.style.backgroundColor = "rgba(231, 76, 60, 0.1)";
+        ghost.style.zIndex = "1";
+        originParent.appendChild(ghost);
+      }
+
       chunk.style.visibility = "visible";
       chunk.style.opacity = "1";
       // The flyer is re-parented to document.body, outside the .fa38-root scope
@@ -930,10 +948,9 @@ export default function FractionDivisionPage() {
         animsFinished++;
         wrap3.setAttribute("data-anims-finished", String(animsFinished));
 
-        // 如果全部拼圖都放完且動畫結束，清除上方拖拉層並顯示答案區
+        // 如果全部拼圖都放完且動畫結束，顯示答案區
+        // （保留上方拖拉層中的紅色虛線佔位，表示被除數原本的位置）
         if (animsFinished === totalChunks) {
-          const overlay = $e("drag-overlay");
-          if (overlay) overlay.remove();
           wrap3.style.outline = "none";
           wrap3.style.backgroundColor = "transparent";
           showAnswerZone(P1, P2, cd);
