@@ -604,7 +604,7 @@ export default function FractionDivisionPage() {
       T(() => ($e("bottom-answer-zone")!.style.display = "none"), 300);
 
       if (isCommonDenomReady) {
-        root.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "none"));
+        root!.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "none"));
         $i("show-nl-cb")!.disabled = true;
         const nl2 = $e("bar2-nl");
         if (nl2) {
@@ -614,7 +614,7 @@ export default function FractionDivisionPage() {
         $e("drag-instruction")!.innerHTML = `💡 分母相同了，開始做除法`;
         T(() => startDivisionAnimation(cd1), 1800 / currentSpeed);
       } else {
-        root.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "flex"));
+        root!.querySelectorAll(".tool-btn").forEach((btn) => ((btn as HTMLElement).style.display = "flex"));
         $i("show-nl-cb")!.disabled = false;
         if ($i("show-nl-cb")!.checked) {
           const nl1 = $e("bar1-nl");
