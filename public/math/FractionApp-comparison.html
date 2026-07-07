@@ -283,8 +283,8 @@
     --grid-dark: #333; 
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'PingFang HK', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background: transparent; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-.container { background: transparent; padding: 1.5rem; border-radius: 0; box-shadow: none; max-width: 1100px; width: 100%; }
+body { font-family: 'PingFang HK', 'Microsoft JhengHei', 'Noto Sans TC', sans-serif; background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+.container { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 1000px; width: 100%; }
 
 /* Nav bar styles now in nav.css */
 select.lang-btn { appearance: none; padding-right: 30px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center; }
@@ -559,7 +559,7 @@ select.lang-btn { appearance: none; padding-right: 30px; background: url('data:i
                 <option value="2">比較 2 個分數</option>
                 <option value="3">比較 3 個分數</option>
             </select>
-            <button id="btn_toggle_sync" class="lang-btn btn-active-mode" onclick="toggleSyncMode()">模式1</button>
+            <button id="btn_toggle_sync" class="lang-btn btn-active-mode" onclick="toggleSyncMode()">固定長度</button>
             <div id="length_controls" style="display:none; gap:10px;">
                 <button class="lang-btn" onclick="randomizeBars()" style="box-shadow: 0 2px 0 var(--gray); font-size:0.9rem; padding: 4px 10px;">隨機長度</button>
                 <button class="lang-btn" onclick="matchBars()" style="box-shadow: 0 2px 0 var(--gray); font-size:0.9rem; padding: 4px 10px;">設定同一長度</button>
@@ -633,7 +633,6 @@ let dragMode = null; // 'h' 表示橫向縮放, 'v' 表示垂直移動
 let isBarTarget = false;
 
 function init() {
-    applyUrlParams();
     renderInputs();
     updateVisuals();
     setupGlobalDrag();
@@ -646,88 +645,20 @@ function init() {
     });
 }
 
-// 從網址參數讀取要比較的分數，讓工具可由題目自動帶入數值
-// 支援的參數（與分數加法的 num1/den1/whole1 命名一致）：
-//   count                          比較幾個分數（2 或 3；未提供時依是否有第三個分數自動判斷）
-//   num1 / den1 / whole1 / format1 第一個分數
-//   num2 / den2 / whole2 / format2 第二個分數
-//   num3 / den3 / whole3 / format3 第三個分數（可選）
-// format 可為 integer / fraction / mixed；未提供時依 whole 是否大於 0 自動推斷
-function applyUrlParams() {
-    const p = new URLSearchParams(window.location.search);
-
-    const keys = [
-        'num1', 'den1', 'whole1', 'format1',
-        'num2', 'den2', 'whole2', 'format2',
-        'num3', 'den3', 'whole3', 'format3',
-        'count',
-    ];
-    const hasAny = keys.some((k) => {
-        const v = p.get(k);
-        return v !== null && v !== '';
-    });
-    if (!hasAny) return false;
-
-    const has = (v) => v !== null && v !== '';
-    const toInt = (v, def) => {
-        const n = parseInt(v);
-        return Number.isFinite(n) ? n : def;
-    };
-    const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
-
-    // 決定要比較幾個分數
-    const hasFrac3 = ['num3', 'den3', 'whole3', 'format3'].some((k) => has(p.get(k)));
-    let count = toInt(p.get('count'), hasFrac3 ? 3 : 2);
-    count = clamp(count, 2, 3);
-    activeCount = count;
-
-    for (let i = 0; i < count; i++) {
-        const idx = i + 1;
-        const wRaw = p.get('whole' + idx);
-        const nRaw = p.get('num' + idx);
-        const dRaw = p.get('den' + idx);
-        const fmtRaw = p.get('format' + idx);
-
-        const w = clamp(toInt(wRaw, 0), 0, 99);
-        const n = clamp(toInt(nRaw, 1), 1, 99);
-        const d = clamp(toInt(dRaw, 2), 1, 99);
-
-        // 推斷顯示格式
-        let format;
-        if (fmtRaw === 'integer' || fmtRaw === 'fraction' || fmtRaw === 'mixed') {
-            format = fmtRaw;
-        } else if (!has(nRaw) && !has(dRaw) && has(wRaw)) {
-            format = 'integer';
-        } else if (has(wRaw) && w > 0) {
-            format = 'mixed';
-        } else {
-            format = 'fraction';
-        }
-
-        state[i] = { format, w, n, d };
-    }
-
-    // 同步「比較幾個分數」下拉選單
-    const sel = document.getElementById('fraction_count');
-    if (sel) sel.value = String(count);
-
-    return true;
-}
-
 function toggleSyncMode() {
     isSyncMode = !isSyncMode;
     const btn = document.getElementById('btn_toggle_sync');
     const lenControls = document.getElementById('length_controls');
     
     if (isSyncMode) {
-        btn.innerText = '模式1';
+        btn.innerText = '固定長度';
         btn.classList.add('btn-active-mode');
         lenControls.style.display = 'none';
         // 強制恢復全滿且無垂直偏移
         containerWidths = [100, 100, 100];
         vOffsets = [0, 0, 0];
     } else {
-        btn.innerText = '模式2';
+        btn.innerText = '自由長度';
         btn.classList.remove('btn-active-mode');
         lenControls.style.display = 'flex';
     }

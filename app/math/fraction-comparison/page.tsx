@@ -55,10 +55,11 @@ const STYLES = `
 /* input area */
 .fcmp-root .math-engine{ position:relative; display:flex; align-items:center; justify-content:center; gap:14px;
   margin:15px 0 30px 0; padding:30px 12px 45px 12px; border-radius:20px; background:#fdfdfd; border:2px solid #eee;
-  flex-wrap:wrap; min-height:200px; }
+  flex-wrap:nowrap; min-height:200px; }
 .fcmp-root .input-card{ position:relative; display:flex; align-items:center; justify-content:center; background:#fff;
   padding:14px 16px; border-radius:12px; border:3px solid #ccc; box-shadow:0 4px 6px rgba(0,0,0,0.05);
-  touch-action:none; user-select:none; transition:0.2s; min-height:120px; flex-wrap:wrap; }
+  cursor:context-menu; touch-action:none; user-select:none; transition:0.2s; min-height:120px; flex-wrap:wrap; }
+.fcmp-root .input-card:hover{ border-color:#bbb; }
 .fcmp-root .card-controls{ display:flex; align-items:center; gap:6px; width:100%; justify-content:center; margin-top:10px;
   padding-top:8px; border-top:1px solid #eee; flex-wrap:wrap; }
 .fcmp-root .card-controls .card-fmt-btn{ padding:3px 8px !important; font-size:0.78rem !important; }
@@ -542,7 +543,7 @@ function FractionComparisonInner() {
               className={`lang-btn${isSyncMode ? " btn-active-mode" : ""}`}
               onClick={toggleSyncMode}
             >
-              {isSyncMode ? "模式1" : "模式2"}
+              {isSyncMode ? "固定長度" : "自由長度"}
             </button>
             {!isSyncMode ? (
               <div style={{ display: "flex", gap: 10 }}>

@@ -367,14 +367,14 @@ function MathDashboardContent() {
       "clock-time-difference": "/math/clock-time-difference",
       "volume-cubes": "/math/volume",
       "journey-graph": "/math/journey",
-      "fraction-addition": "/math/FractionApp-Addition.html",
-      "fraction-subtraction": "/math/FractionApp-Subtraction.html",
-      "fraction-multiplication": "/math/FractionApp-Multiplication.html",
-      "fraction-division": "/math/FractionApp-Division.html",
+      "fraction-addition": "/math/fraction-addition",
+      "fraction-subtraction": "/math/fraction-subtraction",
+      "fraction-multiplication": "/math/fraction-multiplication",
+      "fraction-division": "/math/fraction-division",
       "fraction-comparison": "/math/fraction-comparison",
       "fraction-expanding-simplifying": "/math/fraction-es",
-      "fraction-integer": "/math/FractionApp-Integer.html",
-      "fraction-converting": "/math/FractionApp-Converting.html",
+      "fraction-integer": "/math/fraction-integer",
+      "fraction-converting": "/math/fraction-converting",
     };
 
     const expectedPath = expectedPathByTool[toolKey] ?? "/math/preview.html";
@@ -533,6 +533,12 @@ function MathDashboardContent() {
       "clock-time-difference": "/math/clock-time-difference",
       "volume-cubes": "/math/volume",
       "journey-graph": "/math/journey",
+      // 四則運算（加/減/乘/除）：已改寫為 Next.js route。這些工具不讀取 URL 參數（沿用自身預設 / 隨機出題），
+      // 因此當作靜態路由直接開啟，不需 AI 提取參數。
+      "fraction-addition": "/math/fraction-addition",
+      "fraction-subtraction": "/math/fraction-subtraction",
+      "fraction-multiplication": "/math/fraction-multiplication",
+      "fraction-division": "/math/fraction-division",
     };
     const staticRoute = staticRouteMap[selectedTool];
     if (staticRoute) {
@@ -541,25 +547,23 @@ function MathDashboardContent() {
       return;
     }
 
-    const fractionOpHtmlMap: Record<string, string> = {
-      "fraction-addition": "FractionApp-Addition.html",
-      "fraction-subtraction": "FractionApp-Subtraction.html",
-      "fraction-multiplication": "FractionApp-Multiplication.html",
-      "fraction-division": "FractionApp-Division.html",
-    };
+    // 四則運算（加/減/乘/除）皆已改寫為 Next.js route（見上方 staticRouteMap），
+    // 故此對照表留空；保留變數與後備邏輯以相容其他潛在的 HTML 版工具。
+    const fractionOpHtmlMap: Record<string, string> = {};
     const fractionOpHtml = fractionOpHtmlMap[selectedTool];
 
-    // 直接帶參數的獨立工具頁（非「兩數運算」的版面），各自有專屬的參數組合
-    const standaloneHtmlMap: Record<string, string> = {
-      "fraction-integer": "FractionApp-Integer.html",
-      "fraction-converting": "FractionApp-Converting.html",
-    };
+    // 直接帶參數的獨立工具頁（非「兩數運算」的版面）的 HTML 版本。
+    // 分數概念工具皆已改寫為 Next.js route（見下方 standaloneRouteMap），故此表留空；
+    // 保留變數與後備邏輯以相容其他潛在的 HTML 版工具。
+    const standaloneHtmlMap: Record<string, string> = {};
     const standaloneHtml = standaloneHtmlMap[selectedTool];
 
     // 已改寫為 Next.js route 的獨立工具頁（TypeScript 重寫版）
     const standaloneRouteMap: Record<string, string> = {
       "fraction-expanding-simplifying": "fraction-es",
       "fraction-comparison": "fraction-comparison",
+      "fraction-integer": "fraction-integer",
+      "fraction-converting": "fraction-converting",
     };
     const standaloneRoute = standaloneRouteMap[selectedTool];
 
@@ -644,17 +648,17 @@ function MathDashboardContent() {
           // num 預設 12（可整齊排成長方形，示範效果佳），限制 1–999
           const n = Number(params.num);
           qs.set("num", String(Number.isFinite(n) && n >= 1 ? Math.min(Math.floor(n), 999) : 12));
-          // extractor 回傳 explore/all，HTML 用 mode=1/2
+          // extractor 回傳 explore/all，工具用 mode=1/2
           if (params.mode === "all") qs.set("mode", "2");
-          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-Integer.html?${qs.toString()}`);
+          if (!cancelled) setPreviewUrl(`${basePath}/math/fraction-integer?${qs.toString()}`);
         } else if (selectedTool === "fraction-converting") {
           const qs = new URLSearchParams();
           if (params.whole != null) qs.set("whole", String(params.whole));
           if (params.num != null) qs.set("num", String(params.num));
-          // 分母預設 1，避免 HTML 除零
+          // 分母預設 1，避免除零
           qs.set("den", String(params.den && params.den !== 0 ? params.den : 1));
           if (params.mode) qs.set("mode", String(params.mode));
-          if (!cancelled) setPreviewUrl(`${basePath}/math/FractionApp-Converting.html?${qs.toString()}`);
+          if (!cancelled) setPreviewUrl(`${basePath}/math/fraction-converting?${qs.toString()}`);
         } else if (fractionOpHtml) {
           const qs = new URLSearchParams();
           // 分子默認 1（AI 回傳 0 通常代表純整數題目，0/1 顯示醜，改用 1）

@@ -195,18 +195,18 @@
 body {
     font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
     margin: 0;
-    padding: 0;
-    background: transparent;
+    padding: 20px;
+    background-color: #f4f7f6;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
 .container {
-    background: transparent;
+    background: white;
     padding: 20px 30px;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     max-width: 1000px;
     width: 100%;
     box-sizing: border-box;
@@ -704,37 +704,6 @@ function applyGridLayout(rows, cols) {
     const circles = circleContainer.querySelectorAll('.circle');
     circles.forEach(c => c.style.transform = 'none');
 }
-
-// 讀取網址參數，預先帶入題目（參考分數加法的做法）
-//   num  : 要分解的整數（1–999）
-//   mode : 1 = 互動探索（預設）、2 = 顯示全部因數排列
-function applyUrlParams() {
-    const p = new URLSearchParams(window.location.search);
-    const numRaw = p.get('num');
-    const modeRaw = p.get('mode');
-
-    if (numRaw !== null && numRaw !== '') {
-        const n = parseInt(numRaw, 10);
-        if (!isNaN(n) && n > 0) {
-            mainNumInput.value = Math.min(n, 999);
-        }
-    }
-
-    // mode=2 → 直接顯示全部因數排列
-    if (modeRaw === '2') {
-        currentMode = 2;
-        const btn = document.getElementById('toggleModeBtn');
-        btn.innerText = '逐一顯示';
-        btn.style.borderColor = '#e67e22';
-        btn.style.color = '#e67e22';
-        btn.style.boxShadow = '0 3px 0 #e67e22';
-    }
-
-    updateView();
-}
-
-// 這段 script 位於 body 結尾，DOM 已解析完成，可直接執行
-applyUrlParams();
 
 </script>
 </body>

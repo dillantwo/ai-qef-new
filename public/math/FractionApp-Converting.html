@@ -198,20 +198,19 @@
 
 body {
     font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-    background: transparent;
+    background-color: #f4f7f6;
     display: flex;
     justify-content: center;
-    padding: 0;
-    margin: 0;
+    padding: 20px;
 }
 
 .app-container {
     max-width: 1000px;
     width: 100%;
     box-sizing: border-box;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     padding: 25px;
 }
 
@@ -1060,49 +1059,7 @@ function renderText(w, n, d) {
     `;
 }
 
-// 讀取網址參數，預先帶入題目（參考分數加法的做法）
-//   whole : 整數部分
-//   num   : 分子
-//   den   : 分母
-//   mode  : whole=整數、fraction=分數、mixed=帶分數（未提供時依數值自動判斷）
-function applyUrlParams() {
-    const p = new URLSearchParams(window.location.search);
-    const whole = p.get('whole');
-    const num = p.get('num');
-    const den = p.get('den');
-    let mode = p.get('mode');
-
-    const hasAny = ['whole', 'num', 'den', 'mode'].some((k) => {
-        const v = p.get(k);
-        return v !== null && v !== '';
-    });
-    if (!hasAny) {
-        updateUI();
-        return;
-    }
-
-    // 未提供 mode 時，依提供的數值推斷模式
-    if (!mode) {
-        const hasWhole = whole && whole !== '0';
-        const hasFrac = (num && num !== '0') || (den && den !== '');
-        if (hasWhole && hasFrac) mode = 'mixed';
-        else if (hasFrac) mode = 'fraction';
-        else mode = 'whole';
-    }
-    if (mode !== 'whole' && mode !== 'fraction' && mode !== 'mixed') mode = 'mixed';
-
-    // setMode 會重置輸入為 1 並切換顯示，之後再填入實際數值
-    setMode(mode);
-
-    if (whole !== null && whole !== '') document.getElementById('inputWhole').value = whole;
-    if (num !== null && num !== '') document.getElementById('inputNum').value = num;
-    if (den !== null && den !== '') document.getElementById('inputDen').value = den;
-
-    updateUI();
-}
-
-// 這段 script 位於 body 結尾，DOM 已解析完成，可直接執行
-applyUrlParams();
+updateUI();
 
 </script>
 
