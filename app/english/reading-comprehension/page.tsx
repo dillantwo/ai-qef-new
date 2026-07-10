@@ -73,9 +73,44 @@ const cycles: Cycle[] = [
       {
         id: "reading-2",
         label: "Reading 2",
-        title: "Coming soon",
-        description: "This reading is being prepared.",
-        available: false,
+        title: "Chop Makers",
+        description:
+          "An informational article about Hong Kong chop makers — their history, their work, and their future.",
+        href: "/english/reading-comprehension/cycle-2-reading-2",
+        available: true,
+      },
+      {
+        id: "reading-3",
+        label: "Reading 3",
+        title: "A Wonderful School Trip",
+        description:
+          "An email about a Primary 6 graduation study tour in Iceland — school visits, sightseeing and animals.",
+        href: "/english/reading-comprehension/cycle-2-reading-3",
+        available: true,
+      },
+    ],
+  },
+  {
+    id: "cycle-3",
+    label: "Cycle 3",
+    readings: [
+      {
+        id: "reading-1",
+        label: "Reading 1",
+        title: "Detective Lee and the Gold Watch",
+        description:
+          "A book blurb for a children's detective story — a missing gold watch, book reviews, and a call to read the series.",
+        href: "/english/reading-comprehension/cycle-3-reading-1",
+        available: true,
+      },
+      {
+        id: "reading-2",
+        label: "Reading 2",
+        title: "Make a Balloon Puff Up",
+        description:
+          "A science experiment sheet — materials, safety tips, steps, and how a baking-soda-and-vinegar reaction puffs up a balloon.",
+        href: "/english/reading-comprehension/cycle-3-reading-2",
+        available: true,
       },
     ],
   },

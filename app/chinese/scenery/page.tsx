@@ -8,6 +8,7 @@ export default function ChineseSceneryPage() {
         topicLabel: "景物描寫",
         sessionPrefix: "chinese-scenery",
         apiEndpoint: "/api/chinese-topic/scenery",
+        enableDrafts: true,
       }}
     />
   );

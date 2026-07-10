@@ -431,7 +431,7 @@ export function AppSidebar() {
           }
           router.push(`/${subject}`);
         }}>
-          {isChineseLikeChat || isEnglishDashboard ? '+ New Chat' : isMathDashboard ? '加入題目' : '+ Add New Question'}
+          {isEnglishDashboard ? '+ New Chat' : isChineseLikeChat ? '+ 新聊天' : isMathDashboard ? '加入題目' : '+ Add New Question'}
         </Button>
         {isMathDashboard && isTeacher && (
           <Button
@@ -519,7 +519,7 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupLabel className="flex items-center gap-1.5">
               <Clock className="size-3.5" />
-              聊天記錄
+              Chat History
             </SidebarGroupLabel>
             {englishChatHistory.length > 0 ? (
               <div className="space-y-0.5 px-1">
@@ -663,7 +663,7 @@ export function AppSidebar() {
             }}
           >
             <Users className="size-3.5" />
-            學生歷史記錄
+            Student History
           </Button>
         )}
 

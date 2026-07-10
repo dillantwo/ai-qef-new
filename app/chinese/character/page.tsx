@@ -15,6 +15,7 @@ export default function ChineseCharacterPage() {
           { label: "3. 構思建議", message: "構思建議" },
         ],
         requireQuickStartSelection: true,
+        enableDrafts: true,
       }}
     />
   );

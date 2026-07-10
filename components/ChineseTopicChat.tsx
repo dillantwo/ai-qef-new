@@ -17,6 +17,10 @@ import {
   Check,
   Pin,
   PinOff,
+  FileText,
+  MessageSquarePlus,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +39,14 @@ import {
   type ChineseChatHistoryItem,
   type SavedChatMessage,
 } from "@/lib/chinese-chat-history";
+import {
+  createEssayDraftId,
+  deleteEssayDraft,
+  getEssayDraft,
+  getEssayDrafts,
+  upsertEssayDraft,
+  type EssayDraftItem,
+} from "@/lib/chinese-essay-draft";
 
 export interface ChineseTopicConfig {
   /** Stable identifier used for chat-history storage and load filtering. */
@@ -64,6 +76,10 @@ export interface ChineseTopicConfig {
   /** When true, the input box is disabled until the student picks a
    *  quick-start option (i.e. while the conversation is empty). */
   requireQuickStartSelection?: boolean;
+  /** When true, show a right-side drafts panel (初稿 / 修改版本 / 終稿) that lets
+   *  students write and locally save their essay drafts, and load one into the
+   *  chat input to discuss with the AI. */
+  enableDrafts?: boolean;
 }
 
 type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
@@ -73,6 +89,27 @@ type ChatMsg = {
   text: string;
   images?: ChatImage[];
 };
+
+// Drafts panel: the three writing stages a student works through.
+type DraftStage = "first" | "revised" | "final";
+type DraftState = Record<DraftStage, string>;
+const EMPTY_DRAFTS: DraftState = { first: "", revised: "", final: "" };
+const DRAFT_STAGES: { key: DraftStage; label: string; hint: string }[] = [
+  { key: "first", label: "初稿", hint: "先寫下你的第一個版本…" },
+  { key: "revised", label: "修改版本", hint: "根據建議修改後的版本…" },
+  { key: "final", label: "終稿", hint: "完成後的最終版本…" },
+];
+
+function formatDraftDate(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("zh-HK", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 const ICON_MAP: Record<NonNullable<ChineseTopicConfig["icon"]>, LucideIcon> = {
   pen: PenTool,
@@ -213,6 +250,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     defaultTitle = `${config.topicLabel}對話`,
     quickStartOptions,
     requireQuickStartSelection = false,
+    enableDrafts = false,
   } = config;
   const HeaderIcon = ICON_MAP[icon];
 
@@ -236,6 +274,19 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [showPinned, setShowPinned] = useState(false);
+  // --- Drafts panel (作文稿: 初稿 / 修改版本 / 終稿), stored in the database. ---
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [draftList, setDraftList] = useState<EssayDraftItem[]>([]);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<DraftState>(EMPTY_DRAFTS);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftsView, setDraftsView] = useState<"list" | "editor">("list");
+  const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Per-stage voice input for the drafts panel (independent of the chat mic).
+  const [listeningStage, setListeningStage] = useState<DraftStage | null>(null);
+  const draftRecognitionRef = useRef<SpeechRecognition | null>(null);
+  const draftBaseTextRef = useRef<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -302,6 +353,198 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
       return next;
     });
   }, []);
+
+  const deriveDraftTitle = useCallback((state: DraftState, fallback: string) => {
+    const source = state.first || state.revised || state.final || "";
+    const firstLine = source
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.length > 0);
+    return (firstLine ?? "").slice(0, 40) || fallback;
+  }, []);
+
+  const refreshDraftList = useCallback(async () => {
+    const items = await getEssayDrafts(topicId);
+    setDraftList(items);
+    return items;
+  }, [topicId]);
+
+  // Load the draft list whenever the panel is opened.
+  useEffect(() => {
+    if (!enableDrafts || !showDrafts) return;
+    void refreshDraftList();
+  }, [enableDrafts, showDrafts, refreshDraftList]);
+
+  // Clean up the pending autosave timer on unmount.
+  useEffect(
+    () => () => {
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    },
+    []
+  );
+
+  const saveActiveDraft = useCallback(
+    async (id: string, state: DraftState, title: string) => {
+      // A brand-new, entirely empty draft has nothing worth persisting yet.
+      if (!state.first.trim() && !state.revised.trim() && !state.final.trim() && !title.trim()) {
+        setDraftSaveState("idle");
+        return;
+      }
+      setDraftSaveState("saving");
+      const ok = await upsertEssayDraft({
+        id,
+        topic: topicId,
+        title: title.trim() || deriveDraftTitle(state, "未命名作文稿"),
+        first: state.first,
+        revised: state.revised,
+        final: state.final,
+      });
+      setDraftSaveState(ok ? "saved" : "idle");
+      if (ok) {
+        void refreshDraftList();
+        setTimeout(() => setDraftSaveState((p) => (p === "saved" ? "idle" : p)), 1500);
+      }
+    },
+    [topicId, deriveDraftTitle, refreshDraftList]
+  );
+
+  const scheduleDraftSave = useCallback(
+    (id: string, state: DraftState, title: string) => {
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      draftSaveTimer.current = setTimeout(() => void saveActiveDraft(id, state, title), 800);
+    },
+    [saveActiveDraft]
+  );
+
+  const startNewDraft = useCallback(() => {
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    draftRecognitionRef.current?.stop();
+    setListeningStage(null);
+    setActiveDraftId(createEssayDraftId());
+    setDrafts(EMPTY_DRAFTS);
+    setDraftTitle("");
+    setDraftSaveState("idle");
+    setDraftsView("editor");
+  }, []);
+
+  const openDraft = useCallback(async (id: string) => {
+    const item = await getEssayDraft(id);
+    if (!item) return;
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    draftRecognitionRef.current?.stop();
+    setListeningStage(null);
+    setActiveDraftId(item.id);
+    setDrafts({ first: item.first, revised: item.revised, final: item.final });
+    setDraftTitle(item.title === "未命名作文稿" ? "" : item.title);
+    setDraftSaveState("idle");
+    setDraftsView("editor");
+  }, []);
+
+  const handleDraftChange = useCallback(
+    (stage: DraftStage, value: string) => {
+      if (!activeDraftId) return;
+      setDrafts((prev) => {
+        const next = { ...prev, [stage]: value };
+        scheduleDraftSave(activeDraftId, next, draftTitle);
+        return next;
+      });
+    },
+    [activeDraftId, draftTitle, scheduleDraftSave]
+  );
+
+  const handleDraftTitleChange = useCallback(
+    (value: string) => {
+      setDraftTitle(value);
+      if (activeDraftId) scheduleDraftSave(activeDraftId, drafts, value);
+    },
+    [activeDraftId, drafts, scheduleDraftSave]
+  );
+
+  const handleDeleteDraft = useCallback(
+    async (id: string) => {
+      await deleteEssayDraft(id);
+      await refreshDraftList();
+      if (activeDraftId === id) {
+        setActiveDraftId(null);
+        setDrafts(EMPTY_DRAFTS);
+        setDraftTitle("");
+        setDraftsView("list");
+      }
+    },
+    [activeDraftId, refreshDraftList]
+  );
+
+  // Load a draft stage into the chat input so the student can ask the AI about it.
+  const handleUseDraft = useCallback(
+    (stage: DraftStage) => {
+      const text = drafts[stage].trim();
+      if (!text) return;
+      const label = DRAFT_STAGES.find((s) => s.key === stage)?.label ?? "文章";
+      setInput(`請幫我看看以下這篇${label}：\n\n${text}`);
+      textareaRef.current?.focus();
+    },
+    [drafts]
+  );
+
+  const stopDraftListening = useCallback(() => {
+    draftRecognitionRef.current?.stop();
+    draftRecognitionRef.current = null;
+    setListeningStage(null);
+  }, []);
+
+  // Dictate into a specific draft stage, appending to whatever is already there.
+  const toggleDraftVoice = useCallback(
+    (stage: DraftStage) => {
+      if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+        alert("您的瀏覽器不支援語音輸入，請使用 Chrome 或 Edge 瀏覽器。");
+        return;
+      }
+      if (!activeDraftId) return;
+      // Toggle off if this stage is already recording.
+      if (listeningStage === stage) {
+        stopDraftListening();
+        return;
+      }
+      // Only one recognition at a time — stop any other running mic.
+      stopDraftListening();
+      recognitionRef.current?.stop();
+      setIsListening(false);
+
+      const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognitionCtor) return;
+      const recognition = new SpeechRecognitionCtor();
+      recognition.lang = "zh-HK";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      // Preserve existing text; append a newline separator when needed.
+      const existing = drafts[stage];
+      draftBaseTextRef.current =
+        existing && !/\s$/.test(existing) ? `${existing}\n` : existing;
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let transcript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        handleDraftChange(stage, `${draftBaseTextRef.current}${transcript}`);
+      };
+      recognition.onerror = () => setListeningStage(null);
+      recognition.onend = () => setListeningStage(null);
+      draftRecognitionRef.current = recognition;
+      recognition.start();
+      setListeningStage(stage);
+    },
+    [activeDraftId, listeningStage, drafts, handleDraftChange, stopDraftListening]
+  );
+
+  // Stop draft dictation on unmount.
+  useEffect(() => () => { draftRecognitionRef.current?.stop(); }, []);
+
+  // Stop draft dictation whenever we leave the editor (panel closed / list view).
+  useEffect(() => {
+    if (!showDrafts || draftsView !== "editor") {
+      draftRecognitionRef.current?.stop();
+    }
+  }, [showDrafts, draftsView]);
 
   const handleNewChat = useCallback(() => {
     abortRef.current?.abort();
@@ -401,6 +644,9 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
       return;
     }
     if (isListening) { stopListening(); return; }
+    // Only one recognition at a time — stop any running draft mic first.
+    draftRecognitionRef.current?.stop();
+    setListeningStage(null);
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
     const recognition = new SpeechRecognitionCtor();
@@ -592,6 +838,14 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
             <span className="text-sm font-semibold text-[#080808]">{topicLabel}</span>
           </div>
           <div className="flex items-center gap-2">
+            {enableDrafts && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowDrafts((v) => !v)}
+                className={`rounded-full border-[#e5e5e5] px-3 text-xs font-medium transition-all hover:bg-[#f4f4f5] ${showDrafts ? "text-[#146ef5] border-[#146ef5]/40" : "text-[#080808]"}`}
+                title={showDrafts ? "隱藏作文稿" : "顯示作文稿"}>
+                <FileText className="size-3.5" />
+                作文稿
+              </Button>
+            )}
             {pinnedIds.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => setShowPinned((v) => !v)}
                 className={`rounded-full border-[#e5e5e5] px-3 text-xs font-medium transition-all hover:bg-[#f4f4f5] ${showPinned ? "text-[#146ef5] border-[#146ef5]/40" : "text-[#080808]"}`}
@@ -600,11 +854,6 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
                 釘選 {pinnedIds.length}
               </Button>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={handleNewChat}
-              className="rounded-full border-[#e5e5e5] px-3 text-xs font-medium text-[#080808] transition-all hover:bg-[#f4f4f5]"
-              title="New Chat">
-              New Chat
-            </Button>
           </div>
         </div>
 
@@ -825,6 +1074,154 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
           </form>
         </div>
       </div>
+
+      {/* Right-side drafts panel: history list + editor (初稿 / 修改版本 / 終稿) */}
+      {enableDrafts && showDrafts && (
+        <div className="flex w-96 shrink-0 flex-col border-l border-[#ededed] bg-[#fafafa]">
+          <div className="flex h-[57px] shrink-0 items-center justify-between border-b border-[#ededed] bg-white px-4">
+            <div className="flex items-center gap-2">
+              {draftsView === "editor" ? (
+                <button
+                  type="button"
+                  onClick={() => { setDraftsView("list"); void refreshDraftList(); }}
+                  className="inline-flex items-center rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  title="返回列表"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+              ) : (
+                <FileText className="size-4 text-[#146ef5]" />
+              )}
+              <span className="text-sm font-semibold text-[#080808]">
+                {draftsView === "editor" ? "編輯作文稿" : "我的作文稿"}
+              </span>
+            </div>
+            <Button type="button" size="icon-sm" variant="ghost" onClick={() => setShowDrafts(false)}
+              className="rounded-full text-[#5a5a5a] transition-all hover:bg-[#f4f4f5]" title="關閉">
+              <X className="size-4" />
+            </Button>
+          </div>
+
+          {draftsView === "list" ? (
+            <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              <Button
+                type="button"
+                onClick={startNewDraft}
+                className="w-full rounded-full bg-[#146ef5] text-sm font-medium text-white transition-all hover:bg-[#0055d4]"
+              >
+                <Plus className="size-4" />
+                新建作文稿
+              </Button>
+              {draftList.length === 0 ? (
+                <div className="flex h-40 flex-col items-center justify-center text-center text-xs leading-relaxed text-[#9a9a9a]">
+                  還沒有作文稿。<br />點擊上方「新建作文稿」開始寫作。
+                </div>
+              ) : (
+                draftList.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => void openDraft(item.id)}
+                    className="group/draft cursor-pointer rounded-xl border border-[#ededed] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:border-[#146ef5]/40"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-[#080808]">{item.title}</div>
+                        <div className="mt-0.5 text-[11px] text-[#9a9a9a]">{formatDraftDate(item.updatedAt)}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); void handleDeleteDraft(item.id); }}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-[#9a9a9a] transition-colors hover:bg-red-50 hover:text-red-500"
+                        title="刪除"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {DRAFT_STAGES.filter((s) => item[s.key].trim()).map((s) => (
+                        <span key={s.key} className="rounded-full bg-[#146ef5]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#146ef5]">
+                          {s.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-[#9a9a9a]">標題</label>
+                <input
+                  value={draftTitle}
+                  onChange={(e) => handleDraftTitleChange(e.target.value)}
+                  placeholder="為這篇作文取個名字…"
+                  className="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#146ef5]/40"
+                />
+              </div>
+              <div className="text-[11px] text-[#9a9a9a]">
+                {draftSaveState === "saving" ? (
+                  "儲存中…"
+                ) : draftSaveState === "saved" ? (
+                  <span className="inline-flex items-center gap-1 text-[#16a34a]">
+                    <Check className="size-3" />
+                    已儲存到雲端
+                  </span>
+                ) : (
+                  "編輯後會自動儲存到雲端"
+                )}
+              </div>
+              {DRAFT_STAGES.map((stage) => {
+                const value = drafts[stage.key];
+                const hasText = value.trim().length > 0;
+                return (
+                  <div key={stage.key} className="rounded-xl border border-[#ededed] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#146ef5]/10 px-2 py-0.5 text-[11px] font-semibold text-[#146ef5]">
+                        {stage.label}
+                      </span>
+                      <span className="text-[10px] text-[#c0c0c0]">{value.length} 字</span>
+                    </div>
+                    <Textarea
+                      value={value}
+                      onChange={(e) => handleDraftChange(stage.key, e.target.value)}
+                      placeholder={stage.hint}
+                      className="min-h-[120px] max-h-[280px] resize-y rounded-lg border-[#e5e5e5] bg-white text-[13px] leading-relaxed focus-visible:ring-1 focus-visible:ring-[#146ef5]/40"
+                    />
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          onClick={() => toggleDraftVoice(stage.key)}
+                          className={`rounded-full transition-all ${listeningStage === stage.key ? "text-red-500 hover:bg-red-50" : "text-[#5a5a5a] hover:bg-[#f4f4f5]"}`}
+                          title={listeningStage === stage.key ? "停止語音輸入" : "語音輸入"}
+                        >
+                          {listeningStage === stage.key ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                        </Button>
+                        {listeningStage === stage.key && (
+                          <span className="text-[11px] font-medium text-red-500 animate-pulse">聆聽中…</span>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleUseDraft(stage.key)}
+                        disabled={!hasText}
+                        className="rounded-full bg-[#146ef5] px-3 text-xs font-medium text-white transition-all hover:bg-[#0055d4] disabled:bg-[#d8d8d8]"
+                      >
+                        <MessageSquarePlus className="size-3.5" />
+                        與 AI 討論
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Right-side pinned panel */}
       {showPinned && (
