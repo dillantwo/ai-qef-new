@@ -597,7 +597,9 @@ export default function FractionMultiplicationPage() {
       ghost.style.top = `${rect.top}px`;
       ghost.style.width = `${rect.width}px`;
       ghost.style.height = `${rect.height}px`;
-      ghost.style.backgroundColor = "var(--red)";
+      // 鬼影被掛在 document.body（.fa45-root 作用域之外），var(--red) 在此無定義，
+      // 會導致背景透明、看不到移動中的紅色方塊，故用明確色碼。
+      ghost.style.backgroundColor = "#e74c3c";
       ghost.style.opacity = "0.85";
       ghost.style.transition = "all 0.6s cubic-bezier(0.25, 1, 0.5, 1)";
       ghost.style.zIndex = "100";

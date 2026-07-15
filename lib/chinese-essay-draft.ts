@@ -78,3 +78,45 @@ export async function deleteEssayDraft(id: string): Promise<boolean> {
     return false;
   }
 }
+
+// --- Teacher: view students' essay drafts (作文稿) ---
+
+export interface EssayDraftStudentSummary {
+  id: string;
+  displayName: string;
+  username: string;
+  count: number;
+  lastUpdatedAt: string | null;
+}
+
+export async function getEssayDraftStudents(): Promise<EssayDraftStudentSummary[]> {
+  try {
+    const response = await fetch(`${basePath}/api/chinese-essay-draft/teacher`, {
+      credentials: "include",
+    });
+    if (!response.ok) return [];
+    const json = (await response.json()) as { students?: EssayDraftStudentSummary[] };
+    return Array.isArray(json.students) ? json.students : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getStudentEssayDrafts(
+  studentId: string,
+  topic?: string,
+): Promise<EssayDraftItem[]> {
+  try {
+    const params = new URLSearchParams({ studentId });
+    if (topic) params.set("topic", topic);
+    const response = await fetch(
+      `${basePath}/api/chinese-essay-draft/teacher?${params.toString()}`,
+      { credentials: "include" },
+    );
+    if (!response.ok) return [];
+    const json = (await response.json()) as { items?: EssayDraftItem[] };
+    return Array.isArray(json.items) ? json.items : [];
+  } catch {
+    return [];
+  }
+}

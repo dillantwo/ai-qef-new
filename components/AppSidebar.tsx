@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Box, Clock, LogOut, MessageSquare, Sparkles, Save, Share2, Timer, Trash2, Users, Variable, Zap } from "lucide-react";
+import { Box, Clock, FileText, LogOut, MessageSquare, Sparkles, Save, Share2, Timer, Trash2, Users, Variable, Zap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -44,6 +44,8 @@ import { deleteMathChatHistoryItem, getMathChatHistory, type MathChatHistoryItem
 import { getEnglishChatHistory, deleteEnglishChatHistoryItem, getEnglishStudents, getEnglishStudentChatHistory, type EnglishChatHistoryItem, type EnglishStudentSummary } from "@/lib/english-chat-history";
 import { getChineseChatHistory, deleteChineseChatHistoryItem, getChineseStudents, getChineseStudentChatHistory, getScienceStudents, getScienceStudentChatHistory, getHumanitiesStudents, getHumanitiesStudentChatHistory, type ChineseChatHistoryItem, type ChineseStudentSummary } from "@/lib/chinese-chat-history";
 import StudentHistoryDialog from "@/components/StudentHistoryDialog";
+import StudentEssayDraftDialog from "@/components/StudentEssayDraftDialog";
+import { getEssayDraftStudents, getStudentEssayDrafts, type EssayDraftStudentSummary } from "@/lib/chinese-essay-draft";
 import { VocabBank } from "@/components/VocabBank";
 
 const CHINESE_TOPIC_LABELS: Record<string, string> = {
@@ -197,6 +199,9 @@ export function AppSidebar() {
   // Teacher: student chat history viewer (Chinese writing topics).
   const [chineseStudents, setChineseStudents] = useState<ChineseStudentSummary[]>([]);
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+  // Teacher: student essay drafts (作文稿) viewer (Chinese writing topics).
+  const [essayDraftStudents, setEssayDraftStudents] = useState<EssayDraftStudentSummary[]>([]);
+  const [essayDraftDialogOpen, setEssayDraftDialogOpen] = useState(false);
   // Teacher: student chat history viewer (English topics).
   const [englishStudents, setEnglishStudents] = useState<EnglishStudentSummary[]>([]);
   const [englishDialogOpen, setEnglishDialogOpen] = useState(false);
@@ -651,6 +656,22 @@ export function AppSidebar() {
           </Button>
         )}
 
+        {/* Teacher: view each student's Chinese essay drafts (read-only popup) */}
+        {isChineseWriting && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getEssayDraftStudents().then(setEssayDraftStudents);
+              setEssayDraftDialogOpen(true);
+            }}
+          >
+            <FileText className="size-3.5" />
+            學生作文稿
+          </Button>
+        )}
+
         {/* Teacher: view each student's English chat history (read-only popup) */}
         {isEnglishDashboard && isTeacher && (
           <Button
@@ -899,6 +920,16 @@ export function AppSidebar() {
           open={studentDialogOpen}
           onClose={() => setStudentDialogOpen(false)}
           fetchChats={getChineseStudentChatHistory}
+          topicLabels={CHINESE_TOPIC_LABELS}
+        />
+      )}
+
+      {isChineseWriting && isTeacher && (
+        <StudentEssayDraftDialog
+          students={essayDraftStudents}
+          open={essayDraftDialogOpen}
+          onClose={() => setEssayDraftDialogOpen(false)}
+          fetchDrafts={getStudentEssayDrafts}
           topicLabels={CHINESE_TOPIC_LABELS}
         />
       )}

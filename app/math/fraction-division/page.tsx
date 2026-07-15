@@ -547,7 +547,8 @@ export default function FractionDivisionPage() {
       }
 
       if (nlWrap) {
-        if (showNL) {
+        // 藍色除數（num===2）不顯示數線的數字標註
+        if (showNL && num !== 2) {
           nlWrap.style.display = "flex";
           nlWrap.classList.add("continuous");
           nlWrap.innerHTML = "";
@@ -629,8 +630,7 @@ export default function FractionDivisionPage() {
         if ($i("show-nl-cb")!.checked) {
           const nl1 = $e("bar1-nl");
           if (nl1) nl1.style.display = "flex";
-          const nl2 = $e("bar2-nl");
-          if (nl2) nl2.style.display = "flex";
+          // 藍色除數（bar2）不顯示數線
         }
         $e("drag-instruction")!.innerHTML = `💡 用「擴分／約分」讓兩邊分母相同`;
         $e("bar3-row")!.style.display = "none";
@@ -754,6 +754,21 @@ export default function FractionDivisionPage() {
       overlay.style.zIndex = "10";
       wrap1.style.position = "relative";
       wrap1.appendChild(overlay);
+
+      // 進入「把紅色拖進藍色容器」階段時，補上被除數最右邊界（整數 1）的粗黑分割線。
+      // 原格線只畫 k=1..d-1，右邊界僅靠 2px 細邊框，看起來像缺一條線（與 4/6 等粗線不一致）。
+      // 掛在最後一個 bar-unit 內，讓高度剛好等於長條（50px），不會超出。
+      const allUnits1 = wrap1.querySelectorAll(".bar-unit");
+      const lastUnit1 = allUnits1[allUnits1.length - 1] as HTMLElement | undefined;
+      if (lastUnit1) {
+        const endLine = document.createElement("div");
+        endLine.className = "abs-thick-line";
+        endLine.style.left = "100%";
+        endLine.style.transform = "translateX(-100%)";
+        endLine.style.zIndex = "5";
+        endLine.style.pointerEvents = "none";
+        lastUnit1.appendChild(endLine);
+      }
 
       for (let i = 0; i < numMolds; i++) {
         const size = i === numMolds - 1 && P1 % P2 !== 0 ? P1 % P2 : P2;
@@ -927,7 +942,8 @@ export default function FractionDivisionPage() {
       // 動畫結束後的處理（完成後才釋放藍色容器並處理佇列，避免多塊紅色重疊）
       T(() => {
         chunk.remove();
-        // 在結果區模具中生成顏色填充（z-index 6，蓋過模具內 z-index 5 的隔線）
+        // 在結果區模具中生成顏色填充（z-index 4，位於模具內 z-index 5 的隔線之下，
+        // 讓每一格與「1 整份」的分割線在紅色填充上仍清楚可見）
         const fill = document.createElement("div");
         fill.style.position = "absolute";
         fill.style.top = "0";
@@ -936,8 +952,7 @@ export default function FractionDivisionPage() {
         fill.style.height = "100%";
         fill.style.backgroundColor = "var(--red)";
         fill.style.opacity = "1";
-        fill.style.zIndex = "6";
-        fill.style.borderRight = "1px solid rgba(255,255,255,0.4)";
+        fill.style.zIndex = "4";
         targetMold.appendChild(fill);
 
         blueMoldBusy = false;
