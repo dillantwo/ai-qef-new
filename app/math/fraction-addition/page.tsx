@@ -128,7 +128,8 @@ const STYLES = `
 .fa47-root .drag-block{ transition:transform 0.1s, opacity 0.2s, box-shadow 0.2s; touch-action:manipulation; }
 .fa47-root .drag-block:active{ transform:scale(0.95); }
 
-@media (max-width:768px){
+/* Disabled: layout now scales proportionally via .scale-viewport instead of reflowing */
+@media (max-width:0px){
   .fa47-root .header{ flex-direction:column; align-items:stretch; text-align:center; }
   .fa47-root .header-left{ justify-content:center; }
   .fa47-root .header-right{ justify-content:center; width:100%; }
@@ -149,9 +150,16 @@ const STYLES = `
 /* embedded (inside iframe) — 去除底層灰底並自適應父頁面，比照相等分數 */
 .fa47-root.embedded{ background:transparent; padding:15px; }
 .fa47-root.embedded .container{ box-shadow:none; border-radius:0; padding:1rem; }
+
+/* Proportional scaling wrapper: keep the desktop layout intact and shrink the
+   whole tool to fit narrow viewports instead of reflowing/stacking, so the
+   擴分/約分 buttons never drop below the bars. */
+.fa47-root .scale-viewport{ width:100%; display:flex; justify-content:center; align-items:flex-start; }
+.fa47-root .scale-viewport > .container{ transform-origin:top center; flex:none; }
 `;
 
 const BODY_HTML = `
+<div class="scale-viewport">
 <div class="container">
   <div class="header">
     <div class="header-left">
@@ -223,6 +231,7 @@ const BODY_HTML = `
       <div id="feedback" class="feedback-msg"></div>
     </div>
   </div>
+</div>
 </div>
 `;
 
@@ -1569,6 +1578,33 @@ export default function FractionAdditionPage() {
     } as CSSStyleDeclaration);
     document.body.appendChild(hand);
 
+    // ---------- proportional scaling ----------
+    // Keep the desktop layout intact and shrink the whole tool to fit narrow
+    // viewports (so the 擴分/約分 buttons never drop below the bars).
+    const DESIGN_WIDTH = 1000; // matches .container's desktop design width
+    const scaleWrap = root.querySelector(".scale-viewport") as HTMLElement | null;
+    const scaleContainer = root.querySelector(".scale-viewport > .container") as HTMLElement | null;
+    const fitScale = () => {
+      if (!scaleWrap || !scaleContainer) return;
+      scaleContainer.style.width = DESIGN_WIDTH + "px";
+      scaleContainer.style.maxWidth = "none";
+      const rootStyle = getComputedStyle(root);
+      const padX = parseFloat(rootStyle.paddingLeft) + parseFloat(rootStyle.paddingRight);
+      const avail = root.clientWidth - padX;
+      const scale = Math.min(1, avail / DESIGN_WIDTH);
+      scaleContainer.style.transform = scale < 1 ? `scale(${scale})` : "none";
+      scaleWrap.style.height = scaleContainer.offsetHeight * scale + "px";
+    };
+    window.addEventListener("resize", fitScale);
+    let scaleObserver: ResizeObserver | null = null;
+    if (window.ResizeObserver && scaleContainer) {
+      scaleObserver = new ResizeObserver(() => {
+        if (alive) fitScale();
+      });
+      scaleObserver.observe(scaleContainer);
+    }
+    fitScale();
+
     const resetEvents = ["mousemove", "mousedown", "keydown", "touchstart", "dragstart", "input", "change"];
     resetEvents.forEach((evt) => document.addEventListener(evt, resetInactivityTimer, { passive: true }));
     const onCtx = (e: Event) => e.preventDefault();
@@ -1588,6 +1624,8 @@ export default function FractionAdditionPage() {
       if (tutorialInterval) clearInterval(tutorialInterval);
       resetEvents.forEach((evt) => document.removeEventListener(evt, resetInactivityTimer));
       root.removeEventListener("contextmenu", onCtx);
+      window.removeEventListener("resize", fitScale);
+      if (scaleObserver) scaleObserver.disconnect();
       hand.remove();
       if (window.__FA47 === api) delete window.__FA47;
       de.style.removeProperty("--max-wholes");

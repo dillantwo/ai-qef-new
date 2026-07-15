@@ -127,7 +127,8 @@ const STYLES = `
   box-shadow:0 4px 10px rgba(0,0,0,0.05); transition:opacity 0.5s; z-index:50; position:relative; }
 .fa38-root .feedback-msg{ font-size:1.2rem; font-weight:bold; min-height:28px; margin-top:5px; opacity:0; transition:opacity 0.3s, color 0.3s; text-align:center; }
 
-@media (max-width:768px){
+/* Disabled: layout now scales proportionally via .scale-viewport instead of reflowing */
+@media (max-width:0px){
   .fa38-root .header{ flex-direction:column; align-items:stretch; text-align:center; }
   .fa38-root .header-left{ justify-content:center; }
   .fa38-root .header-right{ justify-content:center; width:100%; }
@@ -148,9 +149,16 @@ const STYLES = `
 /* embedded (inside iframe) — 去除底層灰底並自適應父頁面，比照相等分數 */
 .fa38-root.embedded{ background:transparent; padding:15px; }
 .fa38-root.embedded .container{ box-shadow:none; border-radius:0; padding:1rem; }
+
+/* Proportional scaling wrapper: keep the desktop layout intact and shrink the
+   whole tool to fit narrow viewports instead of reflowing/stacking, so the
+   擴分/約分 buttons never drop below the bars. */
+.fa38-root .scale-viewport{ width:100%; display:flex; justify-content:center; align-items:flex-start; }
+.fa38-root .scale-viewport > .container{ transform-origin:top center; flex:none; }
 `;
 
 const BODY_HTML = `
+<div class="scale-viewport">
 <div class="container">
   <div class="header">
     <div class="header-left">
@@ -223,6 +231,7 @@ const BODY_HTML = `
     </div>
   </div>
 </div>
+</div>
 `;
 
 type FA38Api = {
@@ -256,6 +265,45 @@ export default function FractionDivisionPage() {
     } catch {
       setEmbedded(true);
     }
+  }, []);
+
+  // Proportional scaling: keep the desktop layout intact and shrink the whole
+  // tool to fit narrow viewports (so the 擴分/約分 buttons never drop below the
+  // bars). Mirrors the .scale-viewport approach used in the standalone HTML.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const DESIGN_WIDTH = 1000; // matches .container's desktop design width
+    const fitScale = () => {
+      const wrap = root.querySelector(".scale-viewport") as HTMLElement | null;
+      const container = root.querySelector(".scale-viewport > .container") as HTMLElement | null;
+      if (!wrap || !container) return;
+      container.style.width = DESIGN_WIDTH + "px";
+      container.style.maxWidth = "none";
+      const rootStyle = getComputedStyle(root);
+      const padX = parseFloat(rootStyle.paddingLeft) + parseFloat(rootStyle.paddingRight);
+      const avail = root.clientWidth - padX;
+      const scale = Math.min(1, avail / DESIGN_WIDTH);
+      container.style.transform = scale < 1 ? `scale(${scale})` : "none";
+      const newH = container.offsetHeight * scale;
+      if (Math.abs(parseFloat(wrap.style.height || "0") - newH) > 0.5) {
+        wrap.style.height = newH + "px";
+      }
+    };
+    window.addEventListener("resize", fitScale);
+    const ro = window.ResizeObserver ? new ResizeObserver(() => fitScale()) : null;
+    if (ro) ro.observe(root);
+    // The tool markup is injected asynchronously by the main effect; poll briefly
+    // so the first fit runs once the container exists.
+    const poll = window.setInterval(fitScale, 100);
+    const stopPoll = window.setTimeout(() => window.clearInterval(poll), 3000);
+    fitScale();
+    return () => {
+      window.removeEventListener("resize", fitScale);
+      if (ro) ro.disconnect();
+      window.clearInterval(poll);
+      window.clearTimeout(stopPoll);
+    };
   }, []);
 
   useEffect(() => {

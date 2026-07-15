@@ -577,7 +577,8 @@ body {
     color: white;
 }
 
-@media (max-width: 768px) {
+/* Disabled: layout now scales proportionally via .scale-viewport instead of reflowing */
+@media (max-width: 0px) {
     .header {
         flex-direction: column;
         align-items: stretch;
@@ -611,7 +612,8 @@ body {
 /* FractionApp47.css - app-specific overrides only.
    Shared rules live in arith-common.css (loaded first). */
 
-@media (max-width: 768px) {
+/* Disabled: layout now scales proportionally via .scale-viewport instead of reflowing */
+@media (max-width: 0px) {
     .container { padding: 15px; }
         .formula { font-size: 1.5rem; }
         .whole-input { width: 35px; height: 40px; font-size: 1.4rem; }
@@ -621,6 +623,20 @@ body {
         .bars-column { width: 100% !important; }
         .bar-wrap-container, .nl-wrap-container { justify-content: flex-start; }
         .bar-unit, .nl-unit { min-width: 80px; }
+}
+
+/* Proportional scaling wrapper: keeps the desktop layout intact and shrinks
+   the whole tool to fit narrow viewports instead of reflowing/stacking. */
+.scale-viewport {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.scale-viewport > .container {
+    transform-origin: top center;
+    flex: none;
 }
 
 #tutorial-hand {
@@ -820,6 +836,7 @@ body {
 
 <div id="tutorial-hand">👆</div>
 
+<div class="scale-viewport">
 <div class="container">
     <div class="header">
         <div class="header-left">
@@ -892,6 +909,7 @@ body {
             <div id="feedback" class="feedback-msg"></div>
         </div>
     </div>
+</div>
 </div>
 
 <script>
@@ -2224,6 +2242,44 @@ function checkAllDropped(totalNeeded) {
      resetInactivityTimer(); // 啟動待機偵測
  };
 
+</script>
+
+<script>
+// Proportional scaling: keep the desktop layout intact and shrink the whole
+// tool to fit narrow viewports, so the 擴分/約分 buttons never drop below.
+(function () {
+    const DESIGN_WIDTH = 1000; // matches .container's desktop design width
+    const wrapper = document.querySelector('.scale-viewport');
+    const container = wrapper ? wrapper.querySelector('.container') : null;
+    if (!container) return;
+
+    function fit() {
+        // Force the container to always render at its full desktop width
+        container.style.width = DESIGN_WIDTH + 'px';
+        container.style.maxWidth = 'none';
+
+        // Available width = viewport minus body horizontal padding
+        const bodyStyle = getComputedStyle(document.body);
+        const padX = parseFloat(bodyStyle.paddingLeft) + parseFloat(bodyStyle.paddingRight);
+        const avail = document.documentElement.clientWidth - padX;
+
+        const scale = Math.min(1, avail / DESIGN_WIDTH);
+        container.style.transform = scale < 1 ? 'scale(' + scale + ')' : 'none';
+
+        // Compensate the reserved layout height so no blank gap is left below
+        wrapper.style.height = (container.offsetHeight * scale) + 'px';
+    }
+
+    window.addEventListener('resize', fit);
+    window.addEventListener('load', fit);
+
+    // Re-fit whenever the content height changes (bars/answer zone appear)
+    if (window.ResizeObserver) {
+        new ResizeObserver(fit).observe(container);
+    }
+
+    fit();
+})();
 </script>
 </body>
 </html>
