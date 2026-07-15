@@ -146,7 +146,7 @@ const BODY_HTML = `
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <div class="title-badge">分數乘法教學</div>
+      <div class="title-badge">分數相乘</div>
     </div>
     <div class="header-right">
       <div class="controls-pill">

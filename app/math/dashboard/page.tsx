@@ -222,6 +222,49 @@ interface ToolboxConfigFromDB {
   isActive: boolean;
 }
 
+// Desired display order for the fraction tool groups (dashboard + sidebar).
+// The toolbox data is DB-driven and its stored order can vary, so we normalise
+// the order here rather than depending on insertion order.
+const FRACTION_TOOL_ORDER: Record<string, string[]> = {
+  "fraction-concept": [
+    "fraction-converting",
+    "fraction-integer",
+    "fraction-expanding-simplifying",
+    "fraction-comparison",
+  ],
+  "fraction-operations": [
+    "fraction-addition",
+    "fraction-subtraction",
+    "fraction-multiplication",
+    "fraction-division",
+  ],
+};
+
+function orderToolboxConfigs(configs: ToolboxConfigFromDB[]): ToolboxConfigFromDB[] {
+  // 1) Sort tools within known fraction groups (unknown keys keep their order, at the end).
+  const result = configs.map((c) => {
+    const order = FRACTION_TOOL_ORDER[c.type];
+    if (!order) return c;
+    const rank = (key: string) => {
+      const i = order.indexOf(key);
+      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+    };
+    const tools = [...c.tools].sort((a, b) => rank(a.key) - rank(b.key));
+    return { ...c, tools };
+  });
+
+  // 2) Ensure 分數概念 (fraction-concept) appears before 四則運算 (fraction-operations),
+  //    without disturbing the position of any other group.
+  const conceptIdx = result.findIndex((c) => c.type === "fraction-concept");
+  const opsIdx = result.findIndex((c) => c.type === "fraction-operations");
+  if (conceptIdx > -1 && opsIdx > -1 && conceptIdx > opsIdx) {
+    const [concept] = result.splice(conceptIdx, 1);
+    result.splice(opsIdx, 0, concept);
+  }
+
+  return result;
+}
+
 type DashboardEntryMode = "question" | "ai-tool";
 
 interface SavedMessagePart {
@@ -420,7 +463,8 @@ function MathDashboardContent() {
   useEffect(() => {
     fetch(`${basePath}/api/toolbox`)
       .then((res) => res.json())
-      .then((configs: ToolboxConfigFromDB[]) => {
+      .then((rawConfigs: ToolboxConfigFromDB[]) => {
+        const configs = orderToolboxConfigs(rawConfigs);
         setAllToolboxConfigs(configs);
         const matched = configs.find((c) => c.type === type);
         if (matched) {

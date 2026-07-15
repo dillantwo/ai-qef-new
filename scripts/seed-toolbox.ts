@@ -48,7 +48,7 @@ const seedData = [
     tools: [
       {
         key: "fraction-addition",
-        label: "異分母加法",
+        label: "分數相加",
         sub: "FractionApp (Addition)",
         icon: "Plus",
         bg: "bg-teal-100",
@@ -59,7 +59,7 @@ const seedData = [
       },
       {
         key: "fraction-subtraction",
-        label: "異分母減法",
+        label: "分數相減",
         sub: "FractionApp (Subtraction)",
         icon: "Minus",
         bg: "bg-rose-100",
@@ -70,7 +70,7 @@ const seedData = [
       },
       {
         key: "fraction-multiplication",
-        label: "分數乘法",
+        label: "分數相乘",
         sub: "FractionApp (Multiplication)",
         icon: "X",
         bg: "bg-purple-100",
@@ -81,7 +81,7 @@ const seedData = [
       },
       {
         key: "fraction-division",
-        label: "分數除法",
+        label: "分數相除",
         sub: "FractionApp (Division)",
         icon: "Divide",
         bg: "bg-amber-100",
@@ -133,7 +133,7 @@ const seedData = [
       },
       {
         key: "fraction-integer",
-        label: "整數的部分",
+        label: "分數是整數的部份",
         sub: "FractionApp (Integer)",
         icon: "Grid3x3",
         bg: "bg-lime-100",

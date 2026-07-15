@@ -88,7 +88,7 @@ const BODY_HTML = `
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <div class="title-badge">整數的部份</div>
+      <div class="title-badge">分數是整數的部份</div>
     </div>
     <div class="header-right">
       <button id="toggleModeBtn" class="lang-btn btn-active-mode" onclick="window.__FA65.toggleMode()">顯示全部</button>

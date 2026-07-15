@@ -152,7 +152,7 @@ const BODY_HTML = `
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <div class="title-badge">分數除法</div>
+      <div class="title-badge">分數相除</div>
     </div>
     <div class="header-right">
       <div class="controls-pill">
