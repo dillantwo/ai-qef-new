@@ -23,6 +23,8 @@ const STYLES = `
   --nav-gray:#95a5a6; --nav-primary:#3498db;
   font-family:'PingFang HK','Microsoft JhengHei','Noto Sans TC',sans-serif;
   margin:0; padding:20px; background-color:#f4f7f6; min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  /* 視窗/iframe 比工具小時可上下捲動，避免內容被裁切看不到 */
+  overflow:auto; -webkit-overflow-scrolling:touch;
 }
 .fa65-root *{ box-sizing:border-box; }
 .fa65-root .container{ background:#fff; padding:20px 30px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); max-width:1000px; width:100%; box-sizing:border-box; }
@@ -80,7 +82,7 @@ const STYLES = `
 }
 
 /* embedded (inside iframe) — 去除底層灰底並自適應父頁面，比照相等分數 */
-.fa65-root.embedded{ background:transparent; padding:15px; min-height:auto; }
+.fa65-root.embedded{ background:transparent; padding:15px; }
 .fa65-root.embedded .container{ box-shadow:none; border-radius:0; padding:1rem; }
 `;
 

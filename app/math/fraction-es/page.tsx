@@ -27,6 +27,8 @@ const STYLES = `
   font-family:'PingFang HK','Microsoft JhengHei','Noto Sans TC',sans-serif;
   background:linear-gradient(135deg,#e0f7fa 0%,#fff9c4 100%);
   min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:20px;
+  /* 視窗/iframe 比工具小時可上下捲動，避免內容被裁切看不到 */
+  overflow:auto; -webkit-overflow-scrolling:touch;
 }
 .fes-root *{ margin:0; padding:0; box-sizing:border-box; }
 .fes-root .container{ background:#fff; padding:1.5rem; border-radius:16px;
@@ -148,7 +150,7 @@ const STYLES = `
 .fes-root .q-blank{ color:var(--accent); background:#f3e5f5; border:2px dashed var(--accent); border-radius:6px; padding:0 10px; min-width:36px; text-align:center; }
 
 /* embedded (inside iframe) */
-.fes-root.embedded{ background:transparent; padding:15px; min-height:auto; }
+.fes-root.embedded{ background:transparent; padding:15px; }
 .fes-root.embedded .title-badge{ display:none; }
 .fes-root.embedded .header{ justify-content:space-between; border-bottom:none; margin-bottom:10px; padding-bottom:0; }
 .fes-root.embedded .container{ box-shadow:none; border-radius:0; padding:1rem; }
