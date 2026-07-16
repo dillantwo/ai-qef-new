@@ -10,6 +10,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
 import { TokenUsage } from "@/models/TokenUsage";
+import { retrieveContext, buildAugmentedPrompt, latestUserText } from "@/lib/rag";
 
 // A topic either uses one shared prompt (string) or a pair of single-language
 // prompts that are picked based on the language of the latest student message.
@@ -122,12 +123,17 @@ export async function POST(
     const inputMessages = messages ?? [];
     const systemPrompt = resolveSystemPrompt(topicPrompt, inputMessages);
 
+    // Retrieve topic-specific knowledge from Pinecone (namespace = topic slug)
+    // and inject it into the system prompt. No-op when RAG is not configured.
+    const chunks = await retrieveContext(topic, latestUserText(inputMessages));
+    const augmentedPrompt = buildAugmentedPrompt(systemPrompt, chunks);
+
     const session = await getSession().catch(() => null);
     const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4.1";
 
     const result = streamText({
       model: azure(deploymentName),
-      system: systemPrompt,
+      system: augmentedPrompt,
       messages: toModelMessages(inputMessages),
     });
 

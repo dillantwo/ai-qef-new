@@ -9,6 +9,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
 import { TokenUsage } from "@/models/TokenUsage";
+import { retrieveContext, buildAugmentedPrompt, latestUserText } from "@/lib/rag";
 
 // Each Humanities topic shares the same Azure-backed chat pipeline and only
 // differs by its system prompt. Add a new topic by extending this map and
@@ -93,14 +94,20 @@ export async function POST(
     }
 
     const { messages } = (await req.json()) as { messages: InputMessage[] };
+    const inputMessages = messages ?? [];
+
+    // Retrieve topic-specific knowledge from Pinecone (namespace = topic slug)
+    // and inject it into the system prompt. No-op when RAG is not configured.
+    const chunks = await retrieveContext(topic, latestUserText(inputMessages));
+    const augmentedPrompt = buildAugmentedPrompt(systemPrompt, chunks);
 
     const session = await getSession().catch(() => null);
     const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4.1";
 
     const result = streamText({
       model: azure(deploymentName),
-      system: systemPrompt,
-      messages: toModelMessages(messages ?? []),
+      system: augmentedPrompt,
+      messages: toModelMessages(inputMessages),
     });
 
     after(async () => {
