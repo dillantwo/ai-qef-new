@@ -13,6 +13,7 @@ import {
   Sparkles,
   Copy,
   Check,
+  Plus,
   Pin,
   PinOff,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { basePath } from "@/lib/utils";
+import { VOCAB_ADD_EVENT } from "@/components/VocabBank";
 import {
   READING_ROLES,
   READING_ROLE_LABELS,
@@ -93,17 +95,41 @@ const vocabUrlTransform = (url: string) =>
   url.startsWith("vocab:") ? url : defaultUrlTransform(url);
 
 function VocabChip({ word, children }: { word: string; children: ReactNode }) {
+  const [added, setAdded] = useState(false);
+
+  // Desktop uses drag-and-drop; tap/click adds the word too, which is the only
+  // way to save it on touch devices (iPad) where drag events never fire.
+  const addToBank = () => {
+    window.dispatchEvent(new CustomEvent(VOCAB_ADD_EVENT, { detail: word }));
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1200);
+  };
+
   return (
     <span
+      role="button"
+      tabIndex={0}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("application/x-vocab-word", word);
         e.dataTransfer.setData("text/plain", word);
         e.dataTransfer.effectAllowed = "copy";
       }}
-      className="not-prose inline-flex cursor-grab items-center gap-1 rounded-full border border-[#146ef5]/40 bg-[#146ef5]/10 px-2 py-0.5 text-[13px] font-semibold text-[#146ef5] no-underline active:cursor-grabbing"
-      title="Drag me to your Word Bank →"
+      onClick={addToBank}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          addToBank();
+        }
+      }}
+      className={`not-prose inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-[13px] font-semibold no-underline transition-colors ${
+        added
+          ? "border-[#16a34a]/50 bg-[#16a34a]/10 text-[#16a34a]"
+          : "border-[#146ef5]/40 bg-[#146ef5]/10 text-[#146ef5]"
+      }`}
+      title="Tap to add to your Word Bank (or drag on desktop) / 點一下加入生詞庫"
     >
+      {added ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
       {children}
     </span>
   );

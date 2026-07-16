@@ -14,6 +14,12 @@ import { basePath } from "@/lib/utils";
 const STORAGE_KEY = "english-reading-vocab-bank";
 const ENDPOINT = `${basePath}/api/english-vocab-bank`;
 
+// Window event used so the draggable chips in the chat (a separate component
+// tree) can add a word by tap/click, which is the fallback for touch devices
+// like iPad where HTML5 drag-and-drop does not fire. See VocabChip in
+// EnglishReadingComprehensionChat.
+export const VOCAB_ADD_EVENT = "english-vocab-bank:add";
+
 function readLocalWords(): string[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -113,6 +119,17 @@ export function VocabBank() {
       prev.some((w) => w.toLowerCase() === word.toLowerCase()) ? prev : [...prev, word],
     );
   }
+
+  // Touch fallback: chips in the chat dispatch this event on tap/click so words
+  // can be saved on iPad, where drag-and-drop does not work.
+  useEffect(() => {
+    function onVocabAdd(e: Event) {
+      const word = (e as CustomEvent<string>).detail;
+      if (typeof word === "string") addWord(word);
+    }
+    window.addEventListener(VOCAB_ADD_EVENT, onVocabAdd);
+    return () => window.removeEventListener(VOCAB_ADD_EVENT, onVocabAdd);
+  }, []);
 
   function removeWord(word: string) {
     setWords((prev) => prev.filter((w) => w !== word));
