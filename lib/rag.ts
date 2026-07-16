@@ -63,13 +63,18 @@ export function isRagEnabled(): boolean {
   return Boolean(process.env.PINECONE_API_KEY);
 }
 
-/** Turn a piece of text into an embedding vector using Azure OpenAI. */
-export async function embedText(text: string): Promise<number[]> {
-  const { embedding } = await embed({
+/**
+ * Turn a piece of text into an embedding vector using Azure OpenAI, returning
+ * both the vector and the number of tokens the embedding call consumed.
+ */
+export async function embedText(
+  text: string
+): Promise<{ embedding: number[]; tokens: number }> {
+  const { embedding, usage } = await embed({
     model: embeddingProvider.embedding(EMBEDDING_DEPLOYMENT),
     value: text,
   });
-  return embedding;
+  return { embedding, tokens: usage?.tokens ?? 0 };
 }
 
 export type RetrievedChunk = {
@@ -79,24 +84,31 @@ export type RetrievedChunk = {
   source?: string;
 };
 
+export type RetrievalResult = {
+  chunks: RetrievedChunk[];
+  /** Embedding tokens consumed by this retrieval (0 when RAG was skipped). */
+  ragTokens: number;
+};
+
 /**
  * Retrieve the most relevant knowledge-base chunks for a query within one
- * topic. Returns an empty array (never throws) when RAG is disabled, the topic
- * has no configured source, or on any retrieval error, so chat stays available.
+ * topic. Never throws: returns empty chunks (and 0 ragTokens) when RAG is
+ * disabled, the topic has no configured source, or on any retrieval error, so
+ * chat stays available.
  */
 export async function retrieveContext(
   topic: string,
   query: string,
   topK = 6
-): Promise<RetrievedChunk[]> {
+): Promise<RetrievalResult> {
   const client = getPinecone();
   const src = RAG_SOURCES[topic];
   if (!client || !src || !query.trim()) {
-    return [];
+    return { chunks: [], ragTokens: 0 };
   }
 
   try {
-    const vector = await embedText(query);
+    const { embedding: vector, tokens } = await embedText(query);
     const base = client.index(src.index);
     // Target the configured namespace, or the index's default namespace.
     const target = src.namespace ? base.namespace(src.namespace) : base;
@@ -106,7 +118,7 @@ export async function retrieveContext(
       includeMetadata: true,
     });
 
-    return (result.matches ?? []).map((match) => ({
+    const chunks = (result.matches ?? []).map((match) => ({
       id: match.id,
       score: match.score ?? 0,
       text: extractText(match.metadata),
@@ -114,9 +126,10 @@ export async function retrieveContext(
         ? String(match.metadata.source)
         : undefined,
     }));
+    return { chunks, ragTokens: tokens };
   } catch (err) {
     console.error(`[rag] retrieveContext failed for topic "${topic}":`, err);
-    return [];
+    return { chunks: [], ragTokens: 0 };
   }
 }
 

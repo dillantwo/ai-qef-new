@@ -23,6 +23,12 @@ export interface ITokenUsage extends Document {
   completionTokens: number;
   /** Total tokens (prompt + completion) */
   totalTokens: number;
+  /**
+   * Tokens consumed by RAG retrieval embeddings (embedding the student query
+   * before querying the vector store). 0 when the request did not use RAG.
+   * Billed separately from chat tokens (embedding model, not the chat model).
+   */
+  ragTokens: number;
   /** Optional: the associated chat session ID */
   chatId?: string;
   /** Optional: the API route that handled the request */
@@ -40,6 +46,7 @@ const TokenUsageSchema = new Schema<ITokenUsage>(
     cachedInputTokens: { type: Number, required: true, default: 0 },
     completionTokens: { type: Number, required: true, default: 0 },
     totalTokens: { type: Number, required: true, default: 0 },
+    ragTokens: { type: Number, required: true, default: 0 },
     chatId: { type: String },
     endpoint: { type: String, required: true },
   },

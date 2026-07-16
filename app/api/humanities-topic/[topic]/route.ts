@@ -98,7 +98,10 @@ export async function POST(
 
     // Retrieve topic-specific knowledge from Pinecone (namespace = topic slug)
     // and inject it into the system prompt. No-op when RAG is not configured.
-    const chunks = await retrieveContext(topic, latestUserText(inputMessages));
+    const { chunks, ragTokens } = await retrieveContext(
+      topic,
+      latestUserText(inputMessages)
+    );
     const augmentedPrompt = buildAugmentedPrompt(systemPrompt, chunks);
 
     const session = await getSession().catch(() => null);
@@ -125,6 +128,7 @@ export async function POST(
           cachedInputTokens: usage.cachedInputTokens ?? 0,
           completionTokens: usage.outputTokens ?? 0,
           totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
+          ragTokens,
           endpoint,
         });
       } catch (err) {
