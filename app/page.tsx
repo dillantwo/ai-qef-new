@@ -81,8 +81,7 @@ export default function Home() {
     <>
       <Header />
 
-      <main className="relative flex flex-1 overflow-x-hidden overflow-y-auto bg-white text-[#080808]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(20,110,245,0.1),_transparent_26%),radial-gradient(circle_at_100%_10%,_rgba(237,82,203,0.1),_transparent_20%),linear-gradient(180deg,_#ffffff_0%,_#f7f8fb_100%)]" />
+      <main className="relative flex flex-1 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top_left,_rgba(20,110,245,0.1),_transparent_26%),radial-gradient(circle_at_100%_10%,_rgba(237,82,203,0.1),_transparent_20%),linear-gradient(180deg,_#ffffff_0%,_#f7f8fb_100%)] text-[#080808]">
         <div className="absolute left-0 top-0 h-44 w-44 -translate-x-1/3 -translate-y-1/4 rounded-full bg-[#146ef5]/10 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-56 w-56 translate-x-1/4 translate-y-1/4 rounded-full bg-[#7a3dff]/10 blur-3xl" />
 
