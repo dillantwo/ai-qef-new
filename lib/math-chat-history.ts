@@ -132,3 +132,54 @@ export async function deleteMathChatHistoryItem(id: string) {
     // Keep deletes silent in UI.
   }
 }
+
+// --- Teacher: view students' Math chat history ---
+
+export interface MathStudentSummary {
+  id: string;
+  displayName: string;
+  username: string;
+  count: number;
+  lastUpdatedAt: string | null;
+}
+
+export interface MathStudentChatHistoryItem {
+  id: string;
+  title: string;
+  // Mirrors `kind`; kept for compatibility with the shared history dialog,
+  // which keys its labels off `topic`.
+  topic: string;
+  kind: MathChatKind;
+  messages: SavedChatMessage[];
+  updatedAt: string;
+}
+
+export async function getMathStudents(): Promise<MathStudentSummary[]> {
+  try {
+    const response = await fetch(`${basePath}/api/math-chat-history/teacher`, {
+      credentials: "include",
+    });
+    if (!response.ok) return [];
+    const json = (await response.json()) as { students?: MathStudentSummary[] };
+    return Array.isArray(json.students) ? json.students : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getMathStudentChatHistory(
+  studentId: string,
+): Promise<MathStudentChatHistoryItem[]> {
+  try {
+    const params = new URLSearchParams({ studentId });
+    const response = await fetch(
+      `${basePath}/api/math-chat-history/teacher?${params.toString()}`,
+      { credentials: "include" },
+    );
+    if (!response.ok) return [];
+    const json = (await response.json()) as { items?: MathStudentChatHistoryItem[] };
+    return Array.isArray(json.items) ? json.items : [];
+  } catch {
+    return [];
+  }
+}

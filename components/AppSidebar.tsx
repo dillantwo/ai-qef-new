@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { basePath } from "@/lib/utils";
-import { deleteMathChatHistoryItem, getMathChatHistory, type MathChatHistoryItem } from "@/lib/math-chat-history";
+import { deleteMathChatHistoryItem, getMathChatHistory, getMathStudents, getMathStudentChatHistory, type MathChatHistoryItem, type MathStudentSummary } from "@/lib/math-chat-history";
 import { getEnglishChatHistory, deleteEnglishChatHistoryItem, getEnglishStudents, getEnglishStudentChatHistory, type EnglishChatHistoryItem, type EnglishStudentSummary } from "@/lib/english-chat-history";
 import { getChineseChatHistory, deleteChineseChatHistoryItem, getChineseStudents, getChineseStudentChatHistory, getScienceStudents, getScienceStudentChatHistory, getHumanitiesStudents, getHumanitiesStudentChatHistory, type ChineseChatHistoryItem, type ChineseStudentSummary } from "@/lib/chinese-chat-history";
 import StudentHistoryDialog from "@/components/StudentHistoryDialog";
@@ -68,6 +68,13 @@ const SCIENCE_TOPIC_LABELS: Record<string, string> = {
 const HUMANITIES_TOPIC_LABELS: Record<string, string> = {
   "humanities-water-resources": "水資源",
   "humanities-anti-japanese-war": "抗日戰爭",
+};
+
+const MATH_KIND_LABELS: Record<string, string> = {
+  "general": "數學問答",
+  "volume-cubes": "體積（積木）",
+  "clock-24hrs": "24小時制時鐘",
+  "clock-time-difference": "時間差",
 };
 
 interface SavedMessagePart {
@@ -211,6 +218,9 @@ export function AppSidebar() {
   // Teacher: student chat history viewer (Humanities topics).
   const [humanitiesStudents, setHumanitiesStudents] = useState<ChineseStudentSummary[]>([]);
   const [humanitiesDialogOpen, setHumanitiesDialogOpen] = useState(false);
+  // Teacher: student chat history viewer (Math dashboard).
+  const [mathStudents, setMathStudents] = useState<MathStudentSummary[]>([]);
+  const [mathStudentDialogOpen, setMathStudentDialogOpen] = useState(false);
 
   const fetchSavedAiTools = useCallback(() => {
     if (!isMathDashboard || (!isTeacher && !isStudent)) return;
@@ -367,6 +377,17 @@ export function AppSidebar() {
 
     void refreshStudents();
   }, [isChineseWriting, isTeacher]);
+
+  // Teacher: load the list of students who have Math chat history.
+  useEffect(() => {
+    if (!isMathDashboard || !isTeacher) return;
+
+    async function refreshMathStudents() {
+      setMathStudents(await getMathStudents());
+    }
+
+    void refreshMathStudents();
+  }, [isMathDashboard, isTeacher]);
 
   useEffect(() => {
     function handleAiToolSaved() {
@@ -720,6 +741,22 @@ export function AppSidebar() {
           </Button>
         )}
 
+        {/* Teacher: view each student's Math chat history (read-only popup) */}
+        {isMathDashboard && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getMathStudents().then(setMathStudents);
+              setMathStudentDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            學生歷史記錄
+          </Button>
+        )}
+
         {isMathDashboard && (isTeacher || isStudent) && (
           <Sheet>
             <SheetTrigger
@@ -961,6 +998,16 @@ export function AppSidebar() {
           onClose={() => setHumanitiesDialogOpen(false)}
           fetchChats={getHumanitiesStudentChatHistory}
           topicLabels={HUMANITIES_TOPIC_LABELS}
+        />
+      )}
+
+      {isMathDashboard && isTeacher && (
+        <StudentHistoryDialog
+          students={mathStudents}
+          open={mathStudentDialogOpen}
+          onClose={() => setMathStudentDialogOpen(false)}
+          fetchChats={getMathStudentChatHistory}
+          topicLabels={MATH_KIND_LABELS}
         />
       )}
     </Sidebar>
