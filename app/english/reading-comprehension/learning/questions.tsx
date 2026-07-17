@@ -37,7 +37,7 @@ export const questions: Question[] = [
     clues: ["q1"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Look at the subtitle under the ice-cream name. Count the
+        <strong>💡 Hint:</strong> Look at clue. Count the
         flavours listed: <em>pineapple, banana, mango and passionfruit</em>. How many are there?
       </>
     ),
@@ -53,7 +53,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: B. four</strong>
         <br />
         <br />
-        The subtitle says &quot;a mix of <em>pineapple, banana, mango and passionfruit</em>{" "}
+        The clue says &quot;a mix of <em>pineapple, banana, mango and passionfruit</em>{" "}
         flavours.&quot; Counting these gives us <strong>four</strong> flavours.
       </>
     ),
@@ -63,7 +63,7 @@ export const questions: Question[] = [
     part: "part1",
     text: "To enjoy the special offer, you have to ______.",
     options: [
-      { val: "A", label: "buy two minicups of ice cream" },
+      { val: "A", label: "buy two minicups of ice-cream" },
       { val: "B", label: "order the family pack" },
       { val: "C", label: "post a comment on the website" },
       { val: "D", label: "visit the Tai Po shop" },

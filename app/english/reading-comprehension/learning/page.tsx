@@ -14,9 +14,7 @@ import {
   GraduationCap,
   Hash,
   HelpCircle,
-  Info,
   Lightbulb,
-  Link2,
   MapPin,
   Megaphone,
   MessageCircle,
@@ -61,6 +59,12 @@ export default function EnglishReadingComprehensionLearningPage() {
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -432,7 +436,16 @@ export default function EnglishReadingComprehensionLearningPage() {
                               className="size-3.5"
                               style={{ color: "var(--accent-purple)" }}
                             />
-                            Comments
+                            Customer Reviews:
+                            <span
+                              style={{
+                                marginLeft: "auto",
+                                fontWeight: 500,
+                                color: "var(--text-secondary)",
+                              }}
+                            >
+                              4 out of 100 reviews
+                            </span>
                           </div>
                           {OVERVIEW_COMMENTS.map((c) => (
                             <div className="comment-item" key={c.user}>
@@ -731,38 +744,30 @@ export default function EnglishReadingComprehensionLearningPage() {
                       Reading Skills You Practiced
                     </div>
                     <ul className="summary-skills">
-                      {SKILLS_PRACTICED.map(({ color, icon: Icon, title, desc }) => (
-                        <li key={title}>
+                      {SKILLS_PRACTICED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li
+                          key={id}
+                          style={indent ? { marginLeft: 30 } : undefined}
+                        >
                           <span className="skill-icon" style={{ background: color }}>
                             <Icon className="size-3" />
                           </span>
-                          <span>
-                            <strong>{title}</strong> — {desc}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
-                        }}
-                      >
-                        <Lightbulb className="size-4" />
-                      </span>
-                      Tips for Next Time
-                    </div>
-                    <ul className="summary-skills">
-                      {TIPS.map(({ color, icon: Icon, text }) => (
-                        <li key={text}>
-                          <span className="skill-icon" style={{ background: color }}>
-                            <Icon className="size-3" />
-                          </span>
-                          <span>{text}</span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as practiced"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -815,70 +820,129 @@ const OVERVIEW_COMMENTS = [
   },
 ];
 
-const SKILLS_PRACTICED = [
+const SKILLS_PRACTICED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: React.ReactNode;
+  indent?: boolean;
+}[] = [
   {
+    id: "skim",
     color: "var(--accent-blue)",
     icon: FastForward,
-    title: "Skimming",
-    desc: "Get an overview and the main idea quickly.",
+    label: (
+      <>
+        <strong>Skim</strong> the reading to have a general impression and get the main idea.
+      </>
+    ),
   },
   {
+    id: "structure",
     color: "var(--accent-mint)",
     icon: Network,
-    title: "Text Structure",
-    desc: "Identify theme markers, structure and topic sentences.",
+    label: "Understand the titles and the structure of the text.",
   },
   {
+    id: "scan",
     color: "var(--accent-orange)",
     icon: Search,
-    title: "Scanning",
-    desc: "Find specific information you need in the reading.",
+    label: (
+      <>
+        <strong>Scan</strong> in the reading to find the information you need.
+      </>
+    ),
   },
   {
+    id: "keywords",
+    color: "var(--accent-purple)",
+    icon: MapPin,
+    label: "Find the keywords and topic sentences.",
+  },
+  {
+    id: "activate",
+    color: "var(--accent-yellow)",
+    icon: Eye,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>background knowledge</strong> (or{" "}
+        <strong>world knowledge</strong>) about the topic.
+      </>
+    ),
+  },
+  {
+    id: "details",
     color: "var(--accent-pink)",
-    icon: Puzzle,
-    title: "Making Inferences",
-    desc: "Go beyond what is stated to understand implied meaning.",
+    icon: BookOpenCheck,
+    label: (
+      <>
+        <strong>Find the details</strong> in the reading to support your understanding.
+      </>
+    ),
   },
   {
+    id: "inferences",
+    color: "var(--accent-blue)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "numerical",
     color: "var(--accent-purple)",
     icon: Hash,
-    title: "Numerical Reasoning",
-    desc: "Work out answers related to numbers and dates.",
+    indent: true,
+    label: (
+      <>
+        <strong>Numerical reasoning:</strong> work out something related to numbers, dates and time
+        relations, etc.
+      </>
+    ),
   },
   {
+    id: "contextual",
     color: "var(--accent-yellow)",
     icon: Book,
-    title: "Contextual Inference",
-    desc: "Use surrounding words to figure out unknown meanings.",
+    indent: true,
+    label: (
+      <>
+        <strong>Contextual inference:</strong> use surrounding information to guess the meaning of
+        an unknown word.
+      </>
+    ),
   },
   {
+    id: "interpret",
     color: "var(--accent-mint)",
-    icon: Link2,
-    title: "Coherence Inference",
-    desc: "Connect information to understand attitudes and feelings.",
-  },
-];
-
-const TIPS = [
-  {
-    color: "var(--accent-blue)",
-    icon: Eye,
-    text: "Activate your background knowledge about the topic before reading.",
+    icon: Brain,
+    label: (
+      <>
+        <strong>Interpret</strong> intentions, opinions, attitudes and feelings expressed in the
+        text.
+      </>
+    ),
   },
   {
-    color: "var(--accent-pink)",
-    icon: MapPin,
-    text: "Locate details in the reading to support your understanding.",
-  },
-  {
-    color: "var(--accent-purple)",
+    id: "reread",
+    color: "var(--accent-orange)",
     icon: RotateCcw,
-    text: "Reread relevant parts to confirm your interpretation.",
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
   },
   {
-    color: "var(--accent-mint)",
+    id: "compare",
+    color: "var(--accent-pink)",
     icon: Scale,
-    text: "Understand each answer choice and compare them to find the best one.",
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
+      </>
+    ),
   },
 ];

@@ -112,6 +112,13 @@ const cycles: Cycle[] = [
         href: "/english/reading-comprehension/cycle-3-reading-2",
         available: true,
       },
+      {
+        id: "reading-3",
+        label: "Reading 3",
+        title: "Coming soon",
+        description: "This reading is being prepared. Check back soon!",
+        available: false,
+      },
     ],
   },
 ];
