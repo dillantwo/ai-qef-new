@@ -271,7 +271,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -379,9 +379,8 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 2 — Reading 2: Chop Makers (Article)
               </h1>
-              <p>Cycle 2 — Reading 2: Chop Makers (Article)</p>
             </div>
 
             {/* Tabs */}
@@ -403,26 +402,6 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Info className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-                      The reading below is an <strong>informational article</strong> called{" "}
-                      <strong>Chop Makers</strong>. It has <strong>three paragraphs</strong>: the
-                      past, the work chop makers did, and chop makers today. Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -483,38 +462,6 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                         Chop Alley. Most of their customers are older people or small shop owners. In
                         the future, chop makers may slowly disappear from Hong Kong.
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <BookOpen className="size-3" /> Contextual Clues
-                      </span>
-                      <span className="skill-tag">
-                        <Scale className="size-3" /> Comparing Answers
-                      </span>
                     </div>
                   </div>
 

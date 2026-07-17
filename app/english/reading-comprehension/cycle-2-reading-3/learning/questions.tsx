@@ -46,7 +46,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Use World Knowledge &amp; Infer:</strong> The word &quot;graduation&quot; is the
+        The word &quot;graduation&quot; is the
         clue. In primary school, students go on a graduation activity in their <em>last</em> year, so
         they are most likely Primary 6.
       </>
@@ -83,7 +83,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Language Features &amp; World Knowledge:</strong> A leaf shakes in the wind. Susan
+        A leaf shakes in the wind. Susan
         had to speak in front of others, could not speak, and needed encouragement — these are clues
         that she felt worried, not calm or sick.
       </>
@@ -120,7 +120,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Compare:</strong> Reykjavík is a city in Iceland, so &quot;Icelandic
+        Reykjavík is a city in Iceland, so &quot;Icelandic
         friends&quot; are &quot;new friends from Reykjavík&quot;. Rebecca is the person Susan is
         writing to, not someone she met; teachers and a cousin are never mentioned.
       </>
@@ -157,7 +157,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Sort by Day:</strong> Be careful — clapping and introducing themselves
+        Be careful — clapping and introducing themselves
         happened on the <em>first</em> day, not the second. Games were on the first day too, not
         &quot;every lesson&quot;.
       </>
@@ -194,7 +194,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Reference Words &amp; Inference:</strong> &quot;They&quot; and &quot;one&quot; both
+        &quot;They&quot; and &quot;one&quot; both
         point to the nearest noun — <em>whales</em>. The boat is only transport; the puffin appears
         later and Susan never saw one; the city is too far away in the text.
       </>
@@ -231,7 +231,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Interpret Feelings &amp; Infer:</strong> &quot;Sadly&quot; shows a negative feeling
+        &quot;Sadly&quot; shows a negative feeling
         like disappointment. Susan <em>saw</em> whales breaching (so they swam) and <em>saw</em>{" "}
         Arctic foxes (so they were not hiding). Icelandic horses are never mentioned.
       </>
@@ -267,7 +267,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Predict from the Clue:</strong> If Susan hopes they can travel together, then going
+        If Susan hopes they can travel together, then going
         on a trip together is the most reasonable future plan. Designing a postcard, opening a zoo,
         and visiting Hong Kong Park are never mentioned.
       </>
@@ -304,7 +304,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Skim for the Main Idea:</strong> The best subject covers the whole email. Animals,
+        The best subject covers the whole email. Animals,
         friends and food are each only one small part, but <em>&quot;a wonderful time&quot;</em> on
         the study tour describes everything.
       </>

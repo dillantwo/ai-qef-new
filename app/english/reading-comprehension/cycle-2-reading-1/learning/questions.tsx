@@ -46,7 +46,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Compare:</strong> Find the clue that tells you the purpose, then check
+        Find the clue that tells you the purpose, then check
         each answer. &quot;22nd March&quot; is a date, not an anniversary. Acting and dressing up
         are only activities, not the main purpose.
       </>
@@ -84,7 +84,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Use Picture Clues &amp; World Knowledge:</strong> Look at what each student wears or
+        Look at what each student wears or
         carries, then match it against the rules. A sword is a thing used for fighting; a white
         cloth makes a ghost (a horror theme); a sleeveless top is not allowed.
       </>
@@ -122,7 +122,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Make Inferences &amp; Use Synonyms:</strong> &quot;Perform&quot; and &quot;act
+        &quot;Perform&quot; and &quot;act
         out&quot; have similar meanings. Walking on the stage is only for the best-dressed students,
         and the reading room is for listening, not writing — so those are not for{" "}
         <em>all</em> students.
@@ -159,7 +159,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Language Features &amp; Inference:</strong> <em>&quot;...written by Peter Lam&quot;</em>{" "}
+        <em>&quot;...written by Peter Lam&quot;</em>{" "}
         means Peter Lam is the author of a book, not the storyteller. Lulu is a character in a book
         title. The person named in <em>&quot;Story Corner with Ms Lee&quot;</em> is the storyteller.
       </>
@@ -189,14 +189,14 @@ export const questions: Question[] = [
     clues: ["q5", "q5b"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Scan for the keyword <em>&quot;Best Costume Award&quot;</em>. Read
+        Scan for the keyword <em>&quot;Best Costume Award&quot;</em>. Read
         the sentence before it: <em>&quot;The best-dressed students... will walk proudly on the
         stage.&quot;</em> It is about what students <strong>wear</strong>.
       </>
     ),
     strategy: (
       <>
-        <strong>Contextual Inference:</strong> When you do not know a word, use the words around it.
+        When you do not know a word, use the words around it.
         &quot;Best-dressed&quot; and &quot;Fashion Show&quot; point to clothing, so
         &quot;costume&quot; means the clothes students wear to dress up.
       </>
@@ -233,7 +233,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Skim for the Main Idea:</strong> The best answer summarises most of the poster.
+        The best answer summarises most of the poster.
         Recess, rules and prizes are each only one small part, but &quot;a school event&quot; covers
         the whole Story Day.
       </>

@@ -268,7 +268,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -374,9 +374,8 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 1 — Reading 2: Amazing Animals (Encyclopedia)
               </h1>
-              <p>Cycle 1 — Reading 2: Amazing Animals (Encyclopedia)</p>
             </div>
 
             {/* Tabs */}
@@ -398,27 +397,6 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Info className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-                      The reading below is an entry from an{" "}
-                      <strong>encyclopedia</strong> about animals. It has{" "}
-                      <strong>two parts</strong>: one animal from the sea and one from the far north.
-                      Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -481,41 +459,6 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                         it enjoys the warmest time of the year. It often finds a dry, open place to
                         nest and raise its babies.
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <BookOpen className="size-3" /> Contextual Clues
-                      </span>
-                      <span className="skill-tag">
-                        <Link2 className="size-3" /> Reference Words
-                      </span>
-                      <span className="skill-tag">
-                        <Replace className="size-3" /> Synonyms
-                      </span>
                     </div>
                   </div>
 

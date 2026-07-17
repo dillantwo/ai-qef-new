@@ -46,7 +46,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Tell Must-have from Extra:</strong> All four items are in the list, so
+        All four items are in the list, so
         find the one that is only <em>helpful</em>, not needed. The note{" "}
         <em>&quot;helpful if you have one&quot;</em> means it is okay without it.
       </>
@@ -83,7 +83,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Use Background Knowledge:</strong> The advice sits under{" "}
+        The advice sits under{" "}
         <em>Safety</em>, so it is about keeping safe. Children can use a spoon too, and washing the
         tray is not a reason to ask for help — those answers have no evidence.
       </>
@@ -122,7 +122,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Contextual Inference &amp; Visualise:</strong> Picture the action. To{" "}
+        Picture the action. To{" "}
         <em>&quot;wrap it around the neck of the bottle&quot;</em>, the balloon&apos;s mouth must be
         pulled <em>wider</em>, not washed, cut, or made smaller.
       </>
@@ -163,7 +163,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Bridging Inference:</strong> Link Step 6 with <em>How It Works</em>. Bubbles (B) and
+        Link Step 6 with <em>How It Works</em>. Bubbles (B) and
         the balloon puffing up (C) are stated. The liquid turning less clear (A) matches the milky
         colour in the picture. Nothing says the bottle shrinks.
       </>
@@ -200,7 +200,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Make a Prediction:</strong> Connect the <em>Tip</em> with <em>How It Works</em>.
+        Connect the <em>Tip</em> with <em>How It Works</em>.
         More of both makes more gas, and gas puffs up the balloon. Pink liquid (A) is never
         mentioned, and B and C go against the text.
       </>
@@ -237,7 +237,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Identify Text Type &amp; Purpose:</strong> This is a science experiment, not a story
+        This is a science experiment, not a story
         (A), not cooking food (B), and not sport (D). A science activity fits the{" "}
         <em>Little Scientist</em> section.
       </>

@@ -256,7 +256,7 @@ export default function EnglishReadingComprehensionLearningPage() {
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -312,9 +312,8 @@ export default function EnglishReadingComprehensionLearningPage() {
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 1 — Reading 1: Sunshine Ice-cream Webpage
               </h1>
-              <p>Cycle 1 — Reading 1: Sunshine Ice-cream Webpage</p>
             </div>
 
             {/* Tabs */}
@@ -336,31 +335,6 @@ export default function EnglishReadingComprehensionLearningPage() {
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Info className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      The reading below is a <strong>webpage of an ice-cream shop</strong>. It has
-                      an advertisement and a comments section. Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -471,41 +445,6 @@ export default function EnglishReadingComprehensionLearningPage() {
                           ))}
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Network className="size-3" /> Text Structure
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <Hash className="size-3" /> Numerical Reasoning
-                      </span>
-                      <span className="skill-tag">
-                        <Book className="size-3" /> Contextual Clues
-                      </span>
                     </div>
                   </div>
 

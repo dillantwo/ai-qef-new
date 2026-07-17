@@ -48,7 +48,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Make Inferences:</strong> The door was locked and Mr Chan has the only
+        The door was locked and Mr Chan has the only
         key, so A and B are wrong. The police are not mentioned taking it (D). Even the police
         don&apos;t know where to start — so nobody knows yet.
       </>
@@ -88,7 +88,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Contextual Inference:</strong> Use the sentences around the word. They are all about
+        Use the sentences around the word. They are all about
         something strange and hard to solve — even the police are stuck. So &quot;mystery&quot; is
         not a place (A), a plan (B) or funny (D).
       </>
@@ -125,7 +125,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Skim &amp; Activate Background Knowledge:</strong> A stolen watch, the police and a
+        A stolen watch, the police and a
         detective are all parts of a crime story. &quot;Journey&quot; is a distractor for travel (D);
         eating in the living room is not about cooking (B); there is nothing historical (C).
       </>
@@ -163,7 +163,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Use Genre Knowledge:</strong> A blurb has review comments. Mr Chan is a
+        A blurb has review comments. Mr Chan is a
         character (A); Dillan Rumelhart wrote <em>Lulu and the Moon Rocket</em> and only left a
         comment (B); Jocelyn Chow is a reviewer (D). The book is <em>by</em> David Wong.
       </>
@@ -200,7 +200,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Make Inferences (Numerical Reasoning):</strong> &quot;The other two books&quot; means
+        &quot;The other two books&quot; means
         two more <em>besides</em> this one. This book + 2 others = 3 books in total.
       </>
     ),
@@ -235,7 +235,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Understand the Writer&apos;s Intention:</strong> A blurb uses an exciting summary and
+        A blurb uses an exciting summary and
         good reviews to make readers want the book. It does not teach crime-solving (A) or story
         writing (C), and it is a story, not a real report (D).
       </>

@@ -46,7 +46,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Infer:</strong> Find the keyword, read the clue right after it, then
+        Find the keyword, read the clue right after it, then
         activate your world knowledge — remembering and learning from mistakes means the animal is
         smart. Compare the answers to pick the best.
       </>
@@ -84,7 +84,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Language features &amp; details:</strong> &quot;Hiding master&quot; is a
+        &quot;Hiding master&quot; is a
         personification — it means the cuttlefish is very good at hiding. Look for the detail that is
         about <em>hiding</em>, then compare the options.
       </>
@@ -121,7 +121,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Reference words:</strong> Words like &quot;this&quot;, &quot;that&quot;,
+        Words like &quot;this&quot;, &quot;that&quot;,
         &quot;it&quot; and &quot;these&quot; refer to something near them. Look at the sentence
         before &quot;This&quot; to find what it means.
       </>
@@ -158,7 +158,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Synonyms:</strong> &quot;Well known&quot; means &quot;famous&quot;, and a long
+        &quot;Well known&quot; means &quot;famous&quot;, and a long
         &quot;trip&quot; is the same as flying a long &quot;way&quot;. Match words with similar
         meanings, then take out options with no evidence.
       </>
@@ -196,7 +196,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Bridging inference:</strong> Link two pieces of information — it returns to Alaska,
+        Link two pieces of information — it returns to Alaska,
         and there it enjoys the warmest time of the year. Fill the gap with your world knowledge:
         the warmest season is summer.
       </>
@@ -263,7 +263,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Language features &amp; gap-filling inference:</strong> Notice that a verb is needed
+        Notice that a verb is needed
         in the sentence, so meanings 1 and 2 (nouns) are out. Then use your knowledge that birds
         build a nest to raise babies to pick the best verb meaning.
       </>

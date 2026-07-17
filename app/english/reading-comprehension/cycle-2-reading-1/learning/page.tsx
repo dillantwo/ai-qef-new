@@ -277,7 +277,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -442,9 +442,8 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 2 — Reading 1: Story Day (Poster)
               </h1>
-              <p>Cycle 2 — Reading 1: Story Day (Poster)</p>
             </div>
 
             {/* Tabs */}
@@ -466,26 +465,6 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Info className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-                      The reading below is a <strong>poster</strong> for a school event called{" "}
-                      <strong>Story Day</strong>. It has <strong>two parts</strong>: the basic
-                      information (with a dress code) and the activities. Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -610,41 +589,6 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
                       <p className="poster-note">
                         Note: Students who watch the fashion show will get a small gift.
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <BookOpen className="size-3" /> Contextual Clues
-                      </span>
-                      <span className="skill-tag">
-                        <Replace className="size-3" /> Synonyms
-                      </span>
-                      <span className="skill-tag">
-                        <Scale className="size-3" /> Comparing Answers
-                      </span>
                     </div>
                   </div>
 

@@ -267,7 +267,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -444,9 +444,8 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 2 — Reading 3: A Wonderful School Trip (Email)
               </h1>
-              <p>Cycle 2 — Reading 3: A Wonderful School Trip (Email)</p>
             </div>
 
             {/* Tabs */}
@@ -468,26 +467,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Mail className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-                      The reading below is an <strong>email</strong> from Susan to her friend
-                      Rebecca. Susan writes about her <strong>graduation study tour in Iceland</strong>.
-                      It has <strong>six paragraphs</strong>. Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -572,38 +551,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                           Susan
                         </p>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Quote className="size-3" /> Language Features
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <Scale className="size-3" /> Comparing Answers
-                      </span>
                     </div>
                   </div>
 

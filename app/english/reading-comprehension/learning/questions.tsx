@@ -43,7 +43,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scanning &amp; Inference:</strong> You cannot see the exact words &quot;four
+        You cannot see the exact words &quot;four
         flavours&quot; in the reading, but you can scan for the keyword &quot;flavours&quot;,
         count them and get the sum. This is numerical reasoning.
       </>
@@ -78,7 +78,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scanning &amp; Comparing:</strong> Find the special offer section and read all the
+        Find the special offer section and read all the
         conditions. Take out the answers with no evidence in the text, then compare the rest. The
         branch restriction tells you what action is required.
       </>
@@ -115,7 +115,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Numerical Reasoning:</strong> Activate your knowledge of time relations. &quot;10–16
+        Activate your knowledge of time relations. &quot;10–16
         August&quot; is a period of time. Check each option and decide whether the date falls inside
         the period.
       </>
@@ -153,7 +153,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Contextual Inference:</strong> When you don&apos;t know a word&apos;s meaning, look
+        When you don&apos;t know a word&apos;s meaning, look
         at the surrounding words for clues. &quot;Prefer…to…&quot; compares two things in contrast,
         so &quot;ordinary&quot; is the opposite of &quot;strange.&quot;
       </>
@@ -191,7 +191,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Interpreting Feelings:</strong> Connect the exclamation &quot;Yuck!&quot; with
+        Connect the exclamation &quot;Yuck!&quot; with
         HappyPeter&apos;s overall attitude. &quot;What a mess!&quot;, &quot;melted&quot; and the
         sarcastic renaming to &quot;Tropical Cyclone Ice-cream&quot; all show{" "}
         <strong>negative feelings</strong>.
@@ -235,7 +235,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Interpreting Feelings:</strong> Match each person&apos;s attitude to the ice-cream.
+        Match each person&apos;s attitude to the ice-cream.
         Compare the <strong>feelings</strong> in each comment. &quot;Coming back for more&quot; is
         the most positive statement of all four comments.
       </>

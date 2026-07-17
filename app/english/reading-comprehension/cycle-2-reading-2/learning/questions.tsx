@@ -47,7 +47,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Use World Knowledge:</strong> Find the reason in the text, then check each
+        Find the reason in the text, then check each
         answer. People in the old days did not use computers, and painting is never given as a
         reason for visiting a chop maker.
       </>
@@ -84,7 +84,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan &amp; Compare:</strong> &quot;Materials, words and styles&quot; is the same as
+        &quot;Materials, words and styles&quot; is the same as
         deciding what kind of chop you want. &quot;Pay&quot; is never mentioned, and painting or a
         business document is only for some customers, not everyone.
       </>
@@ -120,7 +120,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Skim for the Main Idea:</strong> The best answer covers most of the paragraph.
+        The best answer covers most of the paragraph.
         Customers, the steps of making a chop, and Chop Alley are each only a small part — the
         paragraph is really about the work chop makers did.
       </>
@@ -184,7 +184,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Contextual Inference:</strong> Use the words around &quot;peak&quot;. Because there
+        Use the words around &quot;peak&quot;. Because there
         were <em>many</em> stalls, it was the time when chop makers were most successful — meaning 1.
         Meanings 2–4 (mountain, pointed shape, cap) do not fit.
       </>
@@ -222,7 +222,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Make Inferences:</strong> Link the clues together. If fewer people need chops, chop
+        Link the clues together. If fewer people need chops, chop
         makers will have fewer customers. &quot;Open more stalls&quot; is the opposite of the text,
         and pens and offices are not what the text says about chop makers.
       </>
@@ -261,7 +261,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Bridging Inference:</strong> Link clues from more than one paragraph. Chop makers do
+        Link clues from more than one paragraph. Chop makers do
         not draw paintings or carve fortune cats, and writing emails is not their work — but making a
         company chop matches both what they do and who their customers are.
       </>

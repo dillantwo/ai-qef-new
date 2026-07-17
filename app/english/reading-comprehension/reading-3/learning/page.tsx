@@ -260,7 +260,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                   className="hint-btn strategy-btn"
                   onClick={() => toggleStrategy(q.id)}
                 >
-                  <GraduationCap className="size-3.5" /> Reading Strategy
+                  <GraduationCap className="size-3.5" /> Tips &amp; Key Reading Skills
                 </button>
               </div>
               {hints[q.id] && <div className="hint-box">{q.hint}</div>}
@@ -376,9 +376,8 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Reading Scaffolding
+                <BookOpenCheck className="size-6" /> Cycle 1 — Reading 3: Pip the Dragon (Story)
               </h1>
-              <p>Cycle 1 — Reading 3: Pip the Dragon (Story)</p>
             </div>
 
             {/* Tabs */}
@@ -400,26 +399,6 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
             {section === "overview" && (
               <div className="section-panel">
                 <div className="narrow">
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-blue),var(--accent-purple))",
-                        }}
-                      >
-                        <Info className="size-4" />
-                      </span>
-                      About This Reading
-                    </div>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-                      The reading below is a <strong>story</strong> about magical animals and a
-                      village. It has <strong>six paragraphs</strong> in{" "}
-                      <strong>two parts</strong>. Have a quick look at it!
-                    </p>
-                  </div>
-
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -496,41 +475,6 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                         The villagers knew that they were wrong about Pip. They became friends with
                         him and welcomed him to the village.
                       </p>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
-                        }}
-                      >
-                        <Brain className="size-4" />
-                      </span>
-                      Reading Skills You&apos;ll Practice
-                    </div>
-                    <div>
-                      <span className="skill-tag">
-                        <FastForward className="size-3" /> Skimming
-                      </span>
-                      <span className="skill-tag">
-                        <Search className="size-3" /> Scanning
-                      </span>
-                      <span className="skill-tag">
-                        <Puzzle className="size-3" /> Inference
-                      </span>
-                      <span className="skill-tag">
-                        <Heart className="size-3" /> Feelings &amp; Attitude
-                      </span>
-                      <span className="skill-tag">
-                        <Replace className="size-3" /> Synonyms
-                      </span>
-                      <span className="skill-tag">
-                        <Link2 className="size-3" /> Fact vs Opinion
-                      </span>
                     </div>
                   </div>
 

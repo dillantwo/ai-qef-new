@@ -47,7 +47,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Fact vs opinion:</strong> The question asks what really made the villagers think Pip
+        The question asks what really made the villagers think Pip
         was dangerous — his appearance. &quot;Burned houses&quot; is only what they{" "}
         <em>heard</em>, and &quot;did evil things&quot; / &quot;not kind&quot; are just their
         guesses, not facts in the text.
@@ -87,7 +87,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Synonyms &amp; substitution:</strong> Put each option into &quot;___ broken
+        Put each option into &quot;___ broken
         things&quot;. You would not <em>damage</em> something already broken, and &quot;build&quot;
         or &quot;touch&quot; do not fit. &quot;Repair&quot; means to make it good again.
       </>
@@ -123,7 +123,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Similes &amp; compound words:</strong> &quot;Warm-hearted&quot; is{" "}
+        &quot;Warm-hearted&quot; is{" "}
         <em>warm</em> + <em>heart</em>. &quot;Confident&quot; is wrong (the text says he was{" "}
         <em>not</em> confident), and &quot;shy&quot; is true about Pip but does not answer this
         question — it is a distractor.
@@ -161,7 +161,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Onomatopoeia &amp; atmosphere:</strong> &quot;Moo!&quot; is the cows&apos; sound
+        &quot;Moo!&quot; is the cows&apos; sound
         during Greta&apos;s evil magic. &quot;Scared&quot; matches &quot;frightened&quot;.
         &quot;Excited&quot; and &quot;calm&quot; are not negative, and &quot;bored&quot; does not fit
         the scary setting.
@@ -199,7 +199,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Main idea &amp; topic sentence:</strong> The main idea covers the whole paragraph.
+        The main idea covers the whole paragraph.
         It was Pip (not the villagers) who fixed things, so A is only a small, wrong detail.
         &quot;Greta scared the villagers&quot; is Part 2&apos;s first paragraph, and &quot;argued&quot;
         is never mentioned.
@@ -237,7 +237,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Bridging inference:</strong> Link the two clues — Pip stopped all her tricks, and she
+        Link the two clues — Pip stopped all her tricks, and she
         knew she could not beat him. Together they show Pip&apos;s magic was stronger. The other
         options are not mentioned or not supported.
       </>
