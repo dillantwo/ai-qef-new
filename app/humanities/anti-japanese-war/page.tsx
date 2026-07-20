@@ -67,7 +67,7 @@ export default function HumanitiesAntiJapaneseWarLandingPage() {
     <>
       <Header backHref="/humanities" backLabel="返回人文科" />
 
-      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+      <main className="relative flex flex-1 overflow-y-auto overflow-x-hidden bg-white text-[#080808]">
         <div className="absolute inset-0 bg-[linear-gradient(180deg,_#fffdf8_0%,_#f8f7f4_48%,_#ffffff_100%)]" />
         <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(20,110,245,0.12),_transparent_42%)]" />
         <div className="absolute right-0 top-24 h-56 w-56 translate-x-1/4 rounded-full bg-[#ed52cb]/8 blur-3xl" />
