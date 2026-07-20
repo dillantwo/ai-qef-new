@@ -98,9 +98,12 @@ export interface ChineseStudentSummary {
   lastUpdatedAt: string | null;
 }
 
-export async function getChineseStudents(): Promise<ChineseStudentSummary[]> {
+export async function getChineseStudents(topic?: string): Promise<ChineseStudentSummary[]> {
   try {
-    const response = await fetch(`${basePath}/api/chinese-chat-history/teacher`, {
+    const url = topic
+      ? `${basePath}/api/chinese-chat-history/teacher?topic=${encodeURIComponent(topic)}`
+      : `${basePath}/api/chinese-chat-history/teacher`;
+    const response = await fetch(url, {
       credentials: "include",
     });
     if (!response.ok) return [];
@@ -134,9 +137,12 @@ export async function getChineseStudentChatHistory(
 // Science chats live in the same collection as Chinese ones, distinguished by
 // topic. They are served by a dedicated teacher endpoint.
 
-export async function getScienceStudents(): Promise<ChineseStudentSummary[]> {
+export async function getScienceStudents(topic?: string): Promise<ChineseStudentSummary[]> {
   try {
-    const response = await fetch(`${basePath}/api/science-chat-history/teacher`, {
+    const url = topic
+      ? `${basePath}/api/science-chat-history/teacher?topic=${encodeURIComponent(topic)}`
+      : `${basePath}/api/science-chat-history/teacher`;
+    const response = await fetch(url, {
       credentials: "include",
     });
     if (!response.ok) return [];
@@ -170,9 +176,12 @@ export async function getScienceStudentChatHistory(
 // Humanities chats live in the same collection as Chinese ones, distinguished
 // by topic. They are served by a dedicated teacher endpoint.
 
-export async function getHumanitiesStudents(): Promise<ChineseStudentSummary[]> {
+export async function getHumanitiesStudents(topic?: string): Promise<ChineseStudentSummary[]> {
   try {
-    const response = await fetch(`${basePath}/api/humanities-chat-history/teacher`, {
+    const url = topic
+      ? `${basePath}/api/humanities-chat-history/teacher?topic=${encodeURIComponent(topic)}`
+      : `${basePath}/api/humanities-chat-history/teacher`;
+    const response = await fetch(url, {
       credentials: "include",
     });
     if (!response.ok) return [];

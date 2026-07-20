@@ -71,12 +71,14 @@ export async function GET(req: Request) {
     }
 
     // --- List students who have Science chat history ---
+    const topicMatch =
+      topic && SCIENCE_TOPICS.includes(topic) ? topic : { $in: SCIENCE_TOPICS };
     const grouped = await ChineseChatHistory.aggregate<{
       _id: string;
       count: number;
       lastUpdatedAt: Date;
     }>([
-      { $match: { topic: { $in: SCIENCE_TOPICS } } },
+      { $match: { topic: topicMatch } },
       {
         $group: {
           _id: "$userId",

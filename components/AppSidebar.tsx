@@ -176,6 +176,21 @@ export function AppSidebar() {
   const isHumanities = isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isChineseLikeChat = isChineseWriting || isScienceCircuit || isScienceAerospace || isHumanitiesWater || isHumanitiesAntiJapaneseWar;
   const isEnglishDashboard = pathname.startsWith('/english/dashboard') || pathname.startsWith('/english/thankyouletter') || pathname.startsWith('/english/reading-comprehension');
+  // Current topic for the teacher's per-topic student-history views.
+  const chineseWritingTopic = isChineseCharacter
+    ? 'character-description'
+    : isChineseLinZexu
+    ? 'lin-zexu'
+    : 'scenery-description';
+  const englishTopic = pathname.startsWith('/english/thankyouletter')
+    ? 'thank-you-letter'
+    : pathname.startsWith('/english/reading-comprehension')
+    ? 'reading-comprehension'
+    : 'location-direction';
+  const scienceTopic = isScienceAerospace ? 'science-aerospace' : 'science-circuit';
+  const humanitiesTopic = isHumanitiesAntiJapaneseWar
+    ? 'humanities-anti-japanese-war'
+    : 'humanities-water-resources';
   // Reading-comprehension role-play pages get a draggable Word Bank.
   const isReadingRoleplay =
     pathname.startsWith('/english/reading-comprehension') && pathname.endsWith('/roleplay');
@@ -372,11 +387,33 @@ export function AppSidebar() {
     if (!isChineseWriting || !isTeacher) return;
 
     async function refreshStudents() {
-      setChineseStudents(await getChineseStudents());
+      setChineseStudents(await getChineseStudents(chineseWritingTopic));
     }
 
     void refreshStudents();
-  }, [isChineseWriting, isTeacher]);
+  }, [isChineseWriting, isTeacher, chineseWritingTopic]);
+
+  // Teacher: load the list of students who have Science chat history.
+  useEffect(() => {
+    if (!isScience || !isTeacher) return;
+
+    async function refreshScienceStudents() {
+      setScienceStudents(await getScienceStudents(scienceTopic));
+    }
+
+    void refreshScienceStudents();
+  }, [isScience, isTeacher, scienceTopic]);
+
+  // Teacher: load the list of students who have Humanities chat history.
+  useEffect(() => {
+    if (!isHumanities || !isTeacher) return;
+
+    async function refreshHumanitiesStudents() {
+      setHumanitiesStudents(await getHumanitiesStudents(humanitiesTopic));
+    }
+
+    void refreshHumanitiesStudents();
+  }, [isHumanities, isTeacher, humanitiesTopic]);
 
   // Teacher: load the list of students who have Math chat history.
   useEffect(() => {
@@ -668,7 +705,7 @@ export function AppSidebar() {
             size="sm"
             className="w-full justify-start gap-2 text-xs"
             onClick={() => {
-              void getChineseStudents().then(setChineseStudents);
+              void getChineseStudents(chineseWritingTopic).then(setChineseStudents);
               setStudentDialogOpen(true);
             }}
           >
@@ -700,7 +737,7 @@ export function AppSidebar() {
             size="sm"
             className="w-full justify-start gap-2 text-xs"
             onClick={() => {
-              void getEnglishStudents().then(setEnglishStudents);
+              void getEnglishStudents(englishTopic).then(setEnglishStudents);
               setEnglishDialogOpen(true);
             }}
           >
@@ -716,7 +753,7 @@ export function AppSidebar() {
             size="sm"
             className="w-full justify-start gap-2 text-xs"
             onClick={() => {
-              void getScienceStudents().then(setScienceStudents);
+              void getScienceStudents(scienceTopic).then(setScienceStudents);
               setScienceDialogOpen(true);
             }}
           >
@@ -732,7 +769,7 @@ export function AppSidebar() {
             size="sm"
             className="w-full justify-start gap-2 text-xs"
             onClick={() => {
-              void getHumanitiesStudents().then(setHumanitiesStudents);
+              void getHumanitiesStudents(humanitiesTopic).then(setHumanitiesStudents);
               setHumanitiesDialogOpen(true);
             }}
           >
@@ -958,6 +995,7 @@ export function AppSidebar() {
           onClose={() => setStudentDialogOpen(false)}
           fetchChats={getChineseStudentChatHistory}
           topicLabels={CHINESE_TOPIC_LABELS}
+          topic={chineseWritingTopic}
         />
       )}
 
@@ -978,6 +1016,7 @@ export function AppSidebar() {
           onClose={() => setEnglishDialogOpen(false)}
           fetchChats={getEnglishStudentChatHistory}
           topicLabels={ENGLISH_TOPIC_LABELS}
+          topic={englishTopic}
         />
       )}
 
@@ -988,6 +1027,7 @@ export function AppSidebar() {
           onClose={() => setScienceDialogOpen(false)}
           fetchChats={getScienceStudentChatHistory}
           topicLabels={SCIENCE_TOPIC_LABELS}
+          topic={scienceTopic}
         />
       )}
 
@@ -998,6 +1038,7 @@ export function AppSidebar() {
           onClose={() => setHumanitiesDialogOpen(false)}
           fetchChats={getHumanitiesStudentChatHistory}
           topicLabels={HUMANITIES_TOPIC_LABELS}
+          topic={humanitiesTopic}
         />
       )}
 

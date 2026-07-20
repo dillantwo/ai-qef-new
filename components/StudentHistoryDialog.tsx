@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -17,6 +17,26 @@ import { Separator } from "@/components/ui/separator";
 
 const REMARK_PLUGINS = [remarkGfm, remarkMath];
 const REHYPE_PLUGINS = [[rehypeKatex, { strict: false }]] as never;
+
+// Renders a short piece of text (e.g. a chat title) with inline LaTeX support,
+// while keeping the output inline (no block <p> wrapper).
+const INLINE_MARKDOWN_COMPONENTS = {
+  p: ({ children }: { children?: ReactNode }) => <>{children}</>,
+} as never;
+
+function MathText({ children, className }: { children: string; className?: string }) {
+  return (
+    <span className={className}>
+      <ReactMarkdown
+        remarkPlugins={REMARK_PLUGINS}
+        rehypePlugins={REHYPE_PLUGINS}
+        components={INLINE_MARKDOWN_COMPONENTS}
+      >
+        {children}
+      </ReactMarkdown>
+    </span>
+  );
+}
 
 export interface StudentSummary {
   id: string;
@@ -48,13 +68,15 @@ export default function StudentHistoryDialog({
   students,
   fetchChats,
   topicLabels,
+  topic,
   title = "學生歷史記錄",
 }: {
   open: boolean;
   onClose: () => void;
   students: StudentSummary[];
-  fetchChats: (studentId: string) => Promise<HistoryChatItem[]>;
+  fetchChats: (studentId: string, topic?: string) => Promise<HistoryChatItem[]>;
   topicLabels: Record<string, string>;
+  topic?: string;
   title?: string;
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -80,7 +102,7 @@ export default function StudentHistoryDialog({
     setLoading(true);
     setChats([]);
     setSelectedChatId(null);
-    fetchChats(selectedStudentId)
+    fetchChats(selectedStudentId, topic)
       .then((items) => {
         if (cancelled) return;
         setChats(items);
@@ -92,7 +114,7 @@ export default function StudentHistoryDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, selectedStudentId, fetchChats]);
+  }, [open, selectedStudentId, fetchChats, topic]);
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === selectedStudentId) ?? null,
@@ -195,7 +217,7 @@ export default function StudentHistoryDialog({
                           selectedChatId === item.id ? "text-blue-700" : ""
                         }`}
                       >
-                        {item.title}
+                        <MathText>{item.title}</MathText>
                       </div>
                       <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
                         <span className="inline-flex items-center rounded-[4px] bg-[#146ef5]/10 px-1.5 py-0.5 font-medium text-[#146ef5]">
@@ -217,7 +239,9 @@ export default function StudentHistoryDialog({
             {selectedChat ? (
               <div className="space-y-4">
                 <div className="mb-2 border-b pb-2">
-                  <h3 className="text-sm font-semibold">{selectedChat.title}</h3>
+                  <h3 className="text-sm font-semibold">
+                    <MathText>{selectedChat.title}</MathText>
+                  </h3>
                   <p className="text-[10px] text-muted-foreground">
                     {selectedStudent?.displayName} · {topicLabel(selectedChat.topic)}
                   </p>

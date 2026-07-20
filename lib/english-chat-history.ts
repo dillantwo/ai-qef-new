@@ -138,9 +138,12 @@ export interface EnglishStudentSummary {
   lastUpdatedAt: string | null;
 }
 
-export async function getEnglishStudents(): Promise<EnglishStudentSummary[]> {
+export async function getEnglishStudents(topic?: string): Promise<EnglishStudentSummary[]> {
   try {
-    const response = await fetch(`${basePath}/api/english-chat-history/teacher`, {
+    const url = topic
+      ? `${basePath}/api/english-chat-history/teacher?topic=${encodeURIComponent(topic)}`
+      : `${basePath}/api/english-chat-history/teacher`;
+    const response = await fetch(url, {
       credentials: "include",
     });
     if (!response.ok) return [];

@@ -72,12 +72,14 @@ export async function GET(req: Request) {
     }
 
     // --- List students who have English chat history ---
+    const topicMatch =
+      topic && ENGLISH_TOPICS.includes(topic) ? topic : { $in: ENGLISH_TOPICS };
     const grouped = await EnglishChatHistory.aggregate<{
       _id: string;
       count: number;
       lastUpdatedAt: Date;
     }>([
-      { $match: { topic: { $in: ENGLISH_TOPICS } } },
+      { $match: { topic: topicMatch } },
       {
         $group: {
           _id: "$userId",
