@@ -10,7 +10,7 @@ const topics = [
     id: "location-direction",
     label: "Location and Direction",
     subtitle: "Map Language Lab",
-    description: "Practice prepositional phrases through map-based direction tasks and structured speaking prompts.",
+    description: "Practice giving directions through map-based tasks.",
     icon: Route,
     color: "#146ef5",
     available: true,

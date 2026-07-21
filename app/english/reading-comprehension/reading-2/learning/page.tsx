@@ -75,6 +75,12 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -193,9 +199,9 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
           ? "Good effort! Review the hints and try again."
           : "Keep practicing — use the hints to help you next time!";
 
-  const clueClass = (id: string) =>
-    `highlight-clue${activeClues.ids.includes(id) ? " glow" : ""}${
-      activeClues.badge === id ? " clue-badge" : ""
+  const clueClass = (...ids: string[]) =>
+    `highlight-clue${ids.some((id) => activeClues.ids.includes(id)) ? " glow" : ""}${
+      ids.some((id) => activeClues.badge === id) ? " clue-badge" : ""
     }`;
   const setClueRef = (id: string) => (el: HTMLElement | null) => {
     clueRefs.current[id] = el;
@@ -319,9 +325,9 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
       <div className="doc-title">Amazing Animals</div>
       <div className="section-bar sea">From the Sea</div>
       <p className="doc-text">
-        The common cuttlefish is a sea animal. It has eight arms and two longer arms called
-        tentacles. It can fire out the tentacles to catch its prey. It has three hearts and blue
-        blood. The common cuttlefish is an{" "}
+        <strong>The common cuttlefish</strong> is a sea animal. It has eight arms and two longer arms
+        called tentacles. It can fire out the tentacles to catch its prey. It has three hearts and
+        blue blood. <strong>The common cuttlefish</strong> is an{" "}
         <span className="doc-underline">intelligent</span> animal.{" "}
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           It can remember things and learn from its mistakes.
@@ -331,7 +337,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
           It can shoot ink when it is in danger.
         </span>{" "}
         <span className="doc-underline">This</span> helps it escape.{" "}
-        <span className={clueClass("q2")} ref={setClueRef("q2")}>
+        <span className={clueClass("q2", "q1b")} ref={setClueRef("q2")}>
           It can change its skin colour to look like the sand.
         </span>{" "}
         It can also hide in small spaces because it has a soft body.
@@ -344,8 +350,8 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
     <div className={docActive("part2")}>
       <div className="section-bar north">From the Far North</div>
       <p className="doc-text">
-        The bar-tailed godwit is a bird with long beak and pointed wings. There are patterns of fine
-        bars on its tail.{" "}
+        <strong>The bar-tailed godwit</strong> is a bird with long beak and pointed wings. There are
+        patterns of fine bars on its tail.{" "}
         <span className={clueClass("q4")} ref={setClueRef("q4")}>
           It is well known for having one of the longest trips without stopping.
         </span>{" "}
@@ -417,9 +423,6 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                       <li>
                         <HelpCircle className="size-4" /> How many parts are there?
                       </li>
-                      <li>
-                        <HelpCircle className="size-4" /> How many lines are there?
-                      </li>
                     </ul>
                   </div>
 
@@ -441,18 +444,20 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                       <div className="doc-title">Amazing Animals</div>
                       <div className="section-bar sea">From the Sea</div>
                       <p className="doc-text">
-                        The common cuttlefish is a sea animal. It has eight arms and two longer arms
-                        called tentacles. It can fire out the tentacles to catch its prey. It has
-                        three hearts and blue blood. The common cuttlefish is an intelligent animal.
-                        It can remember things and learn from its mistakes. It is also a &quot;hiding
+                        <strong>The common cuttlefish</strong> is a sea animal. It has eight arms and
+                        two longer arms called tentacles. It can fire out the tentacles to catch its
+                        prey. It has three hearts and blue blood. <strong>The common cuttlefish</strong>{" "}
+                        is an intelligent animal. It can remember things and learn from its mistakes.
+                        It is also a &quot;hiding
                         master&quot;. It can shoot ink when it is in danger. This helps it escape. It
                         can change its skin colour to look like the sand. It can also hide in small
                         spaces because it has a soft body.
                       </p>
                       <div className="section-bar north">From the Far North</div>
                       <p className="doc-text">
-                        The bar-tailed godwit is a bird with long beak and pointed wings. There are
-                        patterns of fine bars on its tail. It is well known for having one of the
+                        <strong>The bar-tailed godwit</strong> is a bird with long beak and pointed
+                        wings. There are patterns of fine bars on its tail. It is well known for
+                        having one of the
                         longest trips without stopping. It always follows the warm weather. Every
                         year, before winter comes, it leaves Alaska. It flies south to enjoy the warm
                         season in New Zealand. When the season changes, it returns to Alaska. There,
@@ -629,64 +634,29 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      <li>
-                        <span
-                          className="skill-icon"
-                          style={{ background: "var(--accent-blue)" }}
-                        >
-                          <FastForward className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Skim</strong> the reading to get an overview and the main idea.
-                        </span>
-                      </li>
-                      <li>
-                        <span
-                          className="skill-icon"
-                          style={{ background: "var(--accent-mint)" }}
-                        >
-                          <Search className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Scan</strong> to find the keyword and the information you need.
-                        </span>
-                      </li>
-                      <li>
-                        <span
-                          className="skill-icon"
-                          style={{ background: "var(--accent-orange)" }}
-                        >
-                          <BookOpen className="size-3.5" />
-                        </span>
-                        <span>
-                          Use <strong>contextual clues</strong> and find details to support your
-                          understanding.
-                        </span>
-                      </li>
-                      <li>
-                        <span
-                          className="skill-icon"
-                          style={{ background: "var(--accent-purple)" }}
-                        >
-                          <Link2 className="size-3.5" />
-                        </span>
-                        <span>
-                          Spot <strong>reference words</strong> (this, that, it) and{" "}
-                          <strong>synonyms</strong> (well known = famous).
-                        </span>
-                      </li>
-                      <li>
-                        <span
-                          className="skill-icon"
-                          style={{ background: "var(--accent-pink)" }}
-                        >
-                          <Puzzle className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Make inferences</strong> by linking information and filling gaps
-                          with your background knowledge.
-                        </span>
-                      </li>
+                      {SKILLS_USED.map(({ id, color, icon: Icon, label }) => (
+                        <li key={id}>
+                          <span className="skill-icon" style={{ background: color }}>
+                            <Icon className="size-3" />
+                          </span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as used"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
@@ -716,3 +686,63 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
     </>
   );
 }
+
+const SKILLS_USED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: React.ReactNode;
+}[] = [
+  {
+    id: "skim",
+    color: "var(--accent-blue)",
+    icon: FastForward,
+    label: (
+      <>
+        <strong>Skim</strong> the reading to get an overview and the main idea.
+      </>
+    ),
+  },
+  {
+    id: "scan",
+    color: "var(--accent-mint)",
+    icon: Search,
+    label: (
+      <>
+        <strong>Scan</strong> to find the keyword and the information you need.
+      </>
+    ),
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-orange)",
+    icon: BookOpen,
+    label: (
+      <>
+        Use <strong>contextual clues</strong> and find details to support your understanding.
+      </>
+    ),
+  },
+  {
+    id: "reference",
+    color: "var(--accent-purple)",
+    icon: Link2,
+    label: (
+      <>
+        Spot <strong>reference words</strong> (this, that, it) and <strong>synonyms</strong> (well
+        known = famous).
+      </>
+    ),
+  },
+  {
+    id: "inferences",
+    color: "var(--accent-pink)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong> by linking information and filling gaps with your
+        background knowledge.
+      </>
+    ),
+  },
+];

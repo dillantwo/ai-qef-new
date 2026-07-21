@@ -36,7 +36,7 @@ export const questions: Question[] = [
       { val: "D", label: "was not kind to others" },
     ],
     answer: "B",
-    clues: ["q1"],
+    clues: ["q1", "q1b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Scan the second paragraph:{" "}
@@ -60,8 +60,7 @@ export const questions: Question[] = [
         <br />
         The clue <em>&quot;big wings and sharp teeth&quot;</em> and{" "}
         <em>&quot;Look at that scary dragon!&quot;</em> shows the villagers judged Pip by his
-        appearance. They only <em>heard</em> that dragons burn houses, and the other options are
-        guesses with no evidence — they are distractors.
+        appearance. The other options are distractors.
       </>
     ),
   },
@@ -81,8 +80,7 @@ export const questions: Question[] = [
       <>
         <strong>💡 Hint:</strong> The clue is{" "}
         <em>&quot;cure sick plants and animals, and mend broken things&quot;</em>. &quot;Cure&quot;
-        makes sick things well again, so &quot;mend&quot; does something similar to{" "}
-        <em>broken</em> things.
+        makes sick things well again, so &quot;mend&quot; does something similar.
       </>
     ),
     strategy: (
@@ -118,14 +116,14 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> <em>&quot;Pip was kind. He was like sunlight.&quot;</em> is a
-        simile. Sunlight is warm and gentle, and Pip helped others — he brought warmth and healing.
+        simile. Sunlight is warm, and Pip helped others — he brought warmth and healing.
       </>
     ),
     strategy: (
       <>
         &quot;Warm-hearted&quot; is{" "}
         <em>warm</em> + <em>heart</em>. &quot;Confident&quot; is wrong (the text says he was{" "}
-        <em>not</em> confident), and &quot;shy&quot; is true about Pip but does not answer this
+        <em>not</em>{" "}confident), and &quot;shy&quot; is true about Pip but does not answer this
         question — it is a distractor.
       </>
     ),

@@ -49,6 +49,7 @@ const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
 const reading3Styles = `
 .rc-learning .story-doc { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); padding: 8px 14px 14px; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .story-doc.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
+.rc-learning .story-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); padding: 6px 4px 10px; }
 .rc-learning .story-part-label { display: inline-block; margin: 12px 0 4px; font-weight: 700; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-purple); }
 .rc-learning .story-part-label:first-child { margin-top: 4px; }
 .rc-learning .story-text { font-size: 14px; line-height: 1.9; color: var(--text-primary); margin: 0 0 10px; }
@@ -67,6 +68,12 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -315,7 +322,10 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           Pip had big wings and sharp teeth.
         </span>{" "}
-        &quot;Look at that scary dragon!&quot; the villagers whispered. &quot;He must be dangerous!
+        <span className={clueClass("q1b")} ref={setClueRef("q1b")}>
+          &quot;Look at that scary dragon!&quot; the villagers whispered. &quot;He must be
+          dangerous!
+        </span>{" "}
         I&apos;ve heard that dragons like to burn houses with the fire from their mouths.&quot;
       </p>
       <p className="story-text">
@@ -323,10 +333,9 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
         <span className={clueClass("q3")} ref={setClueRef("q3")}>
           He was like sunlight.
         </span>{" "}
-        He could make bad weather nice again by flapping his wings. He could cure sick plants and
-        animals, and{" "}
+        He could make bad weather nice again by flapping his wings.{" "}
         <span className={clueClass("q2")} ref={setClueRef("q2")}>
-          mend broken things
+          He could cure sick plants and animals, and mend broken things
         </span>{" "}
         by breathing fire on them gently. Although Pip was good at magic, he was not confident. He
         usually hid from the villagers.
@@ -348,7 +357,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
       </p>
       <p className="story-text">
         <span className={clueClass("q5")} ref={setClueRef("q5")}>
-          Pip came to help.
+        Pip came to help.
         </span>{" "}
         He flapped his wings and the storm stopped. He gently breathed fire on the cows. Soon, they
         could walk again. Then he breathed fire on the houses and plants. He stopped all of
@@ -419,9 +428,6 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       <li>
                         <HelpCircle className="size-4" /> How many paragraphs are there?
                       </li>
-                      <li>
-                        <HelpCircle className="size-4" /> How many parts are there in the story?
-                      </li>
                     </ul>
                   </div>
 
@@ -440,7 +446,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       The Story
                     </div>
                     <div className="story-doc">
-                      <span className="story-part-label">Part 1 — Pip the Dragon</span>
+                      <div className="story-title">Pip the Dragon</div>
                       <p className="story-text">
                         Once upon a time, a young dragon named Pip came to live near a small village.
                         He lived in a cave on the hill. There was always grey smoke above his cave.
@@ -457,7 +463,6 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                         Although Pip was good at magic, he was not confident. He usually hid from the
                         villagers.
                       </p>
-                      <span className="story-part-label">Part 2 — Greta the Swan</span>
                       <p className="story-text">
                         One day, a swan named Greta came to the village. The villagers welcomed her
                         because she looked beautiful. Much to their shock, she created a lot of
@@ -644,48 +649,29 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <FastForward className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Skim</strong> for the gist and look for the topic sentence.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <Search className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Scan</strong> to find the keyword and the details you need.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-orange)" }}>
-                          <Heart className="size-3.5" />
-                        </span>
-                        <span>
-                          Interpret <strong>feelings and attitudes</strong>, and tell{" "}
-                          <strong>facts from opinions</strong>.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-purple)" }}>
-                          <Replace className="size-3.5" />
-                        </span>
-                        <span>
-                          Use <strong>synonyms</strong> and language features (similes, compound
-                          words) to guess word meanings.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-pink)" }}>
-                          <Puzzle className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Make inferences</strong> by linking clues across the text.
-                        </span>
-                      </li>
+                      {SKILLS_USED.map(({ id, color, icon: Icon, label }) => (
+                        <li key={id}>
+                          <span className="skill-icon" style={{ background: color }}>
+                            <Icon className="size-3" />
+                          </span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as used"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
@@ -715,3 +701,63 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
     </>
   );
 }
+
+const SKILLS_USED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: React.ReactNode;
+}[] = [
+  {
+    id: "skim",
+    color: "var(--accent-blue)",
+    icon: FastForward,
+    label: (
+      <>
+        <strong>Skim</strong> for the gist and look for the topic sentence.
+      </>
+    ),
+  },
+  {
+    id: "scan",
+    color: "var(--accent-mint)",
+    icon: Search,
+    label: (
+      <>
+        <strong>Scan</strong> to find the keyword and the details you need.
+      </>
+    ),
+  },
+  {
+    id: "interpret",
+    color: "var(--accent-orange)",
+    icon: Heart,
+    label: (
+      <>
+        Interpret <strong>feelings and attitudes</strong>, and tell{" "}
+        <strong>facts from opinions</strong>.
+      </>
+    ),
+  },
+  {
+    id: "synonyms",
+    color: "var(--accent-purple)",
+    icon: Replace,
+    label: (
+      <>
+        Use <strong>synonyms</strong> and language features (similes, compound words) to guess word
+        meanings.
+      </>
+    ),
+  },
+  {
+    id: "inferences",
+    color: "var(--accent-pink)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong> by linking clues across the text.
+      </>
+    ),
+  },
+];

@@ -28,7 +28,7 @@ export const questions: Question[] = [
   {
     id: 1,
     part: "part1",
-    text: 'In line 5, the word "intelligent" means ______.',
+    text: 'The word "intelligent" means ______.',
     options: [
       { val: "A", label: "beautiful" },
       { val: "B", label: "clever" },
@@ -36,7 +36,7 @@ export const questions: Question[] = [
       { val: "D", label: "shy" },
     ],
     answer: "B",
-    clues: ["q1"],
+    clues: ["q1", "q1b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Scan for the keyword <em>&quot;intelligent&quot;</em>, then read
@@ -103,7 +103,7 @@ export const questions: Question[] = [
   {
     id: 3,
     part: "part1",
-    text: 'Read lines 6 – 7. "This helps it escape." The word "This" refers to ______.',
+    text: '"This helps it escape." The word "This" refers to ______.',
     options: [
       { val: "A", label: "firing out its longer arms" },
       { val: "B", label: "losing a heart" },
@@ -133,7 +133,7 @@ export const questions: Question[] = [
         <br />
         The sentence before says <em>&quot;It can shoot ink when it is in danger,&quot;</em> so
         &quot;This&quot; refers to <strong>shooting ink</strong>. Firing out its arms is for catching
-        prey, and remembering things is about being clever — neither is about escaping.
+        prey, and remembering things is about being clever — neither is about escaping. Losing a heart is never mentioned in the text.
       </>
     ),
   },
@@ -159,8 +159,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;Well known&quot; means &quot;famous&quot;, and a long
-        &quot;trip&quot; is the same as flying a long &quot;way&quot;. Match words with similar
-        meanings, then take out options with no evidence.
+        &quot;trip&quot; is the same as a long &quot;way&quot;. Find the answer with similar meaning with the clue.
+        Take out the answers with no supporting evidence.
       </>
     ),
     explain: (
@@ -207,15 +207,14 @@ export const questions: Question[] = [
         <br />
         <br />
         Back in Alaska it enjoys <em>&quot;the warmest time of the year&quot;</em>. From your
-        background knowledge, the warmest season is <strong>summer</strong>. The warm season in New
-        Zealand is a distractor because that is not in Alaska.
+        background knowledge, the warmest season is <strong>summer</strong>.
       </>
     ),
   },
   {
     id: 6,
     part: "part2",
-    text: 'In the last line, what does "nest" mean? The best answer is ______.',
+    text: 'In the last, what does "nest" mean? The best answer is ______.',
     extra: (
       <div className="dict-entry">
         <div className="dict-head">
