@@ -40,8 +40,8 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Look near the top of the poster:{" "}
-        <em>&quot;We hope this special day will help you enjoy reading more books.&quot;</em> What is
-        the school&apos;s real purpose?
+        <em>&quot;{" "}We hope this special day will help you enjoy reading more books.&quot;</em>
+        {" "}What is the school&apos;s real purpose?
       </>
     ),
     strategy: (
@@ -154,7 +154,7 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Find the activity at recess: <em>&quot;Story Corner with Ms
-        Lee&quot;</em>. Who is the person standing at the Story Corner?
+        Lee&quot;</em>. Who is the person at the Story Corner?
       </>
     ),
     strategy: (
@@ -197,7 +197,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         When you do not know a word, use the words around it.
-        &quot;Best-dressed&quot; and &quot;Fashion Show&quot; point to clothing, so
+        &quot;Best-dressed&quot; and &quot;Fashion Show&quot; refer to clothing, so
         &quot;costume&quot; means the clothes students wear to dress up.
       </>
     ),
@@ -207,7 +207,7 @@ export const questions: Question[] = [
         <br />
         <br />
         The Fashion Show is about the <em>&quot;best-dressed students&quot;</em>, so
-        &quot;costume&quot; means the <strong>clothes</strong> they wear to dress up. A &quot;short
+        &quot;costume&quot; means the <strong>clothes</strong> {" "}they wear to dress up. A &quot;short
         part&quot; belongs to Classroom Drama (C) and a &quot;gift&quot; is for watching the show
         (D) — neither answers the question.
       </>

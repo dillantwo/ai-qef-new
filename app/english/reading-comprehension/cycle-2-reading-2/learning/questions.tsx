@@ -36,7 +36,7 @@ export const questions: Question[] = [
       { val: "D", label: "were too busy to write their names" },
     ],
     answer: "A",
-    clues: ["q1"],
+    clues: ["q1", "q1b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Read Paragraph 1 again. It says people used seals (chops) on{" "}
@@ -47,9 +47,10 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Find the reason in the text, then check each
-        answer. People in the old days did not use computers, and painting is never given as a
-        reason for visiting a chop maker.
+        Look at the clues in the text, then check each answer. The best answer has the most
+        supporting details in the clues. People in the old days did not use computer. &quot;Could
+        not paint pictures&quot; or &quot;were too busy to write their names&quot; are not mentioned
+        in the text.
       </>
     ),
     explain: (
@@ -96,7 +97,7 @@ export const questions: Question[] = [
         <br />
         The clue <em>&quot;asked customers what materials, words and styles they wanted&quot;</em>{" "}
         matches telling the chop maker what kind of chop you want. &quot;Pay&quot; (A) is never
-        mentioned; a painting (B) or business document (C) is only needed by some customers.
+        mentioned; a painting (B) or business document (C) may only be needed by some customers, and they are not necessary before having a chop made.
       </>
     ),
   },
@@ -139,7 +140,7 @@ export const questions: Question[] = [
   {
     id: 4,
     part: "part2",
-    text: 'In Paragraph 2, what does the word "peak" mean?',
+    text: 'In this paragraph, what does the underlined word "peak" mean?',
     extra: (
       <div className="dict-entry">
         <div className="dict-head">
@@ -214,10 +215,9 @@ export const questions: Question[] = [
     clues: ["q5", "q5b"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Read the end of Paragraph 3:{" "}
+        <strong>💡 Hint:</strong> Read the end of this paragraph:{" "}
         <em>&quot;fewer people need chops every day&quot;</em> and{" "}
-        <em>&quot;chop makers may slowly disappear from Hong Kong.&quot;</em> What does this mean for
-        their customers?
+        <em>&quot;chop makers may slowly disappear from Hong Kong.&quot;</em> What does this mean?
       </>
     ),
     strategy: (
@@ -235,7 +235,7 @@ export const questions: Question[] = [
         The clues <em>&quot;fewer people need chops&quot;</em> and{" "}
         <em>&quot;Fewer and fewer chop makers still work in Chop Alley&quot;</em> show they will have
         fewer customers. &quot;Open more stalls&quot; (A) is the opposite; pens (C) and offices (D)
-        are not mentioned for chop makers.
+        are just distractors.
       </>
     ),
   },

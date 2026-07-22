@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,6 +16,7 @@ import {
   Lightbulb,
   PenLine,
   Puzzle,
+  Replace,
   RotateCcw,
   Scale,
   ScrollText,
@@ -25,6 +26,7 @@ import {
   Trophy,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { basePath } from "@/lib/utils";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 
@@ -52,13 +54,25 @@ const articleStyles = `
 .rc-learning .article-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); text-decoration: underline; margin-bottom: 12px; }
 .rc-learning .article p { font-size: 13.5px; line-height: 1.95; color: var(--text-secondary); margin: 0 0 12px; }
 .rc-learning .article p:last-child { margin-bottom: 0; }
+.rc-learning .article p.focus-para { color: var(--text-primary); }
+.rc-learning .article::after { content: ""; display: block; clear: both; }
+.rc-learning .article p > .highlight-clue:first-child { padding-left: 0; }
+.rc-learning .options-list.compact-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.rc-learning .options-list.compact-row li { flex: 1 1 0; min-width: 64px; }
+.rc-learning .options-list.compact-row .option-btn { justify-content: center; padding: 12px 10px; margin-bottom: 0; }
+.rc-learning .article-figure { width: 150px; margin: 2px 0 8px; }
+.rc-learning .article-figure img { width: 100%; height: auto; display: block; border-radius: var(--radius-sm); }
+.rc-learning .article-figure.right { float: right; margin-left: 16px; }
+.rc-learning .article-figure.left { float: left; margin-right: 16px; }
+@media (max-width: 520px) { .rc-learning .article-figure { width: 110px; } }
 .rc-learning .para-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-purple); margin-bottom: 6px; }
 .rc-learning .dict-entry { background: var(--bg-article); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; }
 .rc-learning .dict-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .rc-learning .dict-word { font-weight: 800; font-size: 16px; color: var(--text-primary); }
 .rc-learning .dict-pos { font-style: italic; font-size: 12px; color: var(--text-muted); }
 .rc-learning .dict-pron { font-size: 12px; color: var(--text-muted); }
-.rc-learning .dict-senses { margin: 0; padding-left: 20px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
+.rc-learning .dict-senses { margin: 0; padding-left: 22px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); list-style: decimal outside; }
+.rc-learning .dict-senses li { padding-left: 2px; }
 .rc-learning .dict-senses li { margin-bottom: 6px; }
 .rc-learning .dict-eg { display: block; font-style: italic; color: var(--text-muted); margin-top: 2px; }
 `;
@@ -74,6 +88,12 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -166,6 +186,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
     setAnswered({});
     setHints({});
     setStrategies({});
+    setSkillChecks({});
     setStep({ part1: 0, part2: 0, part3: 0 });
     clearHighlights();
     setSection("overview");
@@ -241,7 +262,13 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
               <div className="q-number">Question {q.id}</div>
               <div className="q-text">{q.text}</div>
               {q.extra}
-              <ul className="options-list">
+              <ul
+                className={`options-list${
+                  q.options.every((o) => typeof o.label === "string" && o.label.length <= 2)
+                    ? " compact-row"
+                    : ""
+                }`}
+              >
                 {q.options.map((opt) => {
                   let cls = "option-btn";
                   if (picked) {
@@ -311,14 +338,20 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
   const paragraph1 = (
     <div className={articleActive("part1")}>
       <div className="article-title">Chop Makers</div>
+      <div className="article-figure right">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/english/chop%20makers%201.png`} alt="A carved stone chop and its red seal imprint on paper" />
+      </div>
       <p>
         Long ago, many people in Hong Kong used seals on important papers.{" "}
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           They used them on letters, business documents and paintings.
         </span>{" "}
         Seals are also called chops. Some people put name chops on traditional paintings: it was
-        just like signing their names. In the old days, people usually went to chop makers to help
-        them make chops.
+        just like signing their names. In the old days,{" "}
+        <span className={clueClass("q1b")} ref={setClueRef("q1b")}>
+          people usually went to chop makers to help them make chops.
+        </span>
       </p>
     </div>
   );
@@ -326,7 +359,10 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
   // Paragraph 2 — what chop makers did. Clue spans for Part 2 (Q2–Q4, and Q6a).
   const paragraph2 = (
     <div className={articleActive("part2")}>
-      <div className="article-title">Chop Makers</div>
+      <div className="article-figure left">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/english/chop%20makers%202.png`} alt="A traditional chop maker's street stall" />
+      </div>
       <p>
         <span className={clueClass("q3")} ref={setClueRef("q3")}>
           Chop makers did many kinds of work.
@@ -346,11 +382,36 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
     </div>
   );
 
-  // Paragraph 3 — chop makers today. Clue spans for Part 3 (Q5, Q6b).
+  // Part 3 shows the whole article so learners can connect information across
+  // all paragraphs (Q5, Q6a in paragraph 2 and Q6b in paragraph 3).
   const paragraph3 = (
     <div className={articleActive("part3")}>
       <div className="article-title">Chop Makers</div>
+      <div className="article-figure right">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/english/chop%20makers%201.png`} alt="A carved stone chop and its red seal imprint on paper" />
+      </div>
       <p>
+        Long ago, many people in Hong Kong used seals on important papers. They used them on
+        letters, business documents and paintings. Seals are also called chops. Some people put name
+        chops on traditional paintings: it was just like signing their names. In the old days, people
+        usually went to chop makers to help them make chops.
+      </p>
+      <div className="article-figure left">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/english/chop%20makers%202.png`} alt="A traditional chop maker's street stall" />
+      </div>
+      <p>
+        Chop makers did many kinds of work. They usually carved names or words into stone, wood or
+        rubber.{" "}
+        <span className={clueClass("q6a")} ref={setClueRef("q6a")}>
+          They made personal name chops and company chops.
+        </span>{" "}
+        Before carving, they asked customers what materials, words and styles they wanted. At its
+        peak, there were many chop maker stalls in Man Wa Lane, a place people now call Chop Alley at
+        Sheung Wan.
+      </p>
+      <p className="focus-para">
         Today, some chop makers also print name cards.{" "}
         <span className={clueClass("q5b")} ref={setClueRef("q5b")}>
           This is because fewer people need chops every day.
@@ -441,6 +502,13 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                     </div>
                     <div className="article">
                       <div className="article-title">Chop Makers</div>
+                      <div className="article-figure right">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`${basePath}/english/chop%20makers%201.png`}
+                          alt="A carved stone chop and its red seal imprint on paper"
+                        />
+                      </div>
                       <p>
                         Long ago, many people in Hong Kong used seals on important papers. They used
                         them on letters, business documents and paintings. Seals are also called
@@ -448,6 +516,13 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                         signing their names. In the old days, people usually went to chop makers to
                         help them make chops.
                       </p>
+                      <div className="article-figure left">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`${basePath}/english/chop%20makers%202.png`}
+                          alt="A traditional chop maker's street stall"
+                        />
+                      </div>
                       <p>
                         Chop makers did many kinds of work. They usually carved names or words into
                         stone, wood or rubber. They made personal name chops and company chops.
@@ -684,50 +759,29 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <FastForward className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Skim</strong> the article to get an overview and the main idea of
-                          each paragraph.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <Search className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Scan</strong> to find the keyword and the information you need.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-orange)" }}>
-                          <BookOpen className="size-3.5" />
-                        </span>
-                        <span>
-                          Use <strong>contextual clues</strong> to work out a new word like
-                          &quot;peak&quot;.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-pink)" }}>
-                          <Puzzle className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Make inferences</strong> — link up information across paragraphs to
-                          read between the lines.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-purple)" }}>
-                          <Scale className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Compare</strong> the answers and take out the distractors to find
-                          the best one.
-                        </span>
-                      </li>
+                      {SKILLS_PRACTICED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li key={id} style={indent ? { marginLeft: 30 } : undefined}>
+                          <span className="skill-icon" style={{ background: color }}>
+                            <Icon className="size-3.5" />
+                          </span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as used"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -792,3 +846,115 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
     </>
   );
 }
+
+const SKILLS_PRACTICED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: ReactNode;
+  indent?: boolean;
+}[] = [
+  {
+    id: "skim",
+    color: "var(--accent-blue)",
+    icon: FastForward,
+    label: (
+      <>
+        <strong>Skim</strong> the reading to get an overview and get the main idea.
+      </>
+    ),
+  },
+  {
+    id: "scan",
+    color: "var(--accent-mint)",
+    icon: Search,
+    label: (
+      <>
+        <strong>Scan</strong> in the reading to find the information you need.
+      </>
+    ),
+  },
+  {
+    id: "activate-background",
+    color: "var(--accent-orange)",
+    icon: Eye,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>background knowledge</strong> or{" "}
+        <strong>world knowledge</strong> about the topic.
+      </>
+    ),
+  },
+  {
+    id: "activate-language",
+    color: "var(--accent-purple)",
+    icon: Brain,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>knowledge</strong> about{" "}
+        <strong>language features</strong> and <strong>devices</strong>.
+      </>
+    ),
+  },
+  {
+    id: "details",
+    color: "var(--accent-pink)",
+    icon: BookOpenCheck,
+    label: (
+      <>
+        <strong>Find the details</strong> in the reading to support your understanding.
+      </>
+    ),
+  },
+  {
+    id: "inferences",
+    color: "var(--accent-blue)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-yellow)",
+    icon: BookOpen,
+    indent: true,
+    label: "Contextual inference: use surrounding information to guess the meaning of an unknown word.",
+  },
+  {
+    id: "bridging",
+    color: "var(--accent-mint)",
+    icon: Replace,
+    indent: true,
+    label: "Bridging inference: link up the information across the text to make an inference.",
+  },
+  {
+    id: "gap-filling",
+    color: "var(--accent-orange)",
+    icon: Lightbulb,
+    indent: true,
+    label: "Gap-filling inference: use your background knowledge to fill in the gap and make an inference.",
+  },
+  {
+    id: "reread",
+    color: "var(--accent-purple)",
+    icon: RotateCcw,
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
+  },
+  {
+    id: "compare",
+    color: "var(--accent-pink)",
+    icon: Scale,
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
+      </>
+    ),
+  },
+];

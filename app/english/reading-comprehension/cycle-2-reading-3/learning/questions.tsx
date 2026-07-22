@@ -46,9 +46,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        The word &quot;graduation&quot; is the
-        clue. In primary school, students go on a graduation activity in their <em>last</em> year, so
-        they are most likely Primary 6.
+        The word &quot;graduation&quot; is the keyword. Activate your background knowledge: in
+        primary school, a graduation study tour usually happens in students&apos; last year.
       </>
     ),
     explain: (
@@ -83,9 +82,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        A leaf shakes in the wind. Susan
-        had to speak in front of others, could not speak, and needed encouragement — these are clues
-        that she felt worried, not calm or sick.
+        Susan had to speak in front of others, but she could not speak and needed encouragement —
+        these are signs that she felt worried, not calm or sick. Activate your background knowledge:
+        how may people feel if they have to speak in front of a lot of strangers?
       </>
     ),
     explain: (
@@ -95,7 +94,7 @@ export const questions: Question[] = [
         <br />
         She <em>&quot;could not speak&quot;</em> and needed the students to encourage her, so
         &quot;shaking like a leaf&quot; means she was <strong>nervous</strong>. A calm person would
-        not shake (A); the clues point to worry, not excitement (B); and &quot;sick&quot; (D) is not
+        not shake (A); &quot;excited&quot;(B) and &quot;sick&quot; (D) are not
         supported.
       </>
     ),
@@ -120,8 +119,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Reykjavík is a city in Iceland, so &quot;Icelandic
-        friends&quot; are &quot;new friends from Reykjavík&quot;. Rebecca is the person Susan is
+        Reykjavík is a city in Iceland, so &quot;new friends from Reykjavík
+        &quot; can be &quot;new Iceland friends&quot;. Rebecca is the person Susan is
         writing to, not someone she met; teachers and a cousin are never mentioned.
       </>
     ),
@@ -130,7 +129,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: B. new friends from Reykjavík</strong>
         <br />
         <br />
-        <em>&quot;I made a few new Icelandic friends&quot;</em> matches B. Teachers from Hong Kong
+        <em>&quot;I made a few new Icelandic friends&quot;</em> matches answer B. Teachers from Hong Kong
         (A) and a cousin (C) are never mentioned, and Rebecca (D) is the reader of the email, not
         someone Susan met on the trip.
       </>
@@ -187,7 +186,7 @@ export const questions: Question[] = [
     clues: ["q5"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> A word like &quot;one&quot; points back to a noun just before it.
+        <strong>💡 Hint: </strong> A word like &quot;one&quot; points back to a noun just before it.
         Read: <em>&quot;We saw whales breaching the surface. They were beautiful! I bought a postcard
         of one for you.&quot;</em>
       </>
@@ -195,7 +194,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;They&quot; and &quot;one&quot; both
-        point to the nearest noun — <em>whales</em>. The boat is only transport; the puffin appears
+        refer to the nearest noun — <em>whales</em>. The boat is only transport; the puffin appears
         later and Susan never saw one; the city is too far away in the text.
       </>
     ),
@@ -224,7 +223,7 @@ export const questions: Question[] = [
     clues: ["q6"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> The word &quot;disappointed&quot; is not in the text, but a related
+        <strong>💡 Hint: </strong> The word &quot;disappointed&quot; is not in the text, but a related
         feeling is: <em>&quot;Sadly, I did not see any puffins. It was not the right season
         yet.&quot;</em>
       </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,6 +27,7 @@ import {
   Trophy,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { basePath } from "@/lib/utils";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 
@@ -55,21 +56,36 @@ const posterStyles = `
 .rc-learning .poster-date { text-align: center; font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
 .rc-learning .poster-intro { text-align: center; font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 12px 0; }
 .rc-learning .poster-h { font-weight: 700; font-size: 14px; color: var(--text-primary); margin: 10px 0 6px; }
+.rc-learning .wear-group { width: fit-content; max-width: 100%; margin: 0 auto; }
 .rc-learning .wear-list { list-style: none; padding: 0; margin: 0; }
 .rc-learning .wear-list li { font-size: 13px; line-height: 1.6; color: var(--text-secondary); padding: 2px 0; display: flex; align-items: flex-start; gap: 8px; }
 .rc-learning .wear-list .tick { color: var(--accent-mint); font-weight: 800; }
 .rc-learning .wear-list .cross { color: var(--wrong-border); font-weight: 800; }
+.rc-learning .wear-row { display: flex; gap: 20px; align-items: center; justify-content: center; }
+.rc-learning .wear-row .wear-list { flex: 0 1 auto; min-width: 0; }
+.rc-learning .poster-figure { flex: 0 0 auto; width: 120px; align-self: center; }
+.rc-learning .poster-figure img { width: 100%; height: auto; display: block; border-radius: var(--radius-sm); }
+@media (max-width: 520px) { .rc-learning .poster-figure { width: 90px; } }
 .rc-learning .activities-bar { background: #6b7280; color: #fff; font-weight: 700; text-align: center; padding: 8px 12px; font-size: 16px; }
+.rc-learning .activities-figure { float: right; width: 120px; margin: 0 40px 6px 14px; shape-outside: margin-box; }
+.rc-learning .activities-figure img { width: 100%; height: auto; display: block; }
+@media (max-width: 520px) { .rc-learning .activities-figure { width: 90px; } }
 .rc-learning .activity { padding: 10px 14px 4px; }
 .rc-learning .activity-name { font-weight: 700; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
 .rc-learning .activity-name svg { color: var(--accent-purple); flex-shrink: 0; }
 .rc-learning .activity-text { font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin: 4px 0 0; padding-left: 24px; }
 .rc-learning .book-list { margin: 4px 0 0; padding-left: 40px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
-.rc-learning .award-table { width: calc(100% - 28px); margin: 8px 14px 4px; border-collapse: collapse; font-size: 12.5px; }
+.rc-learning .award-table { clear: both; width: calc(100% - 28px); margin: 8px 14px 4px; border-collapse: collapse; font-size: 12.5px; }
 .rc-learning .award-table caption { font-weight: 700; font-size: 13px; color: var(--text-primary); padding: 4px; }
 .rc-learning .award-table th, .rc-learning .award-table td { border: 1px solid var(--border-light); padding: 6px 8px; text-align: left; color: var(--text-secondary); }
 .rc-learning .award-table th { font-weight: 700; color: var(--text-primary); white-space: nowrap; }
 .rc-learning .poster-note { font-size: 12px; font-style: italic; color: var(--text-muted); padding: 8px 14px 2px; }
+.rc-learning .q-image { margin: 0 0 14px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-card); }
+.rc-learning .q-image img { display: block; width: 100%; height: auto; }
+.rc-learning .options-list.letter-only { display: flex; flex-wrap: wrap; gap: 10px; }
+.rc-learning .options-list.letter-only li { flex: 1 1 0; min-width: 64px; }
+.rc-learning .options-list.letter-only .option-btn { justify-content: center; padding: 12px 10px; margin-bottom: 0; }
+.rc-learning .options-list.letter-only .opt-letter { width: 32px; height: 32px; font-size: 15px; }
 `;
 
 export default function EnglishReadingComprehensionCycle2Reading1LearningPage() {
@@ -83,6 +99,12 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -175,6 +197,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
     setAnswered({});
     setHints({});
     setStrategies({});
+    setSkillChecks({});
     setStep({ part1: 0, part2: 0 });
     clearHighlights();
     setSection("overview");
@@ -247,7 +270,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
               <div className="q-number">Question {q.id}</div>
               <div className="q-text">{q.text}</div>
               {q.extra}
-              <ul className="options-list">
+              <ul className={`options-list${q.options.every((o) => !o.label) ? " letter-only" : ""}`}>
                 {q.options.map((opt) => {
                   let cls = "option-btn";
                   if (picked) {
@@ -327,42 +350,50 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
           <br />
           Come and dress up as your favourite story character!
         </p>
+        <div className="wear-group">
         <div className="poster-h">What You Can and Cannot Wear and Bring:</div>
-        <ul className="wear-list">
-          <li>
-            <span className="tick">✓</span> school-friendly clothes that are easy to move in
-          </li>
-          <li>
-            <span className="tick">✓</span>
-            <span className={clueClass("q2a")} ref={setClueRef("q2a")}>
-              trousers, skirts and dresses (knee length)
-            </span>
-          </li>
-          <li>
-            <span className="tick">✓</span> face paint
-          </li>
-          <li>
-            <span className="tick">✓</span> toy accessories (e.g. necklaces and rings)
-          </li>
-          <li>
-            <span className="cross">✗</span>
-            <span className={clueClass("q2b")} ref={setClueRef("q2b")}>
-              tops with no sleeves
-            </span>
-          </li>
-          <li>
-            <span className="cross">✗</span>
-            <span className={clueClass("q2c")} ref={setClueRef("q2c")}>
-              clothes with horror themes
-            </span>
-          </li>
-          <li>
-            <span className="cross">✗</span>
-            <span className={clueClass("q2d")} ref={setClueRef("q2d")}>
-              things used for fighting
-            </span>
-          </li>
-        </ul>
+        <div className="wear-row">
+          <ul className="wear-list">
+            <li>
+              <span className="tick">✓</span> school-friendly clothes that are easy to move in
+            </li>
+            <li>
+              <span className="tick">✓</span>
+              <span className={clueClass("q2a")} ref={setClueRef("q2a")}>
+                trousers, skirts and dresses (knee length)
+              </span>
+            </li>
+            <li>
+              <span className="tick">✓</span> face paint
+            </li>
+            <li>
+              <span className="tick">✓</span> toy accessories (e.g. necklaces and rings)
+            </li>
+            <li>
+              <span className="cross">✗</span>
+              <span className={clueClass("q2b")} ref={setClueRef("q2b")}>
+                tops with no sleeves
+              </span>
+            </li>
+            <li>
+              <span className="cross">✗</span>
+              <span className={clueClass("q2c")} ref={setClueRef("q2c")}>
+                clothes with horror themes
+              </span>
+            </li>
+            <li>
+              <span className="cross">✗</span>
+              <span className={clueClass("q2d")} ref={setClueRef("q2d")}>
+                things used for fighting
+              </span>
+            </li>
+          </ul>
+          <div className="poster-figure">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${basePath}/english/story%20day%201.png`} alt="A student dressed up as a fairy story character" />
+          </div>
+        </div>
+        </div>
       </div>
     </div>
   );
@@ -381,6 +412,10 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
             English class.
           </span>
         </p>
+      </div>
+      <div className="activities-figure">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${basePath}/english/story%20day%202.png`} alt="A stack of colourful storybooks" />
       </div>
       <div className="activity">
         <div className="activity-name">
@@ -511,33 +546,44 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
                           <br />
                           Come and dress up as your favourite story character!
                         </p>
+                        <div className="wear-group">
                         <div className="poster-h">What You Can and Cannot Wear and Bring:</div>
-                        <ul className="wear-list">
-                          <li>
-                            <span className="tick">✓</span> school-friendly clothes that are easy to
-                            move in
-                          </li>
-                          <li>
-                            <span className="tick">✓</span> trousers, skirts and dresses (knee
-                            length)
-                          </li>
-                          <li>
-                            <span className="tick">✓</span> face paint
-                          </li>
-                          <li>
-                            <span className="tick">✓</span> toy accessories (e.g. necklaces and
-                            rings)
-                          </li>
-                          <li>
-                            <span className="cross">✗</span> tops with no sleeves
-                          </li>
-                          <li>
-                            <span className="cross">✗</span> clothes with horror themes
-                          </li>
-                          <li>
-                            <span className="cross">✗</span> things used for fighting
-                          </li>
-                        </ul>
+                        <div className="wear-row">
+                          <ul className="wear-list">
+                            <li>
+                              <span className="tick">✓</span> school-friendly clothes that are easy
+                              to move in
+                            </li>
+                            <li>
+                              <span className="tick">✓</span> trousers, skirts and dresses (knee
+                              length)
+                            </li>
+                            <li>
+                              <span className="tick">✓</span> face paint
+                            </li>
+                            <li>
+                              <span className="tick">✓</span> toy accessories (e.g. necklaces and
+                              rings)
+                            </li>
+                            <li>
+                              <span className="cross">✗</span> tops with no sleeves
+                            </li>
+                            <li>
+                              <span className="cross">✗</span> clothes with horror themes
+                            </li>
+                            <li>
+                              <span className="cross">✗</span> things used for fighting
+                            </li>
+                          </ul>
+                          <div className="poster-figure">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`${basePath}/english/story%20day%201.png`}
+                              alt="A student dressed up as a fairy story character"
+                            />
+                          </div>
+                        </div>
+                        </div>
                       </div>
                       <div className="activities-bar">Activities:</div>
                       <div className="activity">
@@ -548,6 +594,13 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
                           Everyone picks a short part from his or her favourite story. Read it and act
                           it out in English class.
                         </p>
+                      </div>
+                      <div className="activities-figure">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`${basePath}/english/story%20day%202.png`}
+                          alt="A stack of colourful storybooks"
+                        />
                       </div>
                       <div className="activity">
                         <div className="activity-name">
@@ -754,49 +807,29 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <FastForward className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Skim</strong> the poster to get an overview and the main idea.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <Search className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Scan</strong> to find the keyword and the information you need.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-orange)" }}>
-                          <BookOpen className="size-3.5" />
-                        </span>
-                        <span>
-                          Use <strong>contextual clues</strong> and find details to support your
-                          understanding.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-pink)" }}>
-                          <Puzzle className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Make inferences</strong> — read between the lines and use picture
-                          clues.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-purple)" }}>
-                          <Scale className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Compare</strong> the answers and take out the distractors to find
-                          the best one.
-                        </span>
-                      </li>
+                      {SKILLS_PRACTICED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li key={id} style={indent ? { marginLeft: 30 } : undefined}>
+                          <span className="skill-icon" style={{ background: color }}>
+                            <Icon className="size-3.5" />
+                          </span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as used"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -861,3 +894,115 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
     </>
   );
 }
+
+const SKILLS_PRACTICED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: ReactNode;
+  indent?: boolean;
+}[] = [
+  {
+    id: "skim",
+    color: "var(--accent-blue)",
+    icon: FastForward,
+    label: (
+      <>
+        <strong>Skim</strong> the reading to get an overview and get the main idea.
+      </>
+    ),
+  },
+  {
+    id: "scan",
+    color: "var(--accent-mint)",
+    icon: Search,
+    label: (
+      <>
+        <strong>Scan</strong> in the reading to find the information you need.
+      </>
+    ),
+  },
+  {
+    id: "activate-background",
+    color: "var(--accent-orange)",
+    icon: Eye,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>background knowledge</strong> or{" "}
+        <strong>world knowledge</strong> about the topic.
+      </>
+    ),
+  },
+  {
+    id: "activate-language",
+    color: "var(--accent-purple)",
+    icon: Brain,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>knowledge</strong> about{" "}
+        <strong>language features</strong> and <strong>devices</strong>.
+      </>
+    ),
+  },
+  {
+    id: "details",
+    color: "var(--accent-pink)",
+    icon: BookOpenCheck,
+    label: (
+      <>
+        <strong>Find the details</strong> in the reading to support your understanding.
+      </>
+    ),
+  },
+  {
+    id: "inferences",
+    color: "var(--accent-blue)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-yellow)",
+    icon: BookOpen,
+    indent: true,
+    label: "Contextual inference: use surrounding information to guess the meaning of an unknown word.",
+  },
+  {
+    id: "bridging",
+    color: "var(--accent-mint)",
+    icon: Replace,
+    indent: true,
+    label: "Bridging inference: link up the information across the text to make an inference.",
+  },
+  {
+    id: "gap-filling",
+    color: "var(--accent-orange)",
+    icon: Lightbulb,
+    indent: true,
+    label: "Gap-filling inference: use your background knowledge to fill in the gap and make an inference.",
+  },
+  {
+    id: "reread",
+    color: "var(--accent-purple)",
+    icon: RotateCcw,
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
+  },
+  {
+    id: "compare",
+    color: "var(--accent-pink)",
+    icon: Scale,
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
+      </>
+    ),
+  },
+];

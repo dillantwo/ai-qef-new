@@ -1,5 +1,5 @@
 import EnglishReadingComprehensionChat from "../../EnglishReadingComprehensionChat";
-import { READING_2_FULL_TEXT } from "@/lib/english-prompts";
+import { basePath } from "@/lib/utils";
 
 export default function EnglishReadingComprehensionReading2RoleplayPage() {
   return (
@@ -7,7 +7,7 @@ export default function EnglishReadingComprehensionReading2RoleplayPage() {
       reading="reading-2"
       topicLabel="Reading 2 — Amazing Animals"
       backHref="/english/reading-comprehension/reading-2"
-      startMessageText={`Here is our reading. Let's read it together!\n\n${READING_2_FULL_TEXT}`}
+      startMessageText={`Here is our reading. Let's read it together!\n\n![Amazing Animals encyclopedia](${basePath}/english/amazing%20animals.png)`}
     />
   );
 }
