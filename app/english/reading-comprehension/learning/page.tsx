@@ -31,6 +31,7 @@ import {
 import Header from "@/components/Header";
 import { learningStyles } from "./styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
+import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "summary";
 
@@ -60,6 +61,19 @@ export default function EnglishReadingComprehensionLearningPage() {
   });
   const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+  const { clearRecord } = useReadingRecord({
+    readingId: "cycle-1-reading-1",
+    title: "Cycle 1 · Reading 1: Sunshine Ice-cream Webpage",
+    questions,
+    answered,
+    section,
+    step,
+    skillChecks,
+    setAnswered,
+    setSection,
+    setStep,
+    setSkillChecks,
+  });
 
   const toggleSkill = useCallback(
     (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
@@ -155,6 +169,7 @@ export default function EnglishReadingComprehensionLearningPage() {
 
   const resetAll = useCallback(() => {
     setAnswered({});
+    clearRecord();
     setHints({});
     setStrategies({});
     setStep({ part1: 0, part2: 0 });

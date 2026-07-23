@@ -1,36 +1,35 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Bird,
   BookOpen,
   BookOpenCheck,
   Brain,
+  Droplets,
   Eye,
   FastForward,
-  Flame,
   GraduationCap,
-  Heart,
   HelpCircle,
-  Info,
   Lightbulb,
-  Link2,
   PenLine,
   Puzzle,
   Replace,
   RotateCcw,
+  Scale,
+  ScrollText,
   Search,
   Star,
   Trophy,
+  Waves,
 } from "lucide-react";
 import Header from "@/components/Header";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 import { useReadingRecord } from "@/lib/english-reading-record";
 
-type Section = "overview" | "part1" | "part2" | "summary";
+type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
 interface ModalData {
   emoji: string;
@@ -41,29 +40,28 @@ interface ModalData {
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: Pip the Dragon", icon: Flame },
-  { id: "part2", label: "Part 2: Greta the Swan", icon: Bird },
+  { id: "part1", label: "Part 1: The Red Tides", icon: Waves },
+  { id: "part2", label: "Part 2: Causes & Views", icon: Droplets },
+  { id: "part3", label: "Part 3: Whole Text", icon: ScrollText },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
-// Extra styles for the story passage.
-const reading3Styles = `
-.rc-learning .story-doc { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); padding: 8px 14px 14px; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
-.rc-learning .story-doc.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
-.rc-learning .story-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); padding: 6px 4px 10px; }
-.rc-learning .story-part-label { display: inline-block; margin: 12px 0 4px; font-weight: 700; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-purple); }
-.rc-learning .story-part-label:first-child { margin-top: 4px; }
-.rc-learning .story-text { font-size: 14px; line-height: 1.9; color: var(--text-primary); margin: 0 0 10px; }
-.rc-learning .story-text:last-child { margin-bottom: 0; }
-.rc-learning .doc-underline { text-decoration: underline; font-weight: 600; }
+// Extra styles for the "Red Tides" article.
+const articleStyles = `
+.rc-learning .article { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); padding: 16px 18px; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.rc-learning .article.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
+.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); text-decoration: underline; margin-bottom: 12px; }
+.rc-learning .article p { font-size: 13.5px; line-height: 1.95; color: var(--text-secondary); margin: 0 0 12px; }
+.rc-learning .article p:last-child { margin-bottom: 0; }
+.rc-learning .para-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-purple); margin-bottom: 4px; }
 `;
 
-export default function EnglishReadingComprehensionReading3LearningPage() {
+export default function EnglishReadingComprehensionCycle3Reading3LearningPage() {
   const [section, setSection] = useState<Section>("overview");
   const [answered, setAnswered] = useState<Record<number, string>>({});
   const [hints, setHints] = useState<Record<number, boolean>>({});
   const [strategies, setStrategies] = useState<Record<number, boolean>>({});
-  const [step, setStep] = useState<Record<PartId, number>>({ part1: 0, part2: 0 });
+  const [step, setStep] = useState<Record<PartId, number>>({ part1: 0, part2: 0, part3: 0 });
   const [activeClues, setActiveClues] = useState<{ ids: string[]; badge: string }>({
     ids: [],
     badge: "",
@@ -71,8 +69,8 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
   const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
-    readingId: "cycle-1-reading-3",
-    title: "Cycle 1 · Reading 3: Pip the Dragon",
+    readingId: "cycle-3-reading-3",
+    title: "Cycle 3 · Reading 3: Red Tides",
     questions,
     answered,
     section,
@@ -181,14 +179,17 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
     clearRecord();
     setHints({});
     setStrategies({});
-    setStep({ part1: 0, part2: 0 });
+    setSkillChecks({});
+    setStep({ part1: 0, part2: 0, part3: 0 });
     clearHighlights();
     setSection("overview");
     mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [clearHighlights]);
 
-  const part1Done = answered[1] && answered[2] && answered[3];
-  const part2Done = answered[4] && answered[5] && answered[6];
+  // Part 1 covers Q1–Q4 (paragraphs 1 & 2); Part 2 covers Q5–Q7 (paragraphs 2 &
+  // 3); Part 3 covers Q8 (the whole text / best title).
+  const part1Done = answered[1] && answered[2] && answered[3] && answered[4];
+  const part2Done = answered[5] && answered[6] && answered[7];
   const allDone = Object.keys(answered).length === TOTAL_QUESTIONS;
 
   const isTabCompleted = (id: Section) => {
@@ -199,11 +200,11 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
   };
 
   const summaryMsg =
-    score === 6
+    score === TOTAL_QUESTIONS
       ? "Perfect score! You're a reading superstar!"
-      : score >= 4
+      : score >= 6
         ? "Great job! Keep up the good work!"
-        : score >= 2
+        : score >= 3
           ? "Good effort! Review the hints and try again."
           : "Keep practicing — use the hints to help you next time!";
 
@@ -214,10 +215,70 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
   const setClueRef = (id: string) => (el: HTMLElement | null) => {
     clueRefs.current[id] = el;
   };
-  const docActive = (part: "part1" | "part2") =>
-    `story-doc${section === part && activeClues.ids.length > 0 ? " clue-active" : ""}`;
+  const articleActive = (part: PartId) =>
+    `article${section === part && activeClues.ids.length > 0 ? " clue-active" : ""}`;
 
-  function renderQuestions(part: "part1" | "part2") {
+  // Render a sentence either as a highlightable clue span or as plain text.
+  const clue = (id: string, text: string, withClues: boolean): ReactNode =>
+    withClues ? (
+      <span className={clueClass(id)} ref={setClueRef(id)}>
+        {text}
+      </span>
+    ) : (
+      text
+    );
+
+  const paragraph1 = (withClues: boolean) => (
+    <p>
+      <span className="para-tag">Paragraph 1</span>
+      <br />
+      {clue("q1", "In April 2026, a red tide appeared at Stanley Bay.", withClues)} Two more red
+      tides happened in Sai Kung in May. The government warned the public about the problem.{" "}
+      {clue("q2", "People were told not to swim there until it was safe again.", withClues)} A few
+      days later, the water was clean and safe. Luckily, no fish died during these red tides.
+    </p>
+  );
+
+  const paragraph2 = (withClues: boolean) => (
+    <p>
+      <span className="para-tag">Paragraph 2</span>
+      <br />
+      Red tides happen in many places around the world. They occur when tiny living things called
+      algae grow very quickly in the water.{" "}
+      {clue("q5", "This sudden growth is called an algal bloom.", withClues)} Most red tides that
+      happened in Hong Kong were not harmful.{" "}
+      {clue("q4", "However, a few kinds of algae can be dangerous.", withClues)}{" "}
+      {clue("q3b", "Some algal blooms can kill fish and harm people.", withClues)}{" "}
+      {clue(
+        "q3",
+        "People should stay out of the sea when there is a red tide because it may be unsafe.",
+        withClues,
+      )}{" "}
+      People who drink polluted water or eat polluted seafood can get sick.
+    </p>
+  );
+
+  const paragraph3 = (withClues: boolean) => (
+    <p>
+      <span className="para-tag">Paragraph 3</span>
+      <br />
+      Why do red tides happen?{" "}
+      {clue(
+        "q6",
+        "Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form.",
+        withClues,
+      )}{" "}
+      Nutrients may often come from dirty water or from farms and gardens after rain. Scientists
+      check the sea water often and warn people when a beach is not safe.{" "}
+      {clue(
+        "q7",
+        "To protect the environment, we should keep the sea clean and try to reduce water pollution.",
+        withClues,
+      )}
+    </p>
+  );
+
+  function renderQuestions(part: PartId) {
     const list = questions.filter((q) => q.part === part);
     const current = step[part];
     const currentQ = list[current];
@@ -299,22 +360,14 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
         {(current > 0 || (currentAnswered && !isLast)) && (
           <div className="q-nav-row">
             {current > 0 ? (
-              <button
-                type="button"
-                className="q-nav-btn back"
-                onClick={() => goBackStep(part)}
-              >
+              <button type="button" className="q-nav-btn back" onClick={() => goBackStep(part)}>
                 <ArrowLeft className="size-4" /> Previous
               </button>
             ) : (
               <span />
             )}
             {currentAnswered && !isLast ? (
-              <button
-                type="button"
-                className="q-nav-btn next"
-                onClick={() => advanceStep(part)}
-              >
+              <button type="button" className="q-nav-btn next" onClick={() => advanceStep(part)}>
                 Next Question <ArrowRight className="size-4" />
               </button>
             ) : (
@@ -326,81 +379,19 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
     );
   }
 
-  // Part 1 of the story (paragraphs 1–3). Clue spans glow on hint/answer.
-  const part1Passage = (
-    <div className={docActive("part1")}>
-      <p className="story-text">
-        Once upon a time, a young dragon named Pip came to live near a small village. He lived in a
-        cave on the hill. There was always grey smoke above his cave.
-      </p>
-      <p className="story-text">
-        <span className={clueClass("q1")} ref={setClueRef("q1")}>
-          Pip had big wings and sharp teeth.
-        </span>{" "}
-        <span className={clueClass("q1b")} ref={setClueRef("q1b")}>
-          &quot;Look at that scary dragon!&quot; the villagers whispered. &quot;He must be
-          dangerous!
-        </span>{" "}
-        I&apos;ve heard that dragons like to burn houses with the fire from their mouths.&quot;
-      </p>
-      <p className="story-text">
-        Opposite to what the villagers thought, Pip was kind.{" "}
-        <span className={clueClass("q3")} ref={setClueRef("q3")}>
-          He was like sunlight.
-        </span>{" "}
-        He could make bad weather nice again by flapping his wings.{" "}
-        <span className={clueClass("q2")} ref={setClueRef("q2")}>
-          He could cure sick plants and animals, and mend broken things
-        </span>{" "}
-        by breathing fire on them gently. Although Pip was good at magic, he was not confident. He
-        usually hid from the villagers.
-      </p>
-    </div>
-  );
-
-  // Part 2 of the story (paragraphs 4–6).
-  const part2Passage = (
-    <div className={docActive("part2")}>
-      <p className="story-text">
-        One day, a swan named Greta came to the village. The villagers welcomed her because she
-        looked beautiful. Much to their shock, she created a lot of trouble. With her magic, she
-        brought a storm. The storm broke the houses and pulled up all the plants. Then, she walked
-        near the cows.{" "}
-        <span className={clueClass("q4")} ref={setClueRef("q4")}>
-          &quot;Moo!&quot; The cows suddenly could not move. The villagers were frightened.
-        </span>
-      </p>
-      <p className="story-text">
-        <span className={clueClass("q5")} ref={setClueRef("q5")}>
-        Pip came to help.
-        </span>{" "}
-        He flapped his wings and the storm stopped. He gently breathed fire on the cows. Soon, they
-        could walk again. Then he breathed fire on the houses and plants. He stopped all of
-        Greta&apos;s evil tricks. Greta was very angry but had to leave the village.{" "}
-        <span className={clueClass("q6")} ref={setClueRef("q6")}>
-          She knew he could not beat Pip.
-        </span>
-      </p>
-      <p className="story-text">
-        The villagers knew that they were wrong about Pip. They became friends with him and welcomed
-        him to the village.
-      </p>
-    </div>
-  );
-
   return (
     <>
-      <Header backHref="/english/reading-comprehension/reading-3" backLabel="Back" />
+      <Header backHref="/english/reading-comprehension/cycle-3-reading-3" backLabel="Back" />
 
       <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="rc-learning">
-          <style dangerouslySetInnerHTML={{ __html: learningStyles + reading3Styles }} />
+          <style dangerouslySetInnerHTML={{ __html: learningStyles + articleStyles }} />
 
           <div className="app-shell">
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Cycle 1 — Reading 3: Pip the Dragon (Story)
+                <BookOpenCheck className="size-6" /> Cycle 3 — Reading 3: Red Tides (Article)
               </h1>
             </div>
 
@@ -438,15 +429,16 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                     </div>
                     <ul className="pre-reading-list">
                       <li>
-                        <HelpCircle className="size-4" /> What is the story about?
+                        <HelpCircle className="size-4" /> What is the article about?
                       </li>
                       <li>
-                        <HelpCircle className="size-4" /> How many paragraphs are there?
+                        <HelpCircle className="size-4" /> How many paragraphs are there in the
+                        article?
                       </li>
                     </ul>
                   </div>
 
-                  {/* Full story preview */}
+                  {/* Full article preview */}
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -456,45 +448,15 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                             "linear-gradient(135deg,var(--accent-pink),var(--accent-mint))",
                         }}
                       >
-                        <BookOpen className="size-4" />
+                        <ScrollText className="size-4" />
                       </span>
-                      The Story
+                      The Article
                     </div>
-                    <div className="story-doc">
-                      <div className="story-title">Pip the Dragon</div>
-                      <p className="story-text">
-                        Once upon a time, a young dragon named Pip came to live near a small village.
-                        He lived in a cave on the hill. There was always grey smoke above his cave.
-                      </p>
-                      <p className="story-text">
-                        Pip had big wings and sharp teeth. &quot;Look at that scary dragon!&quot; the
-                        villagers whispered. &quot;He must be dangerous! I&apos;ve heard that dragons
-                        like to burn houses with the fire from their mouths.&quot;
-                      </p>
-                      <p className="story-text">
-                        Opposite to what the villagers thought, Pip was kind. He was like sunlight. He
-                        could make bad weather nice again by flapping his wings. He could cure sick
-                        plants and animals, and mend broken things by breathing fire on them gently.
-                        Although Pip was good at magic, he was not confident. He usually hid from the
-                        villagers.
-                      </p>
-                      <p className="story-text">
-                        One day, a swan named Greta came to the village. The villagers welcomed her
-                        because she looked beautiful. Much to their shock, she created a lot of
-                        trouble. With her magic, she brought a storm. The storm broke the houses and
-                        pulled up all the plants. Then, she walked near the cows. &quot;Moo!&quot; The
-                        cows suddenly could not move. The villagers were frightened.
-                      </p>
-                      <p className="story-text">
-                        Pip came to help. He flapped his wings and the storm stopped. He gently
-                        breathed fire on the cows. Soon, they could walk again. Then he breathed fire
-                        on the houses and plants. He stopped all of Greta&apos;s evil tricks. Greta
-                        was very angry but had to leave the village. She knew he could not beat Pip.
-                      </p>
-                      <p className="story-text">
-                        The villagers knew that they were wrong about Pip. They became friends with
-                        him and welcomed him to the village.
-                      </p>
+                    <div className="article">
+                      <div className="article-title">Red Tides</div>
+                      {paragraph1(false)}
+                      {paragraph2(false)}
+                      {paragraph3(false)}
                     </div>
                   </div>
 
@@ -504,8 +466,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       className="restart-btn"
                       onClick={() => switchSection("part1")}
                       style={{
-                        background:
-                          "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
+                        background: "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
                       }}
                     >
                       Start Part 1 <ArrowRight className="size-4" />
@@ -529,24 +490,28 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                           className="icon"
                           style={{
                             background:
-                              "linear-gradient(135deg,var(--accent-orange),var(--accent-yellow))",
+                              "linear-gradient(135deg,var(--accent-pink),var(--accent-orange))",
                           }}
                         >
-                          <Flame className="size-4" />
+                          <Waves className="size-4" />
                         </span>
-                        Part 1: Pip the Dragon
+                        Part 1: The Red Tides
                       </div>
                       <ul className="pre-reading-list">
                         <li>
-                          <HelpCircle className="size-4" /> What was the dragon&apos;s name?
+                          <HelpCircle className="size-4" /> How many paragraphs are in Part 1?
                         </li>
                         <li>
-                          <HelpCircle className="size-4" /> Was the dragon kind or evil?
+                          <HelpCircle className="size-4" /> Do red tides happen only in Hong Kong?
                         </li>
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      {part1Passage}
+                      <div className={articleActive("part1")}>
+                        <div className="article-title">Red Tides</div>
+                        {paragraph1(true)}
+                        {paragraph2(true)}
+                      </div>
                     </div>
                   </div>
                   <div className="split-right">
@@ -591,21 +556,26 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                               "linear-gradient(135deg,var(--accent-purple),var(--accent-blue))",
                           }}
                         >
-                          <Bird className="size-4" />
+                          <Droplets className="size-4" />
                         </span>
-                        Part 2: Greta the Swan
+                        Part 2: Causes &amp; Views
                       </div>
                       <ul className="pre-reading-list">
                         <li>
-                          <HelpCircle className="size-4" /> What was the name of the swan?
+                          <HelpCircle className="size-4" /> Were most of the red tides in Hong Kong
+                          harmful?
                         </li>
                         <li>
-                          <HelpCircle className="size-4" /> Did Pip come to help?
+                          <HelpCircle className="size-4" /> What is the last paragraph about?
                         </li>
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      {part2Passage}
+                      <div className={articleActive("part2")}>
+                        <div className="article-title">Red Tides</div>
+                        {paragraph2(true)}
+                        {paragraph3(true)}
+                      </div>
                     </div>
                   </div>
                   <div className="split-right">
@@ -614,6 +584,68 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                     </div>
                     {renderQuestions("part2")}
                     {part2Done && (
+                      <div style={{ textAlign: "center", marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="restart-btn"
+                          onClick={() => switchSection("part3")}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-blue),var(--accent-mint))",
+                          }}
+                        >
+                          Continue to Part 3 <ArrowRight className="size-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PART 3 */}
+            {section === "part3" && (
+              <div className="section-panel">
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ marginBottom: 10 }}>
+                      <div className="card-title" style={{ fontSize: 15 }}>
+                        <span
+                          className="icon"
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
+                          }}
+                        >
+                          <ScrollText className="size-4" />
+                        </span>
+                        Part 3: The Whole Text
+                      </div>
+                      <ul className="pre-reading-list">
+                        <li>
+                          <HelpCircle className="size-4" /> Read the whole text again. What is the
+                          best title?
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      <div className="article">
+                        <div className="article-title">Red Tides</div>
+                        {paragraph1(false)}
+                        {paragraph2(false)}
+                        {paragraph3(false)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <PenLine className="size-3.5" /> Questions
+                    </div>
+                    {renderQuestions("part3")}
+                    {allDone && (
                       <div style={{ textAlign: "center", marginTop: 6 }}>
                         <button
                           type="button"
@@ -640,7 +672,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
                     <h2>Reading 3 Completed!</h2>
-                    <p>You have just completed Reading 3 — the story of Pip the dragon.</p>
+                    <p>You have just completed Cycle 3 — Reading 3: Red Tides.</p>
                     <div className="final-score">
                       {score} / {TOTAL_QUESTIONS}
                     </div>
@@ -664,10 +696,10 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      {SKILLS_USED.map(({ id, color, icon: Icon, label }) => (
-                        <li key={id}>
+                      {SKILLS_PRACTICED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li key={id} style={indent ? { marginLeft: 30 } : undefined}>
                           <span className="skill-icon" style={{ background: color }}>
-                            <Icon className="size-3" />
+                            <Icon className="size-3.5" />
                           </span>
                           <span>{label}</span>
                           <input
@@ -689,12 +721,18 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                       ))}
                     </ul>
                   </div>
+
+                  <div style={{ textAlign: "center", marginTop: 6 }}>
+                    <button type="button" className="restart-btn" onClick={resetAll}>
+                      <RotateCcw className="size-4" /> Start Over
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Feedback modal */}
+          {/* Modal */}
           {modal && (
             <div className="modal-overlay" onClick={() => setModal(null)}>
               <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -706,7 +744,7 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
                   className={`modal-ok ${modal.ok ? "green" : "pink"}`}
                   onClick={() => setModal(null)}
                 >
-                  Got it
+                  Got it!
                 </button>
               </div>
             </div>
@@ -717,11 +755,12 @@ export default function EnglishReadingComprehensionReading3LearningPage() {
   );
 }
 
-const SKILLS_USED: {
+const SKILLS_PRACTICED: {
   id: string;
   color: string;
   icon: typeof Eye;
-  label: React.ReactNode;
+  label: ReactNode;
+  indent?: boolean;
 }[] = [
   {
     id: "skim",
@@ -729,7 +768,7 @@ const SKILLS_USED: {
     icon: FastForward,
     label: (
       <>
-        <strong>Skim</strong> for the gist and look for the topic sentence.
+        <strong>Skim</strong> the reading to get an overview and get the main idea.
       </>
     ),
   },
@@ -739,39 +778,92 @@ const SKILLS_USED: {
     icon: Search,
     label: (
       <>
-        <strong>Scan</strong> to find the keyword and the details you need.
+        <strong>Scan</strong> in the reading to find the information you need.
       </>
     ),
   },
   {
-    id: "interpret",
+    id: "activate-background",
     color: "var(--accent-orange)",
-    icon: Heart,
+    icon: Eye,
     label: (
       <>
-        Interpret <strong>feelings and attitudes</strong>, and tell{" "}
-        <strong>facts from opinions</strong>.
+        <strong>Activate</strong> your <strong>background knowledge</strong> or{" "}
+        <strong>world knowledge</strong> about the topic.
       </>
     ),
   },
   {
-    id: "synonyms",
+    id: "activate-language",
     color: "var(--accent-purple)",
-    icon: Replace,
+    icon: Brain,
     label: (
       <>
-        Use <strong>synonyms</strong> and language features (similes, compound words) to guess word
-        meanings.
+        <strong>Activate</strong> your <strong>knowledge</strong> about{" "}
+        <strong>language features</strong> and <strong>devices</strong>.
+      </>
+    ),
+  },
+  {
+    id: "details",
+    color: "var(--accent-pink)",
+    icon: BookOpenCheck,
+    label: (
+      <>
+        <strong>Find the details</strong> in the reading to support your understanding.
       </>
     ),
   },
   {
     id: "inferences",
-    color: "var(--accent-pink)",
+    color: "var(--accent-blue)",
     icon: Puzzle,
     label: (
       <>
-        <strong>Make inferences</strong> by linking clues across the text.
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-yellow)",
+    icon: BookOpen,
+    indent: true,
+    label:
+      "Contextual inference: use surrounding information to guess the meaning of an unknown word.",
+  },
+  {
+    id: "bridging",
+    color: "var(--accent-mint)",
+    icon: Replace,
+    indent: true,
+    label: "Bridging inference: link up the information across the text to make an inference.",
+  },
+  {
+    id: "gap-filling",
+    color: "var(--accent-orange)",
+    icon: Lightbulb,
+    indent: true,
+    label:
+      "Gap-filling inference: use your background knowledge to fill in the gap and make an inference.",
+  },
+  {
+    id: "reread",
+    color: "var(--accent-purple)",
+    icon: RotateCcw,
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
+  },
+  {
+    id: "compare",
+    color: "var(--accent-pink)",
+    icon: Scale,
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
       </>
     ),
   },

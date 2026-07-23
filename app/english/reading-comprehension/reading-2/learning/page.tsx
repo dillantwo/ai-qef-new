@@ -27,6 +27,7 @@ import {
 import Header from "@/components/Header";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
+import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "summary";
 
@@ -76,6 +77,19 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
   });
   const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+  const { clearRecord } = useReadingRecord({
+    readingId: "cycle-1-reading-2",
+    title: "Cycle 1 · Reading 2: Amazing Animals",
+    questions,
+    answered,
+    section,
+    step,
+    skillChecks,
+    setAnswered,
+    setSection,
+    setStep,
+    setSkillChecks,
+  });
 
   const toggleSkill = useCallback(
     (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
@@ -171,6 +185,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
 
   const resetAll = useCallback(() => {
     setAnswered({});
+    clearRecord();
     setHints({});
     setStrategies({});
     setStep({ part1: 0, part2: 0 });
@@ -609,7 +624,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                 <div className="narrow">
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
-                    <h2>Reading 2 Complete!</h2>
+                    <h2>Reading 2 Completed!</h2>
                     <p>You have just completed Reading 2 — Amazing Animals.</p>
                     <div className="final-score">
                       {score} / {TOTAL_QUESTIONS}

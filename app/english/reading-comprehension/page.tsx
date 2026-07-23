@@ -115,9 +115,11 @@ const cycles: Cycle[] = [
       {
         id: "reading-3",
         label: "Reading 3",
-        title: "Coming soon",
-        description: "This reading is being prepared. Check back soon!",
-        available: false,
+        title: "Red Tides",
+        description:
+          "An informational article about red tides in Hong Kong — the events, why they happen, and how to protect the sea.",
+        href: "/english/reading-comprehension/cycle-3-reading-3",
+        available: true,
       },
     ],
   },

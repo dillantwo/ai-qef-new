@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,7 +20,6 @@ import {
   RotateCcw,
   Scale,
   Search,
-  Sparkles,
   Star,
   Trophy,
   Watch,
@@ -28,6 +27,7 @@ import {
 import Header from "@/components/Header";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
+import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "summary";
 
@@ -71,6 +71,25 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     badge: "",
   });
   const [modal, setModal] = useState<ModalData | null>(null);
+  const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
+  const { clearRecord } = useReadingRecord({
+    readingId: "cycle-3-reading-1",
+    title: "Cycle 3 · Reading 1: Detective Lee and the Gold Watch",
+    questions,
+    answered,
+    section,
+    step,
+    skillChecks,
+    setAnswered,
+    setSection,
+    setStep,
+    setSkillChecks,
+  });
+
+  const toggleSkill = useCallback(
+    (id: string) => setSkillChecks((prev) => ({ ...prev, [id]: !prev[id] })),
+    [],
+  );
 
   const clueRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainRef = useRef<HTMLElement | null>(null);
@@ -161,8 +180,10 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
 
   const resetAll = useCallback(() => {
     setAnswered({});
+    clearRecord();
     setHints({});
     setStrategies({});
+    setSkillChecks({});
     setStep({ part1: 0, part2: 0 });
     clearHighlights();
     setSection("overview");
@@ -619,7 +640,7 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                 <div className="narrow">
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
-                    <h2>Reading 1 Complete!</h2>
+                    <h2>Reading 1 Completed!</h2>
                     <p>You have just completed Cycle 3 — Reading 1: Detective Lee and the Gold Watch.</p>
                     <div className="final-score">
                       {score} / {TOTAL_QUESTIONS}
@@ -644,57 +665,29 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <FastForward className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Skim</strong> the blurb to get an overview and the main idea.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <Search className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Scan</strong> to find the keyword and the information you need.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-orange)" }}>
-                          <BookOpen className="size-3.5" />
-                        </span>
-                        <span>
-                          Use <strong>contextual clues</strong> to work out a word like
-                          &quot;mystery&quot;.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-pink)" }}>
-                          <Puzzle className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Make inferences</strong> — link up clues and use numerical
-                          reasoning.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-yellow)" }}>
-                          <Sparkles className="size-3.5" />
-                        </span>
-                        <span>
-                          Understand the <strong>writer&apos;s purpose</strong> behind a book blurb.
-                        </span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-purple)" }}>
-                          <Scale className="size-3.5" />
-                        </span>
-                        <span>
-                          <strong>Compare</strong> the answers and take out the distractors to find
-                          the best one.
-                        </span>
-                      </li>
+                      {SKILLS_PRACTICED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li key={id} style={indent ? { marginLeft: 30 } : undefined}>
+                          <span className="skill-icon" style={{ background: color }}>
+                            <Icon className="size-3.5" />
+                          </span>
+                          <span>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={!!skillChecks[id]}
+                            onChange={() => toggleSkill(id)}
+                            aria-label="Mark skill as used"
+                            style={{
+                              marginLeft: "auto",
+                              marginTop: 2,
+                              width: 18,
+                              height: 18,
+                              accentColor: color,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -759,3 +752,125 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     </>
   );
 }
+
+const SKILLS_PRACTICED: {
+  id: string;
+  color: string;
+  icon: typeof Eye;
+  label: ReactNode;
+  indent?: boolean;
+}[] = [
+  {
+    id: "skim",
+    color: "var(--accent-blue)",
+    icon: FastForward,
+    label: (
+      <>
+        <strong>Skim</strong> the reading to get an overview and get the main idea.
+      </>
+    ),
+  },
+  {
+    id: "scan",
+    color: "var(--accent-mint)",
+    icon: Search,
+    label: (
+      <>
+        <strong>Scan</strong> in the reading to find the information you need.
+      </>
+    ),
+  },
+  {
+    id: "activate-background",
+    color: "var(--accent-orange)",
+    icon: Eye,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>background knowledge</strong> or{" "}
+        <strong>world knowledge</strong> about the topic.
+      </>
+    ),
+  },
+  {
+    id: "activate-language",
+    color: "var(--accent-purple)",
+    icon: Brain,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>knowledge</strong> about{" "}
+        <strong>language features</strong> and <strong>devices</strong>.
+      </>
+    ),
+  },
+  {
+    id: "details",
+    color: "var(--accent-pink)",
+    icon: BookOpenCheck,
+    label: (
+      <>
+        <strong>Find the details</strong> in the reading to support your understanding.
+      </>
+    ),
+  },
+  {
+    id: "inferences",
+    color: "var(--accent-blue)",
+    icon: Puzzle,
+    label: (
+      <>
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "numerical",
+    color: "var(--accent-blue)",
+    icon: Watch,
+    indent: true,
+    label:
+      "Numerical reasoning: work out something related to numbers, dates or time relations, etc.",
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-yellow)",
+    icon: BookOpen,
+    indent: true,
+    label:
+      "Contextual inference: use surrounding information to guess the meaning of an unknown word.",
+  },
+  {
+    id: "bridging",
+    color: "var(--accent-mint)",
+    icon: Replace,
+    indent: true,
+    label: "Bridging inference: link up the information across the text to make an inference.",
+  },
+  {
+    id: "gap-filling",
+    color: "var(--accent-orange)",
+    icon: Lightbulb,
+    indent: true,
+    label:
+      "Gap-filling inference: use your background knowledge to fill in the gap and make an inference.",
+  },
+  {
+    id: "reread",
+    color: "var(--accent-purple)",
+    icon: RotateCcw,
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
+  },
+  {
+    id: "compare",
+    color: "var(--accent-pink)",
+    icon: Scale,
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
+      </>
+    ),
+  },
+];

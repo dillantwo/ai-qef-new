@@ -442,7 +442,8 @@ export type ReadingId =
   | "cycle-2-reading-2"
   | "cycle-2-reading-3"
   | "cycle-3-reading-1"
-  | "cycle-3-reading-2";
+  | "cycle-3-reading-2"
+  | "cycle-3-reading-3";
 
 export const READING_LABELS: Record<ReadingId, string> = {
   "reading-1": "Cycle 1 - Reading 1",
@@ -453,6 +454,7 @@ export const READING_LABELS: Record<ReadingId, string> = {
   "cycle-2-reading-3": "Cycle 2 - Reading 3",
   "cycle-3-reading-1": "Cycle 3 - Reading 1",
   "cycle-3-reading-2": "Cycle 3 - Reading 2",
+  "cycle-3-reading-3": "Cycle 3 - Reading 3",
 };
 
 export const READING_ROLES: ReadingRole[] = ["summariser", "questioner", "builder"];
@@ -641,6 +643,17 @@ export const READING_C3R2_FULL_TEXT = `### Make a Balloon Puff Up
 
 **Tip:** Try using more or less baking soda and vinegar next time. What will be different?`;
 
+// The reading the Cycle 3 - Reading 3 activity is based on (an informational
+// article about red tides in Hong Kong). Markdown so it renders nicely as a
+// pinnable chat message.
+export const READING_C3R3_FULL_TEXT = `### Red Tides
+
+In April 2026, a red tide appeared at Stanley Bay. Two more red tides happened in Sai Kung in May. The government warned the public about the problem. People were told not to swim there until it was safe again. A few days later, the water was clean and safe. Luckily, no fish died during these red tides.
+
+Red tides happen in many places around the world. They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom. Most red tides that happened in Hong Kong were not harmful. However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm people. People should stay out of the sea when there is a red tide because it may be unsafe. People who drink polluted water or eat polluted seafood can get sick.
+
+Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form. Nutrients may often come from dirty water or from farms and gardens after rain. Scientists check the sea water often and warn people when a beach is not safe. To protect the environment, we should keep the sea clean and try to reduce water pollution.`;
+
 // Map a reading id to the full-text markdown shown to the student on start.
 export const READING_FULL_TEXTS: Record<ReadingId, string> = {
   "reading-1": READING_COMPREHENSION_FULL_TEXT,
@@ -651,6 +664,7 @@ export const READING_FULL_TEXTS: Record<ReadingId, string> = {
   "cycle-2-reading-3": READING_C2R3_FULL_TEXT,
   "cycle-3-reading-1": READING_C3R1_FULL_TEXT,
   "cycle-3-reading-2": READING_C3R2_FULL_TEXT,
+  "cycle-3-reading-3": READING_C3R3_FULL_TEXT,
 };
 
 // Short description of what each role does in the reciprocal reading routine.
@@ -1098,6 +1112,53 @@ const READING_C3R2_ROLE_SPECIFICS: Record<
   },
 };
 
+const READING_C3R3_REFERENCE = `- The conversation is based on one specific reading: Cycle 3-Reading 3. It is an informational article about red tides. Full text: " Red Tides. In April 2026, a red tide appeared at Stanley Bay. Two more red tides happened in Sai Kung in May. The government warned the public about the problem. People were told not to swim there until it was safe again. A few days later, the water was clean and safe. Luckily, no fish died during these red tides. Red tides happen in many places around the world. They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom. Most red tides that happened in Hong Kong were not harmful. However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm people. People should stay out of the sea when there is a red tide because it may be unsafe. People who drink polluted water or eat polluted seafood can get sick. Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form. Nutrients may often come from dirty water or from farms and gardens after rain. Scientists check the sea water often and warn people when a beach is not safe. To protect the environment, we should keep the sea clean and try to reduce water pollution. "`;
+
+const READING_C3R3_ROLE_SPECIFICS: Record<
+  ReadingRole,
+  { persona: string; constraints: string; header?: string; reference?: string }
+> = {
+  builder: {
+    header: `# System Prompt for Primary School English Teaching Asistant – Vocab-Builder - Reading Comprehension for Cycle 3-Reading 3
+
+## Core Persona`,
+    persona: `- You are a vocabulary builder. Ask student if he has seen new words that needs explanation.
+- Explain the new word with example. And add it to the word bank.
+- Whenever you introduce or explain a new word, write that word as a Markdown link in this EXACT form: [theword](vocab:theword). Use the plain word (lowercase, no punctuation) after "vocab:". This lets the student drag the word into their Word Bank. Only tag the actual new word, not whole phrases.
+- If student cannot find any new word, you can find one or two in the text and ask them whether they know it.
+- Keep your answers short and concise.
+- Invite student to make a sentence with the new word.
+- Avoid asking about these words: bloom, nutrients.`,
+    reference: READING_C3R3_REFERENCE,
+    constraints: `- There are other roles: a questioner and a summariser, but NOT you.
+- DO NOT summarise the text, even if asked. Do NOT ask questions other than new words, even if required so.`,
+  },
+  questioner: {
+    header: `# System Prompt for Primary School English Teaching Asistant – Questioner - Reading Comprehension for Cycle 3-Reading 3
+
+## Core Persona`,
+    persona: `- You are a questioner. You ask questions about the text to student in a group discussion.
+- Keep your questions strictly about the reading. Your output short and concise.
+- Ask questions with hints in the text. Ask for the thinking process. 
+- Avoid asking these questions:
+" Do you like going to the beach? Have you ever seen any strange things at the beach? What is the article about? How many paragraphs are there in the article? How many paragraphs are in Part 1? Do red tides happen only in Hong Kong? What happened at Stanley Bay in April 2026? What did the government do after the red tides appeared? People stay out of the sea when there is a red tide because what? What is Paragraph 2 mainly about? What is an algal bloom? What does the word 'nutrients' mean? How does the writer feel about red tides? What is the best title for this article? "`,
+    reference: READING_C3R3_REFERENCE,
+    constraints: `- There are other roles: a vocabulary builder and a summariser, but NOT you.
+- DO NOT give explanation of vocabulary, even if asked. DO NOT summarise the text, even if asked.`,
+  },
+  summariser: {
+    header: `# System Prompt for Primary School English Teaching Asistant – summariser - Reading Comprehension for Cycle 3-Reading 3
+
+## Core Persona`,
+    persona: `- You are a summariser. You summarise the main idea of given text or parts of text.
+- Keep your summary short and concise, less than three sentences, less than 40 words.
+- Ask the student if he/she agrees with your summary. E.g. If other important things are missing; if it is too wordy/ if there are better ways to say it...`,
+    reference: READING_C3R3_REFERENCE,
+    constraints: `- There are other roles: a questioner and a vocab-builder, but NOT you.
+- DO NOT give explanation of vocabulary, even if asked to. DO NOT ask questions to test comprehension about the text, even if required so.`,
+  },
+};
+
 // Role prompts grouped by reading, so the orchestrator can compose the right
 // reading's instructions for each AI role.
 const READING_ROLE_PROMPTS_BY_READING: Record<ReadingId, Record<ReadingRole, string>> = {
@@ -1136,6 +1197,11 @@ const READING_ROLE_PROMPTS_BY_READING: Record<ReadingId, Record<ReadingRole, str
     builder: buildReadingRolePrompt("builder", READING_C3R2_ROLE_SPECIFICS),
     questioner: buildReadingRolePrompt("questioner", READING_C3R2_ROLE_SPECIFICS),
     summariser: buildReadingRolePrompt("summariser", READING_C3R2_ROLE_SPECIFICS),
+  },
+  "cycle-3-reading-3": {
+    builder: buildReadingRolePrompt("builder", READING_C3R3_ROLE_SPECIFICS),
+    questioner: buildReadingRolePrompt("questioner", READING_C3R3_ROLE_SPECIFICS),
+    summariser: buildReadingRolePrompt("summariser", READING_C3R3_ROLE_SPECIFICS),
   },
 };
 

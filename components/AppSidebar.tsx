@@ -43,7 +43,8 @@ import { basePath } from "@/lib/utils";
 import { deleteMathChatHistoryItem, getMathChatHistory, getMathStudents, getMathStudentChatHistory, type MathChatHistoryItem, type MathStudentSummary } from "@/lib/math-chat-history";
 import { getEnglishChatHistory, deleteEnglishChatHistoryItem, getEnglishStudents, getEnglishStudentChatHistory, type EnglishChatHistoryItem, type EnglishStudentSummary } from "@/lib/english-chat-history";
 import { getChineseChatHistory, deleteChineseChatHistoryItem, getChineseStudents, getChineseStudentChatHistory, getScienceStudents, getScienceStudentChatHistory, getHumanitiesStudents, getHumanitiesStudentChatHistory, type ChineseChatHistoryItem, type ChineseStudentSummary } from "@/lib/chinese-chat-history";
-import StudentHistoryDialog from "@/components/StudentHistoryDialog";
+import StudentHistoryDialog, { type StudentSummary } from "@/components/StudentHistoryDialog";
+import { getReadingRecordStudents, getReadingRecordStudentItems } from "@/lib/english-reading-record";
 import StudentEssayDraftDialog from "@/components/StudentEssayDraftDialog";
 import { getEssayDraftStudents, getStudentEssayDrafts, type EssayDraftStudentSummary } from "@/lib/chinese-essay-draft";
 import { VocabBank } from "@/components/VocabBank";
@@ -194,6 +195,7 @@ export function AppSidebar() {
   // Reading-comprehension role-play pages get a draggable Word Bank.
   const isReadingRoleplay =
     pathname.startsWith('/english/reading-comprehension') && pathname.endsWith('/roleplay');
+  const isReadingComprehension = pathname.startsWith('/english/reading-comprehension');
   const isTeacher = user?.role === "teacher";
   const isStudent = user?.role === "student";
 
@@ -227,6 +229,9 @@ export function AppSidebar() {
   // Teacher: student chat history viewer (English topics).
   const [englishStudents, setEnglishStudents] = useState<EnglishStudentSummary[]>([]);
   const [englishDialogOpen, setEnglishDialogOpen] = useState(false);
+  // Teacher: student reading-comprehension quiz records viewer.
+  const [readingRecordStudents, setReadingRecordStudents] = useState<StudentSummary[]>([]);
+  const [readingRecordDialogOpen, setReadingRecordDialogOpen] = useState(false);
   // Teacher: student chat history viewer (Science topics).
   const [scienceStudents, setScienceStudents] = useState<ChineseStudentSummary[]>([]);
   const [scienceDialogOpen, setScienceDialogOpen] = useState(false);
@@ -746,6 +751,22 @@ export function AppSidebar() {
           </Button>
         )}
 
+        {/* Teacher: view each student's reading-comprehension quiz records (read-only popup) */}
+        {isReadingComprehension && isTeacher && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 text-xs"
+            onClick={() => {
+              void getReadingRecordStudents().then(setReadingRecordStudents);
+              setReadingRecordDialogOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            Reading Records
+          </Button>
+        )}
+
         {/* Teacher: view each student's Science chat history (read-only popup) */}
         {isScience && isTeacher && (
           <Button
@@ -1017,6 +1038,17 @@ export function AppSidebar() {
           fetchChats={getEnglishStudentChatHistory}
           topicLabels={ENGLISH_TOPIC_LABELS}
           topic={englishTopic}
+        />
+      )}
+
+      {isReadingComprehension && isTeacher && (
+        <StudentHistoryDialog
+          students={readingRecordStudents}
+          open={readingRecordDialogOpen}
+          onClose={() => setReadingRecordDialogOpen(false)}
+          fetchChats={(studentId) => getReadingRecordStudentItems(studentId)}
+          topicLabels={ENGLISH_TOPIC_LABELS}
+          title="學生閱讀理解記錄"
         />
       )}
 
