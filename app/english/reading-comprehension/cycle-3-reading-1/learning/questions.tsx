@@ -50,7 +50,7 @@ export const questions: Question[] = [
       <>
         The door was locked and Mr Chan has the only
         key, so A and B are wrong. The police are not mentioned taking it (D). Even the police
-        don&apos;t know where to start — so nobody knows yet.
+        don&apos;t know where to start. The answer is implied. Make a reasonable guess; no body knows yet.
       </>
     ),
     explain: (
@@ -58,7 +58,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: C. Nobody knows yet.</strong>
         <br />
         <br />
-        The watch vanished from a <em>locked</em> study and{" "}
+        The watch disappeared from a <em>locked</em> study and{" "}
         <em>&quot;the police have no idea where to start&quot;</em>, so nobody knows how yet. A is
         wrong (the door was locked); B is wrong (Mr Chan has the only key); D is never mentioned.
       </>
@@ -88,9 +88,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Use the sentences around the word. They are all about
+        Use the sentences around the word "mystery". They are all about
         something strange and hard to solve — even the police are stuck. So &quot;mystery&quot; is
-        not a place (A), a plan (B) or funny (D).
+        not a place (A), a plan (B) or something funny (D).
       </>
     ),
     explain: (
@@ -115,7 +115,7 @@ export const questions: Question[] = [
       { val: "D", label: "travel" },
     ],
     answer: "A",
-    clues: ["q3a", "q1", "q1b"],
+    clues: ["q3a", "q1", "q1b", "q3b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Skim the whole story part. Something is <strong>stolen</strong>,
@@ -126,8 +126,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         A stolen watch, the police and a
-        detective are all parts of a crime story. &quot;Journey&quot; is a distractor for travel (D);
-        eating in the living room is not about cooking (B); there is nothing historical (C).
+        detective are all parts of a crime story. &quot;Journey&quot; is a distractor(D);
+        Food is not the most important idea of the story (B); there is nothing historical (C).
       </>
     ),
     explain: (
@@ -135,9 +135,9 @@ export const questions: Question[] = [
         <strong>✅ Correct: A. crime</strong>
         <br />
         <br />
-        A missing watch, the police and Detective Lee are all <strong>crime</strong> story elements.
+        A missing watch, the police and Detective Lee are all <strong>crime </strong>story elements.
         &quot;Cooking&quot; (B) and &quot;history&quot; (C) are not there; &quot;travel&quot; (D) is
-        a distractor — &quot;journey&quot; here means the investigation, not sightseeing.
+        a distractor.
       </>
     ),
   },
@@ -152,7 +152,7 @@ export const questions: Question[] = [
       { val: "D", label: "Jocelyn Chow" },
     ],
     answer: "C",
-    clues: ["q4"],
+    clues: ["q4", "q6"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Look at the reviews and the last line:{" "}
@@ -163,8 +163,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        A blurb has review comments. Mr Chan is a
-        character (A); Dillan Rumelhart wrote <em>Lulu and the Moon Rocket</em> and only left a
+        Mr Chan is a character (A); A blurb has review comments. Dillan Rumelhart wrote <em>Lulu and the Moon Rocket</em> and only left a
         comment (B); Jocelyn Chow is a reviewer (D). The book is <em>by</em> David Wong.
       </>
     ),
@@ -201,7 +200,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;The other two books&quot; means
-        two more <em>besides</em> this one. This book + 2 others = 3 books in total.
+        two more <em>besides</em> this one. Use numerical reasoning to get the sum. This book + 2 others = 3 books in total.
       </>
     ),
     explain: (

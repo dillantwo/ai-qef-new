@@ -16,6 +16,7 @@ import {
   Info,
   Lightbulb,
   ListOrdered,
+  Lock,
   PenLine,
   Puzzle,
   Replace,
@@ -28,18 +29,12 @@ import {
   Trophy,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { basePath } from "@/lib/utils";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "summary";
-
-interface ModalData {
-  emoji: string;
-  title: string;
-  msg: string;
-  ok: boolean;
-}
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
@@ -64,6 +59,42 @@ const sheetStyles = `
 .rc-learning .steps-list li { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); padding: 2px 0; }
 .rc-learning .how-text, .rc-learning .tip-text { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 4px 0 0; }
 .rc-learning .tip-text { font-style: italic; }
+.rc-learning .mat-grid.with-images li { align-items: center; min-height: 42px; }
+.rc-learning .mat-grid.with-images li { justify-content: flex-start; }
+.rc-learning .mat-img { margin-left: 12px; height: 40px; width: auto; max-width: 70px; object-fit: contain; flex-shrink: 0; }
+.rc-learning .safety-img { margin-left: auto; height: 36px; width: auto; object-fit: contain; flex-shrink: 0; align-self: center; }
+.rc-learning .puff-figure { float: right; width: 96px; margin: 0 4px 10px 16px; }
+.rc-learning .puff-figure img { width: 100%; height: auto; object-fit: contain; }
+
+/* Locked tabs: greyed out and not clickable until the previous part is done. */
+.rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
+.rc-learning .nav-tab.locked:hover { border-color: var(--border-light); color: var(--text-muted); }
+
+/* Neutral "selected" state for options while answering (no right/wrong reveal). */
+.rc-learning .option-btn.selected { border-color: var(--accent-blue); background: rgba(20,110,245,0.08); }
+.rc-learning .option-btn.selected .opt-letter { background: var(--accent-blue); color: #fff; }
+.rc-learning .question-card.answered { border-color: var(--accent-blue); }
+
+/* Answer Review list shown on the Summary tab. */
+.rc-learning .answer-review { list-style: none; padding: 0; margin: 0; }
+.rc-learning .answer-review > li {
+  padding: 14px 14px; margin-bottom: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); border-left: 4px solid var(--border-light);
+  background: var(--bg-article);
+}
+.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--correct-bg); }
+.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--wrong-bg); }
+.rc-learning .answer-review .ar-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.rc-learning .answer-review .ar-badge {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; background: var(--wrong-border);
+}
+.rc-learning .answer-review .ar-badge.ok { background: var(--correct-border); }
+.rc-learning .answer-review .ar-qtext { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
+.rc-learning .answer-review .ar-answers { display: flex; flex-direction: column; gap: 3px; margin: 0 0 8px 34px; font-size: 13px; color: var(--text-secondary); }
+.rc-learning .answer-review .ar-correct { color: var(--correct-border); }
+.rc-learning .answer-review .explain-box { margin-left: 34px; }
 `;
 
 export default function EnglishReadingComprehensionCycle3Reading2LearningPage() {
@@ -76,7 +107,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     ids: [],
     badge: "",
   });
-  const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-3-reading-2",
@@ -130,29 +160,12 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     [clearHighlights],
   );
 
-  const handleAnswer = useCallback(
-    (q: Question, val: string) => {
-      if (answered[q.id]) return;
-      setAnswered((prev) => ({ ...prev, [q.id]: val }));
-      if (val === q.answer) {
-        setModal({
-          emoji: "🎉",
-          title: "Correct!",
-          msg: "Well done! You found the right answer.",
-          ok: true,
-        });
-      } else {
-        setModal({
-          emoji: "🤔",
-          title: "Not quite!",
-          msg: "The correct answer is highlighted in green. Read the explanation below.",
-          ok: false,
-        });
-      }
-      highlightClues(q);
-    },
-    [answered, highlightClues],
-  );
+  // Record the student's choice without revealing whether it is right or wrong.
+  // Feedback (correct/wrong + explanations) is deferred to the Summary tab.
+  // Students may change their choice until they move on.
+  const handleAnswer = useCallback((q: Question, val: string) => {
+    setAnswered((prev) => ({ ...prev, [q.id]: val }));
+  }, []);
 
   const toggleHint = useCallback(
     (q: Question) => {
@@ -209,6 +222,15 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     return false;
   };
 
+  // Tabs unlock in order: Overview → Part 1 → Part 2 → Summary. Part 2 opens
+  // once Part 1 is fully answered; Summary opens once every question is answered.
+  const isTabUnlocked = (id: Section) => {
+    if (id === "overview" || id === "part1") return true;
+    if (id === "part2") return Boolean(part1Done);
+    if (id === "summary") return allDone;
+    return false;
+  };
+
   const summaryMsg =
     score === TOTAL_QUESTIONS
       ? "Perfect score! You're a reading superstar!"
@@ -253,11 +275,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
         </div>
         {list.slice(current, current + 1).map((q) => {
           const picked = answered[q.id];
-          const cardClass = picked
-            ? picked === q.answer
-              ? "question-card answered-correct"
-              : "question-card answered-wrong"
-            : "question-card";
+          const cardClass = picked ? "question-card answered" : "question-card";
           return (
             <div className={cardClass} key={q.id}>
               <div className="q-number">Question {q.id}</div>
@@ -266,11 +284,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
               <ul className="options-list">
                 {q.options.map((opt) => {
                   let cls = "option-btn";
-                  if (picked) {
-                    cls += " disabled";
-                    if (opt.val === q.answer) cls += " correct";
-                    else if (opt.val === picked) cls += " wrong";
-                  }
+                  if (picked === opt.val) cls += " selected";
                   return (
                     <li key={opt.val}>
                       <button
@@ -303,7 +317,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                   <span>{q.strategy}</span>
                 </div>
               )}
-              {picked && <div className="explain-box">{q.explain}</div>}
             </div>
           );
         })}
@@ -329,31 +342,45 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     );
   }
 
-  // Materials list used in both the overview preview and Part 1.
-  const materials = (withClues: boolean) => (
+  // Small helper for the experiment-sheet illustrations in public/english.
+  const sheetImg = (file: string, alt: string, className: string) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className={className} src={`${basePath}/english/${encodeURIComponent(file)}`} alt={alt} />
+  );
+
+  // Materials list used in the overview preview and Part 1. When `withImages`
+  // is set, each item shows its illustration (used in the overview).
+  const materials = (withClues: boolean, withImages = false) => (
     <>
       <div className="sheet-h">Materials:</div>
-      <ul className="mat-grid">
+      <ul className={`mat-grid${withImages ? " with-images" : ""}`}>
         <li>
           <span className="dot">•</span> vinegar
+          {withImages && sheetImg("vinegar.png", "A bottle of vinegar", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> baking soda
+          {withImages && sheetImg("soda.png", "A box of baking soda", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> a small plastic bottle
+          {withImages && sheetImg("bottle.png", "A small plastic bottle", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> a funnel
+          {withImages && sheetImg("funnel.png", "A funnel", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> a spoon
+          {withImages && sheetImg("spoon.png", "A spoon", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> a tray
+          {withImages && sheetImg("tray.png", "A tray", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span> a balloon
+          {withImages && sheetImg("a ballon.png", "A balloon", "mat-img")}
         </li>
         <li>
           <span className="dot">•</span>{" "}
@@ -364,12 +391,13 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
           ) : (
             "a rubber band (helpful if you have one)"
           )}
+          {withImages && sheetImg("rubber.png", "A rubber band", "mat-img")}
         </li>
       </ul>
     </>
   );
 
-  const safety = (withClues: boolean) => (
+  const safety = (withClues: boolean, withImages = false) => (
     <div className="safety-box">
       <ShieldAlert className="size-4" />
       <span>
@@ -383,11 +411,13 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
         )}{" "}
         Wear safety goggles. If something gets in your eyes, wash them with clean water.
       </span>
+      {withImages && sheetImg("goggles.png", "A pair of safety goggles", "safety-img")}
     </div>
   );
 
-  // Steps / How It Works / Tip used in both the preview and Part 2.
-  const steps = (withClues: boolean) => (
+  // Steps / How It Works / Tip used in the preview and Part 2. When
+  // `withImages` is set, the puffed-up balloon illustration is shown.
+  const steps = (withClues: boolean, withImages = false) => (
     <>
       <div className="sheet-h">Steps:</div>
       <ol className="steps-list">
@@ -408,6 +438,11 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
         <li>When you are ready, lift the balloon so the baking soda drops into the bottle.</li>
         <li>Watch the balloon. What happens?</li>
       </ol>
+      {withImages && (
+        <div className="puff-figure">
+          {sheetImg("mix bottle.png", "A balloon puffing up on top of a bottle", "")}
+        </div>
+      )}
       <div className="sheet-h">How It Works:</div>
       <p className="how-text">
         {withClues ? (
@@ -440,15 +475,28 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     <div className={sheetActive("part1")}>
       <div className="sheet-inner">
         <div className="sheet-title">Make a Balloon Puff Up</div>
-        {materials(true)}
-        {safety(true)}
+        {materials(true, true)}
+        {safety(true, true)}
       </div>
     </div>
   );
 
   const sheetBottom = (
     <div className={sheetActive("part2")}>
-      <div className="sheet-inner">{steps(true)}</div>
+      <div className="sheet-inner">{steps(true, true)}</div>
+    </div>
+  );
+
+  // The complete, plain (no clue highlighting) sheet. Reused by the Overview
+  // preview and the Summary's side-by-side Answer Review.
+  const fullSheet = (
+    <div className="sheet">
+      <div className="sheet-inner">
+        <div className="sheet-title">Make a Balloon Puff Up</div>
+        {materials(false, true)}
+        {safety(false, true)}
+        {steps(false, true)}
+      </div>
     </div>
   );
 
@@ -470,17 +518,25 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
 
             {/* Tabs */}
             <div className="nav-tabs">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`nav-tab${section === id ? " active" : ""}`}
-                  onClick={() => switchSection(id)}
-                >
-                  <Icon className="size-3.5" /> {label}
-                  {isTabCompleted(id) ? " ✓" : ""}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon: Icon }) => {
+                const unlocked = isTabUnlocked(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`nav-tab${section === id ? " active" : ""}${
+                      unlocked ? "" : " locked"
+                    }`}
+                    onClick={() => unlocked && switchSection(id)}
+                    disabled={!unlocked}
+                    aria-disabled={!unlocked}
+                    title={unlocked ? undefined : "Finish the previous part to unlock"}
+                  >
+                    <Icon className="size-3.5" /> {label}
+                    {isTabCompleted(id) ? " ✓" : !unlocked ? <Lock className="size-3" /> : ""}
+                  </button>
+                );
+              })}
             </div>
 
             {/* OVERVIEW */}
@@ -521,14 +577,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                       </span>
                       The Experiment Sheet
                     </div>
-                    <div className="sheet">
-                      <div className="sheet-inner">
-                        <div className="sheet-title">Make a Balloon Puff Up</div>
-                        {materials(false)}
-                        {safety(false)}
-                        {steps(false)}
-                      </div>
-                    </div>
+                    {fullSheet}
                   </div>
 
                   <div style={{ textAlign: "center", marginTop: 6 }}>
@@ -685,7 +734,63 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                       <RotateCcw className="size-4" /> Start Over
                     </button>
                   </div>
+                </div>
 
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      {fullSheet}
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <BookOpenCheck className="size-3.5" /> Answer Review
+                    </div>
+                    <ul className="answer-review">
+                      {questions.map((q) => {
+                        const picked = answered[q.id];
+                        const isCorrect = picked === q.answer;
+                        const pickedLabel = q.options.find((o) => o.val === picked)?.label;
+                        const correctLabel = q.options.find((o) => o.val === q.answer)?.label;
+                        return (
+                          <li key={q.id} className={isCorrect ? "correct" : "wrong"}>
+                            <div className="ar-head">
+                              <span className={`ar-badge${isCorrect ? " ok" : ""}`}>
+                                {isCorrect ? "✓" : "✗"}
+                              </span>
+                              <span className="ar-qtext">
+                                <strong>Q{q.id}.</strong> {q.text}
+                              </span>
+                            </div>
+                            <div className="ar-answers">
+                              <span className="ar-your">
+                                Your answer:{" "}
+                                <strong>
+                                  {picked ? `${picked}. ` : "—"}
+                                  {pickedLabel}
+                                </strong>
+                              </span>
+                              {!isCorrect && (
+                                <span className="ar-correct">
+                                  Correct answer:{" "}
+                                  <strong>
+                                    {q.answer}. {correctLabel}
+                                  </strong>
+                                </span>
+                              )}
+                            </div>
+                            <div className="explain-box">{q.explain}</div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="narrow">
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -764,24 +869,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
               </div>
             )}
           </div>
-
-          {/* Modal */}
-          {modal && (
-            <div className="modal-overlay" onClick={() => setModal(null)}>
-              <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-emoji">{modal.emoji}</div>
-                <div className="modal-title">{modal.title}</div>
-                <div className="modal-msg">{modal.msg}</div>
-                <button
-                  type="button"
-                  className={`modal-ok ${modal.ok ? "green" : "pink"}`}
-                  onClick={() => setModal(null)}
-                >
-                  Got it!
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </>

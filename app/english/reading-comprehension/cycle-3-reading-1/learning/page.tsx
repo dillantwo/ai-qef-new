@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Info,
   Lightbulb,
+  Lock,
   MessageSquareQuote,
   PenLine,
   Puzzle,
@@ -31,13 +32,6 @@ import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "summary";
 
-interface ModalData {
-  emoji: string;
-  title: string;
-  msg: string;
-  ok: boolean;
-}
-
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
   { id: "part1", label: "Part 1: The Story", icon: Watch },
@@ -47,17 +41,72 @@ const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
 
 // Extra styles for the "Detective Lee" book blurb.
 const blurbStyles = `
-.rc-learning .blurb { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
-.rc-learning .blurb.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
-.rc-learning .blurb-inner { padding: 16px 18px 18px; }
-.rc-learning .blurb-title { text-align: center; font-weight: 800; font-size: 21px; color: var(--accent-blue); }
-.rc-learning .blurb-tagline { text-align: center; font-weight: 700; font-size: 15px; color: var(--text-primary); margin-top: 12px; }
-.rc-learning .blurb-p { text-align: center; font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 6px 0; }
-.rc-learning .blurb-stars { text-align: center; font-size: 20px; letter-spacing: 2px; color: #f5b301; margin: 10px 0; }
-.rc-learning .blurb-review { text-align: center; font-size: 13.5px; font-style: italic; line-height: 1.7; color: var(--text-secondary); margin: 10px 0 2px; }
-.rc-learning .blurb-reviewer { text-align: center; font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; }
-.rc-learning .blurb-cta { text-align: center; font-weight: 700; font-size: 14px; color: var(--accent-blue); margin-top: 12px; }
-.rc-learning .blurb-press { text-align: center; font-size: 12px; font-style: italic; color: var(--text-muted); margin-top: 10px; }
+/* The blurb is styled to look like the cover of a printed book: a light-blue
+   cover with a spine on the left, stacked page edges at the bottom-right, a
+   soft drop shadow, and a slight tilt that straightens when hovered. */
+.rc-learning .blurb {
+  position: relative;
+  background:
+    radial-gradient(130% 90% at 28% 0%, rgba(255,255,255,0.95), rgba(255,255,255,0) 58%),
+    linear-gradient(135deg, #eef6ff 0%, #e3eefc 48%, #d2e3f9 100%);
+  border: 1px solid #c3d9f2;
+  border-left: 8px solid #aecbee;
+  border-radius: 4px 14px 14px 4px;
+  overflow: visible;
+  transform: rotate(-1.2deg);
+  transform-origin: center;
+  box-shadow:
+    inset 3px 0 7px rgba(255,255,255,0.75),
+    inset -1px -1px 0 rgba(120,160,210,0.25),
+    6px 7px 0 -2px #e9f1fc,
+    7px 8px 0 -2px #cfe0f5,
+    12px 13px 0 -2px #e9f1fc,
+    13px 14px 0 -2px #cfe0f5,
+    17px 22px 36px rgba(30,80,150,0.26);
+  transition: box-shadow 0.4s ease, transform 0.4s ease;
+}
+.rc-learning .blurb:hover { transform: rotate(0deg) translateY(-3px); }
+.rc-learning .blurb.clue-active { border-color: var(--accent-orange) !important; outline: 3px solid rgba(255,140,66,0.30); outline-offset: 3px; }
+.rc-learning .blurb-inner { position: relative; padding: 24px 26px 28px; }
+.rc-learning .blurb-title { text-align: center; font-weight: 800; font-size: 22px; letter-spacing: 0.2px; color: #16407a; }
+.rc-learning .blurb-tagline { text-align: center; font-weight: 700; font-size: 15px; color: #1b3a63; margin-top: 14px; }
+.rc-learning .blurb-p { text-align: center; font-size: 13.5px; line-height: 1.75; color: #3f5878; margin: 6px 0; }
+.rc-learning .blurb-stars { text-align: center; font-size: 22px; letter-spacing: 3px; color: #f5b301; margin: 12px 0; text-shadow: 0 1px 1px rgba(0,0,0,0.08); }
+.rc-learning .blurb-review { text-align: center; font-size: 13.5px; font-style: italic; line-height: 1.7; color: #3f5878; margin: 10px 0 2px; }
+.rc-learning .blurb-reviewer { text-align: center; font-size: 12.5px; color: #6b83a3; margin: 0 0 6px; }
+.rc-learning .blurb-cta { text-align: center; font-weight: 700; font-size: 14px; color: #16407a; margin-top: 14px; }
+.rc-learning .blurb-press { text-align: center; font-size: 12px; font-style: italic; color: #6b83a3; margin-top: 12px; }
+.rc-learning .blurb-press::before { content: "\u2600  "; color: #2f7bd6; font-style: normal; }
+
+/* Locked tabs: greyed out and not clickable until the previous part is done. */
+.rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
+.rc-learning .nav-tab.locked:hover { border-color: var(--border-light); color: var(--text-muted); }
+
+/* Neutral "selected" state for options while answering (no right/wrong reveal). */
+.rc-learning .option-btn.selected { border-color: var(--accent-blue); background: rgba(20,110,245,0.08); }
+.rc-learning .option-btn.selected .opt-letter { background: var(--accent-blue); color: #fff; }
+.rc-learning .question-card.answered { border-color: var(--accent-blue); }
+
+/* Answer Review list shown on the Summary tab. */
+.rc-learning .answer-review { list-style: none; padding: 0; margin: 0; }
+.rc-learning .answer-review > li {
+  padding: 14px 14px; margin-bottom: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); border-left: 4px solid var(--border-light);
+  background: var(--bg-article);
+}
+.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--correct-bg); }
+.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--wrong-bg); }
+.rc-learning .answer-review .ar-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.rc-learning .answer-review .ar-badge {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; background: var(--wrong-border);
+}
+.rc-learning .answer-review .ar-badge.ok { background: var(--correct-border); }
+.rc-learning .answer-review .ar-qtext { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
+.rc-learning .answer-review .ar-answers { display: flex; flex-direction: column; gap: 3px; margin: 0 0 8px 34px; font-size: 13px; color: var(--text-secondary); }
+.rc-learning .answer-review .ar-correct { color: var(--correct-border); }
+.rc-learning .answer-review .explain-box { margin-left: 34px; }
 `;
 
 export default function EnglishReadingComprehensionCycle3Reading1LearningPage() {
@@ -70,7 +119,6 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     ids: [],
     badge: "",
   });
-  const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-3-reading-1",
@@ -124,29 +172,12 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     [clearHighlights],
   );
 
-  const handleAnswer = useCallback(
-    (q: Question, val: string) => {
-      if (answered[q.id]) return;
-      setAnswered((prev) => ({ ...prev, [q.id]: val }));
-      if (val === q.answer) {
-        setModal({
-          emoji: "🎉",
-          title: "Correct!",
-          msg: "Well done! You found the right answer.",
-          ok: true,
-        });
-      } else {
-        setModal({
-          emoji: "🤔",
-          title: "Not quite!",
-          msg: "The correct answer is highlighted in green. Read the explanation below.",
-          ok: false,
-        });
-      }
-      highlightClues(q);
-    },
-    [answered, highlightClues],
-  );
+  // Record the student's choice without revealing whether it is right or wrong.
+  // Feedback (correct/wrong + explanations) is deferred to the Summary tab.
+  // Students may change their choice until they move on.
+  const handleAnswer = useCallback((q: Question, val: string) => {
+    setAnswered((prev) => ({ ...prev, [q.id]: val }));
+  }, []);
 
   const toggleHint = useCallback(
     (q: Question) => {
@@ -202,6 +233,15 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     return false;
   };
 
+  // Tabs unlock in order: Overview → Part 1 → Part 2 → Summary. Part 2 opens
+  // once Part 1 is fully answered; Summary opens once every question is answered.
+  const isTabUnlocked = (id: Section) => {
+    if (id === "overview" || id === "part1") return true;
+    if (id === "part2") return Boolean(part1Done);
+    if (id === "summary") return allDone;
+    return false;
+  };
+
   const summaryMsg =
     score === TOTAL_QUESTIONS
       ? "Perfect score! You're a reading superstar!"
@@ -246,11 +286,7 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
         </div>
         {list.slice(current, current + 1).map((q) => {
           const picked = answered[q.id];
-          const cardClass = picked
-            ? picked === q.answer
-              ? "question-card answered-correct"
-              : "question-card answered-wrong"
-            : "question-card";
+          const cardClass = picked ? "question-card answered" : "question-card";
           return (
             <div className={cardClass} key={q.id}>
               <div className="q-number">Question {q.id}</div>
@@ -259,11 +295,7 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
               <ul className="options-list">
                 {q.options.map((opt) => {
                   let cls = "option-btn";
-                  if (picked) {
-                    cls += " disabled";
-                    if (opt.val === q.answer) cls += " correct";
-                    else if (opt.val === picked) cls += " wrong";
-                  }
+                  if (picked === opt.val) cls += " selected";
                   return (
                     <li key={opt.val}>
                       <button
@@ -296,7 +328,6 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                   <span>{q.strategy}</span>
                 </div>
               )}
-              {picked && <div className="explain-box">{q.explain}</div>}
             </div>
           );
         })}
@@ -350,7 +381,11 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
             . The police have no idea where to start.
           </span>
         </p>
-        <p className="blurb-p">Detective Lee comes to help.</p>
+        <p className="blurb-p">
+          <span className={clueClass("q3b")} ref={setClueRef("q3b")}>
+            Detective Lee comes to help.
+          </span>
+        </p>
         <p className="blurb-p">They begin a funny journey to find the missing watch!</p>
       </div>
     </div>
@@ -385,6 +420,38 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
     </div>
   );
 
+  // The complete, plain (no clue highlighting) blurb. Reused by the Overview
+  // preview and the Summary's side-by-side Answer Review.
+  const fullBlurb = (
+    <div className="blurb">
+      <div className="blurb-inner">
+        <div className="blurb-title">Detective Lee and the Gold Watch</div>
+        <div className="blurb-tagline">Mr Chan&apos;s gold watch is gone!</div>
+        <p className="blurb-p">It disappeared from his study during his birthday party.</p>
+        <p className="blurb-p">
+          Mr Chan has the only key to the study. The door was locked, and all the visitors were
+          eating in the living room.
+        </p>
+        <p className="blurb-p">Where is the watch now? Who took it? How was the door opened?</p>
+        <p className="blurb-p">It is a real mystery. The police have no idea where to start.</p>
+        <p className="blurb-p">Detective Lee comes to help.</p>
+        <p className="blurb-p">They begin a funny journey to find the missing watch!</p>
+        <div className="blurb-stars">★★★★★★★★★</div>
+        <p className="blurb-review">&quot;I enjoyed every page of this book!&quot;</p>
+        <p className="blurb-reviewer">
+          – Dillan Rumelhart, author of <em>Lulu and the Moon Rocket</em>
+        </p>
+        <p className="blurb-review">
+          &quot;This story by David Wong is full of surprises! I want to read the other two books in
+          the Detective Lee series soon.&quot;
+        </p>
+        <p className="blurb-reviewer">– Jocelyn Chow, City Book Club</p>
+        <div className="blurb-cta">Don&apos;t miss David Wong&apos;s Detective Lee series!</div>
+        <div className="blurb-press">Sunlight Press</div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Header backHref="/english/reading-comprehension/cycle-3-reading-1" backLabel="Back" />
@@ -403,17 +470,31 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
 
             {/* Tabs */}
             <div className="nav-tabs">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`nav-tab${section === id ? " active" : ""}`}
-                  onClick={() => switchSection(id)}
-                >
-                  <Icon className="size-3.5" /> {label}
-                  {isTabCompleted(id) ? " ✓" : ""}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon: Icon }) => {
+                const unlocked = isTabUnlocked(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`nav-tab${section === id ? " active" : ""}${
+                      unlocked ? "" : " locked"
+                    }`}
+                    onClick={() => unlocked && switchSection(id)}
+                    disabled={!unlocked}
+                    aria-disabled={!unlocked}
+                    title={unlocked ? undefined : "Finish the previous part to unlock"}
+                  >
+                    <Icon className="size-3.5" /> {label}
+                    {isTabCompleted(id) ? (
+                      " ✓"
+                    ) : !unlocked ? (
+                      <Lock className="size-3" />
+                    ) : (
+                      ""
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* OVERVIEW */}
@@ -457,45 +538,7 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                       </span>
                       The Book Blurb
                     </div>
-                    <div className="blurb">
-                      <div className="blurb-inner">
-                        <div className="blurb-title">Detective Lee and the Gold Watch</div>
-                        <div className="blurb-tagline">Mr Chan&apos;s gold watch is gone!</div>
-                        <p className="blurb-p">
-                          It disappeared from his study during his birthday party.
-                        </p>
-                        <p className="blurb-p">
-                          Mr Chan has the only key to the study. The door was locked, and all the
-                          visitors were eating in the living room.
-                        </p>
-                        <p className="blurb-p">
-                          Where is the watch now? Who took it? How was the door opened?
-                        </p>
-                        <p className="blurb-p">
-                          It is a real mystery. The police have no idea where to start.
-                        </p>
-                        <p className="blurb-p">Detective Lee comes to help.</p>
-                        <p className="blurb-p">
-                          They begin a funny journey to find the missing watch!
-                        </p>
-                        <div className="blurb-stars">★★★★★★★★★</div>
-                        <p className="blurb-review">
-                          &quot;I enjoyed every page of this book!&quot;
-                        </p>
-                        <p className="blurb-reviewer">
-                          – Dillan Rumelhart, author of <em>Lulu and the Moon Rocket</em>
-                        </p>
-                        <p className="blurb-review">
-                          &quot;This story by David Wong is full of surprises! I want to read the
-                          other two books in the Detective Lee series soon.&quot;
-                        </p>
-                        <p className="blurb-reviewer">– Jocelyn Chow, City Book Club</p>
-                        <div className="blurb-cta">
-                          Don&apos;t miss David Wong&apos;s Detective Lee series!
-                        </div>
-                        <div className="blurb-press">Sunlight Press</div>
-                      </div>
-                    </div>
+                    {fullBlurb}
                   </div>
 
                   <div style={{ textAlign: "center", marginTop: 6 }}>
@@ -650,7 +693,63 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                       <RotateCcw className="size-4" /> Start Over
                     </button>
                   </div>
+                </div>
 
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      {fullBlurb}
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <BookOpenCheck className="size-3.5" /> Answer Review
+                    </div>
+                    <ul className="answer-review">
+                      {questions.map((q) => {
+                        const picked = answered[q.id];
+                        const isCorrect = picked === q.answer;
+                        const pickedLabel = q.options.find((o) => o.val === picked)?.label;
+                        const correctLabel = q.options.find((o) => o.val === q.answer)?.label;
+                        return (
+                          <li key={q.id} className={isCorrect ? "correct" : "wrong"}>
+                            <div className="ar-head">
+                              <span className={`ar-badge${isCorrect ? " ok" : ""}`}>
+                                {isCorrect ? "✓" : "✗"}
+                              </span>
+                              <span className="ar-qtext">
+                                <strong>Q{q.id}.</strong> {q.text}
+                              </span>
+                            </div>
+                            <div className="ar-answers">
+                              <span className="ar-your">
+                                Your answer:{" "}
+                                <strong>
+                                  {picked ? `${picked}. ` : "—"}
+                                  {pickedLabel}
+                                </strong>
+                              </span>
+                              {!isCorrect && (
+                                <span className="ar-correct">
+                                  Correct answer:{" "}
+                                  <strong>
+                                    {q.answer}. {correctLabel}
+                                  </strong>
+                                </span>
+                              )}
+                            </div>
+                            <div className="explain-box">{q.explain}</div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="narrow">
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -729,24 +828,6 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
               </div>
             )}
           </div>
-
-          {/* Modal */}
-          {modal && (
-            <div className="modal-overlay" onClick={() => setModal(null)}>
-              <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-emoji">{modal.emoji}</div>
-                <div className="modal-title">{modal.title}</div>
-                <div className="modal-msg">{modal.msg}</div>
-                <button
-                  type="button"
-                  className={`modal-ok ${modal.ok ? "green" : "pink"}`}
-                  onClick={() => setModal(null)}
-                >
-                  Got it!
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </>
