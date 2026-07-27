@@ -13,6 +13,7 @@ import {
   GraduationCap,
   HelpCircle,
   Lightbulb,
+  Lock,
   PenLine,
   Puzzle,
   Replace,
@@ -31,18 +32,11 @@ import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
-interface ModalData {
-  emoji: string;
-  title: string;
-  msg: string;
-  ok: boolean;
-}
-
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: The Red Tides", icon: Waves },
-  { id: "part2", label: "Part 2: Causes & Views", icon: Droplets },
-  { id: "part3", label: "Part 3: Whole Text", icon: ScrollText },
+  { id: "part1", label: "Part 1", icon: Waves },
+  { id: "part2", label: "Part 2", icon: Droplets },
+  { id: "part3", label: "Part 3", icon: ScrollText },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
@@ -54,6 +48,45 @@ const articleStyles = `
 .rc-learning .article p { font-size: 13.5px; line-height: 1.95; color: var(--text-secondary); margin: 0 0 12px; }
 .rc-learning .article p:last-child { margin-bottom: 0; }
 .rc-learning .para-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-purple); margin-bottom: 4px; }
+
+/* Locked tabs: greyed out and not clickable until the previous part is done. */
+.rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
+.rc-learning .nav-tab.locked:hover { border-color: var(--border-light); color: var(--text-muted); }
+
+/* Neutral "selected" state for options while answering (no right/wrong reveal). */
+.rc-learning .option-btn.selected { border-color: var(--accent-blue); background: rgba(20,110,245,0.08); }
+.rc-learning .option-btn.selected .opt-letter { background: var(--accent-blue); color: #fff; }
+.rc-learning .question-card.answered { border-color: var(--accent-blue); }
+
+/* Answer Review list shown on the Summary tab. */
+.rc-learning .answer-review { list-style: none; padding: 0; margin: 0; }
+.rc-learning .answer-review > li {
+  padding: 14px 14px; margin-bottom: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); border-left: 4px solid var(--border-light);
+  background: var(--bg-article);
+}
+.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--bg-card); }
+.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--bg-card); }
+.rc-learning .answer-review .ar-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.rc-learning .answer-review .ar-badge {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; background: var(--wrong-border);
+}
+.rc-learning .answer-review .ar-badge.ok { background: var(--correct-border); }
+.rc-learning .answer-review .ar-qtext { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
+.rc-learning .answer-review .ar-options { list-style: none; padding: 0; margin: 0 0 8px 34px; display: flex; flex-direction: column; gap: 5px; }
+.rc-learning .answer-review .ar-option { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: transparent; font-size: 13px; color: var(--text-secondary); }
+.rc-learning .answer-review .ar-option.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-opt-letter { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 12px; background: var(--border-light); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.correct .ar-opt-letter { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-option.wrong .ar-opt-letter { background: var(--wrong-border); color: #fff; }
+.rc-learning .answer-review .ar-opt-label { flex: 1; }
+.rc-learning .answer-review .ar-tag { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.rc-learning .answer-review .ar-tag.ok { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-tag.you { background: var(--accent-blue); color: #fff; }
+.rc-learning .answer-review .explain-box { margin-left: 34px; }
 `;
 
 export default function EnglishReadingComprehensionCycle3Reading3LearningPage() {
@@ -66,7 +99,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     ids: [],
     badge: "",
   });
-  const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-3-reading-3",
@@ -120,29 +152,12 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     [clearHighlights],
   );
 
-  const handleAnswer = useCallback(
-    (q: Question, val: string) => {
-      if (answered[q.id]) return;
-      setAnswered((prev) => ({ ...prev, [q.id]: val }));
-      if (val === q.answer) {
-        setModal({
-          emoji: "🎉",
-          title: "Correct!",
-          msg: "Well done! You found the right answer.",
-          ok: true,
-        });
-      } else {
-        setModal({
-          emoji: "🤔",
-          title: "Not quite!",
-          msg: "The correct answer is highlighted in green. Read the explanation below.",
-          ok: false,
-        });
-      }
-      highlightClues(q);
-    },
-    [answered, highlightClues],
-  );
+  // Record the student's choice without revealing whether it is right or wrong.
+  // Feedback (correct/wrong + explanations) is deferred to the Summary tab.
+  // Students may change their choice until they move on.
+  const handleAnswer = useCallback((q: Question, val: string) => {
+    setAnswered((prev) => ({ ...prev, [q.id]: val }));
+  }, []);
 
   const toggleHint = useCallback(
     (q: Question) => {
@@ -199,13 +214,22 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     return false;
   };
 
+  // Tabs unlock in order: Overview → Part 1 → Part 2 → Part 3 → Summary.
+  const isTabUnlocked = (id: Section) => {
+    if (id === "overview" || id === "part1") return true;
+    if (id === "part2") return Boolean(part1Done);
+    if (id === "part3") return Boolean(part2Done);
+    if (id === "summary") return allDone;
+    return false;
+  };
+
   const summaryMsg =
     score === TOTAL_QUESTIONS
       ? "Perfect score! You're a reading superstar!"
       : score >= 6
         ? "Great job! Keep up the good work!"
         : score >= 3
-          ? "Good effort! Review the hints and try again."
+          ? "Good effort! Review the answers and try again."
           : "Keep practicing — use the hints to help you next time!";
 
   const clueClass = (id: string) =>
@@ -230,38 +254,55 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
 
   const paragraph1 = (withClues: boolean) => (
     <p>
-      <span className="para-tag">Paragraph 1</span>
-      <br />
       {clue("q1", "In April 2026, a red tide appeared at Stanley Bay.", withClues)} Two more red
-      tides happened in Sai Kung in May. The government warned the public about the problem.{" "}
-      {clue("q2", "People were told not to swim there until it was safe again.", withClues)} A few
-      days later, the water was clean and safe. Luckily, no fish died during these red tides.
+      tides happened in Sai Kung in May.{" "}
+      {clue(
+        "q2",
+        "The government warned the public about the problem. People were told not to swim there until it was safe again.",
+        withClues,
+      )}{" "}
+      A few days later, the water was clean and safe. Luckily, no fish died during these red tides.
     </p>
   );
 
-  const paragraph2 = (withClues: boolean) => (
-    <p>
-      <span className="para-tag">Paragraph 2</span>
-      <br />
-      Red tides happen in many places around the world. They occur when tiny living things called
-      algae grow very quickly in the water.{" "}
-      {clue("q5", "This sudden growth is called an algal bloom.", withClues)} Most red tides that
-      happened in Hong Kong were not harmful.{" "}
-      {clue("q4", "However, a few kinds of algae can be dangerous.", withClues)}{" "}
-      {clue("q3b", "Some algal blooms can kill fish and harm people.", withClues)}{" "}
-      {clue(
-        "q3",
-        "People should stay out of the sea when there is a red tide because it may be unsafe.",
-        withClues,
-      )}{" "}
-      People who drink polluted water or eat polluted seafood can get sick.
-    </p>
-  );
+  const paragraph2 = (withClues: boolean) => {
+    const body = (
+      <>
+        Red tides happen in many places around the world.{" "}
+        {clue(
+          "q5",
+          "They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom.",
+          withClues,
+        )}{" "}
+        Most red tides that happened in Hong Kong were not harmful.{" "}
+        {clue("q4", "However, a few kinds of algae can be dangerous.", withClues)}{" "}
+        {clue("q3b", "Some algal blooms can kill fish and harm people.", withClues)}{" "}
+        {clue(
+          "q3",
+          "People should stay out of the sea when there is a red tide because it may be unsafe.",
+          withClues,
+        )}{" "}
+        People who drink polluted water or eat polluted seafood can get sick.
+      </>
+    );
+    // Q4 (main idea) highlights the whole of Paragraph 2, so wrap the paragraph
+    // in an outer clue span ("q4all") while keeping the inner sentence spans
+    // (q5/q4/q3b/q3) for the other questions.
+    return (
+      <p>
+        {withClues ? (
+          <span className={clueClass("q4all")} ref={setClueRef("q4all")}>
+            {body}
+          </span>
+        ) : (
+          body
+        )}
+      </p>
+    );
+  };
 
   const paragraph3 = (withClues: boolean) => (
     <p>
-      <span className="para-tag">Paragraph 3</span>
-      <br />
       Why do red tides happen?{" "}
       {clue(
         "q6",
@@ -303,11 +344,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
         </div>
         {list.slice(current, current + 1).map((q) => {
           const picked = answered[q.id];
-          const cardClass = picked
-            ? picked === q.answer
-              ? "question-card answered-correct"
-              : "question-card answered-wrong"
-            : "question-card";
+          const cardClass = picked ? "question-card answered" : "question-card";
           return (
             <div className={cardClass} key={q.id}>
               <div className="q-number">Question {q.id}</div>
@@ -316,11 +353,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
               <ul className="options-list">
                 {q.options.map((opt) => {
                   let cls = "option-btn";
-                  if (picked) {
-                    cls += " disabled";
-                    if (opt.val === q.answer) cls += " correct";
-                    else if (opt.val === picked) cls += " wrong";
-                  }
+                  if (picked === opt.val) cls += " selected";
                   return (
                     <li key={opt.val}>
                       <button
@@ -353,7 +386,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                   <span>{q.strategy}</span>
                 </div>
               )}
-              {picked && <div className="explain-box">{q.explain}</div>}
             </div>
           );
         })}
@@ -397,17 +429,25 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
 
             {/* Tabs */}
             <div className="nav-tabs">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`nav-tab${section === id ? " active" : ""}`}
-                  onClick={() => switchSection(id)}
-                >
-                  <Icon className="size-3.5" /> {label}
-                  {isTabCompleted(id) ? " ✓" : ""}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon: Icon }) => {
+                const unlocked = isTabUnlocked(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`nav-tab${section === id ? " active" : ""}${
+                      unlocked ? "" : " locked"
+                    }`}
+                    onClick={() => unlocked && switchSection(id)}
+                    disabled={!unlocked}
+                    aria-disabled={!unlocked}
+                    title={unlocked ? undefined : "Finish the previous part to unlock"}
+                  >
+                    <Icon className="size-3.5" /> {label}
+                    {isTabCompleted(id) ? " ✓" : !unlocked ? <Lock className="size-3" /> : ""}
+                  </button>
+                );
+              })}
             </div>
 
             {/* OVERVIEW */}
@@ -681,7 +721,66 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       <RotateCcw className="size-4" /> Start Over
                     </button>
                   </div>
+                </div>
 
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      <div className="article">
+                        <div className="article-title">Red Tides</div>
+                        {paragraph1(false)}
+                        {paragraph2(false)}
+                        {paragraph3(false)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <BookOpenCheck className="size-3.5" /> Answer Review
+                    </div>
+                    <ul className="answer-review">
+                      {questions.map((q) => {
+                        const picked = answered[q.id];
+                        const isCorrect = picked === q.answer;
+                        return (
+                          <li key={q.id} className={isCorrect ? "correct" : "wrong"}>
+                            <div className="ar-head">
+                              <span className={`ar-badge${isCorrect ? " ok" : ""}`}>
+                                {isCorrect ? "✓" : "✗"}
+                              </span>
+                              <span className="ar-qtext">
+                                <strong>Q{q.id}.</strong> {q.text}
+                              </span>
+                            </div>
+                            <ul className="ar-options">
+                              {q.options.map((opt) => {
+                                const optCorrect = opt.val === q.answer;
+                                const optPicked = opt.val === picked;
+                                let cls = "ar-option";
+                                if (optCorrect) cls += " correct";
+                                else if (optPicked) cls += " wrong";
+                                return (
+                                  <li key={opt.val} className={cls}>
+                                    <span className="ar-opt-letter">{opt.val}</span>
+                                    <span className="ar-opt-label">{opt.label}</span>
+                                    {optCorrect && <span className="ar-tag ok">✓ Correct</span>}
+                                    {optPicked && <span className="ar-tag you">Your answer</span>}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <div className="explain-box">{q.explain}</div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="narrow">
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -731,24 +830,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
               </div>
             )}
           </div>
-
-          {/* Modal */}
-          {modal && (
-            <div className="modal-overlay" onClick={() => setModal(null)}>
-              <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-emoji">{modal.emoji}</div>
-                <div className="modal-title">{modal.title}</div>
-                <div className="modal-msg">{modal.msg}</div>
-                <button
-                  type="button"
-                  className={`modal-ok ${modal.ok ? "green" : "pink"}`}
-                  onClick={() => setModal(null)}
-                >
-                  Got it!
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </>

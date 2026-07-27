@@ -237,7 +237,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
       : score >= 4
         ? "Great job! Keep up the good work!"
         : score >= 2
-          ? "Good effort! Review the hints and try again."
+          ? "Good effort! Review the answers and try again."
           : "Keep practicing — use the hints to help you next time!";
 
   const clueClass = (id: string) =>

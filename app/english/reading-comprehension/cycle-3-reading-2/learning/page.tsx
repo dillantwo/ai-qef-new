@@ -45,9 +45,11 @@ const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
 
 // Extra styles for the "Make a Balloon Puff Up" experiment sheet.
 const sheetStyles = `
-.rc-learning .sheet { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.rc-learning .sheet { background: #FEFEFE; border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .sheet.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
 .rc-learning .sheet-inner { padding: 16px 18px 18px; }
+.rc-learning .steps-block { background: #F2F7FC; border-radius: var(--radius-sm); padding: 12px 16px 16px; margin: 14px -18px -18px; }
+.rc-learning .steps-block > .sheet-h:first-child { margin-top: 0; }
 .rc-learning .sheet-title { text-align: center; font-weight: 800; font-size: 21px; color: var(--text-primary); }
 .rc-learning .sheet-h { font-weight: 700; font-size: 15px; color: var(--accent-blue); margin: 14px 0 6px; }
 .rc-learning .mat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; }
@@ -82,8 +84,8 @@ const sheetStyles = `
   border: 1px solid var(--border-light); border-left: 4px solid var(--border-light);
   background: var(--bg-article);
 }
-.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--correct-bg); }
-.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--wrong-bg); }
+.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--bg-card); }
+.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--bg-card); }
 .rc-learning .answer-review .ar-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
 .rc-learning .answer-review .ar-badge {
   width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
@@ -92,8 +94,17 @@ const sheetStyles = `
 }
 .rc-learning .answer-review .ar-badge.ok { background: var(--correct-border); }
 .rc-learning .answer-review .ar-qtext { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
-.rc-learning .answer-review .ar-answers { display: flex; flex-direction: column; gap: 3px; margin: 0 0 8px 34px; font-size: 13px; color: var(--text-secondary); }
-.rc-learning .answer-review .ar-correct { color: var(--correct-border); }
+.rc-learning .answer-review .ar-options { list-style: none; padding: 0; margin: 0 0 8px 34px; display: flex; flex-direction: column; gap: 5px; }
+.rc-learning .answer-review .ar-option { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: transparent; font-size: 13px; color: var(--text-secondary); }
+.rc-learning .answer-review .ar-option.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-opt-letter { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 12px; background: var(--border-light); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.correct .ar-opt-letter { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-option.wrong .ar-opt-letter { background: var(--wrong-border); color: #fff; }
+.rc-learning .answer-review .ar-opt-label { flex: 1; }
+.rc-learning .answer-review .ar-tag { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.rc-learning .answer-review .ar-tag.ok { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-tag.you { background: var(--accent-blue); color: #fff; }
 .rc-learning .answer-review .explain-box { margin-left: 34px; }
 `;
 
@@ -237,7 +248,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
       : score >= 4
         ? "Great job! Keep up the good work!"
         : score >= 2
-          ? "Good effort! Review the hints and try again."
+          ? "Good effort! Review the answers and try again."
           : "Keep practicing — use the hints to help you next time!";
 
   const clueClass = (id: string) =>
@@ -418,7 +429,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
   // Steps / How It Works / Tip used in the preview and Part 2. When
   // `withImages` is set, the puffed-up balloon illustration is shown.
   const steps = (withClues: boolean, withImages = false) => (
-    <>
+    <div className="steps-block">
       <div className="sheet-h">Steps:</div>
       <ol className="steps-list">
         <li>Put the plastic bottle on the tray.</li>
@@ -468,7 +479,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
           "Try using more or less baking soda and vinegar next time. What will be different?"
         )}
       </p>
-    </>
+    </div>
   );
 
   const sheetTop = (
@@ -753,8 +764,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                       {questions.map((q) => {
                         const picked = answered[q.id];
                         const isCorrect = picked === q.answer;
-                        const pickedLabel = q.options.find((o) => o.val === picked)?.label;
-                        const correctLabel = q.options.find((o) => o.val === q.answer)?.label;
                         return (
                           <li key={q.id} className={isCorrect ? "correct" : "wrong"}>
                             <div className="ar-head">
@@ -765,23 +774,23 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                                 <strong>Q{q.id}.</strong> {q.text}
                               </span>
                             </div>
-                            <div className="ar-answers">
-                              <span className="ar-your">
-                                Your answer:{" "}
-                                <strong>
-                                  {picked ? `${picked}. ` : "—"}
-                                  {pickedLabel}
-                                </strong>
-                              </span>
-                              {!isCorrect && (
-                                <span className="ar-correct">
-                                  Correct answer:{" "}
-                                  <strong>
-                                    {q.answer}. {correctLabel}
-                                  </strong>
-                                </span>
-                              )}
-                            </div>
+                            <ul className="ar-options">
+                              {q.options.map((opt) => {
+                                const optCorrect = opt.val === q.answer;
+                                const optPicked = opt.val === picked;
+                                let cls = "ar-option";
+                                if (optCorrect) cls += " correct";
+                                else if (optPicked) cls += " wrong";
+                                return (
+                                  <li key={opt.val} className={cls}>
+                                    <span className="ar-opt-letter">{opt.val}</span>
+                                    <span className="ar-opt-label">{opt.label}</span>
+                                    {optCorrect && <span className="ar-tag ok">✓ Correct</span>}
+                                    {optPicked && <span className="ar-tag you">Your answer</span>}
+                                  </li>
+                                );
+                              })}
+                            </ul>
                             <div className="explain-box">{q.explain}</div>
                           </li>
                         );

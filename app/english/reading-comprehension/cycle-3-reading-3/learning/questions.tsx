@@ -45,8 +45,10 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan</strong> the reading to find the keyword. <strong>Re-read</strong> to confirm,
-        then <strong>compare</strong> the answers and take out the ones that are obviously wrong.
+        <strong>Scan</strong> for the keywords <em>Stanley Bay</em> and <em>April 2026</em> to find
+        the clue, then <strong>re-read</strong> to confirm. <strong>Compare</strong> all four
+        options and take out the ones the text disproves: nobody swam, only one red tide was here
+        (two were in Sai Kung), and no fish died.
       </>
     ),
     explain: (
@@ -84,8 +86,10 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the keyword. <strong>Look for details / evidence</strong> in the
-        text. Some answers seem possible but have no supporting evidence — those are distractors.
+        <strong>Scan</strong> for the keyword <em>government</em> and <strong>re-read</strong> to
+        confirm. <strong>Look for details / evidence</strong> and <strong>compare</strong> the
+        options: some seem possible but have no supporting evidence, and others are never mentioned
+        — those are just distractors.
       </>
     ),
     explain: (
@@ -110,19 +114,24 @@ export const questions: Question[] = [
       { val: "D", label: "the sea becomes too hot." },
     ],
     answer: "A",
-    clues: ["q3", "q3b"],
+    clues: ["q3", "q4", "q3b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> The text says the sea <em>&quot;may be unsafe&quot;</em>. Read the
         nearby sentences to find out <em>why</em>:{" "}
-        <em>&quot;Some algal blooms can kill fish and harm people.&quot;</em>
+        <em>
+          &quot;However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and
+          harm people.&quot;
+        </em>
       </>
     ),
     strategy: (
       <>
-        <strong>Understand relations</strong> such as cause and effect.{" "}
-        <strong>Make inferences</strong> by linking information across the text, then{" "}
-        <strong>compare</strong> the answers.
+        <strong>Scan</strong> for the reason and <strong>re-read</strong> the nearby sentences. The
+        text only says &quot;unsafe&quot;, so <strong>understand the cause and effect</strong> and{" "}
+        <strong>make an inference</strong> by linking sentences (algae can be dangerous → harm
+        people). <strong>Compare</strong> — some options may be true but do not answer <em>why</em>{" "}
+        people stay out of the sea.
       </>
     ),
     explain: (
@@ -147,17 +156,20 @@ export const questions: Question[] = [
       { val: "D", label: "how to swim safely when there is a red tide" },
     ],
     answer: "C",
-    clues: ["q3b", "q4"],
+    clues: ["q4all"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Skim Paragraph 2 for the <em>main idea</em>. It talks about algae
-        that <em>&quot;can be dangerous&quot;</em> and <em>&quot;can kill fish and harm people&quot;</em>.
+        <strong>💡 Hint:</strong> Skim the <em>whole</em> of Paragraph 2 for the <em>main idea</em>.
+        It talks about algae that <em>&quot;can be dangerous&quot;</em> and{" "}
+        <em>&quot;can kill fish and harm people&quot;</em>.
       </>
     ),
     strategy: (
       <>
-        <strong>Skim</strong> to get the gist and the main idea. A good main-idea answer covers the
-        <em> whole</em> paragraph, not just one small part.
+        <strong>Skim</strong> the whole paragraph for the gist and <strong>re-read</strong> to
+        confirm the main idea. <strong>Compare</strong> the options: a good main-idea answer covers
+        the <em>whole</em> paragraph, not just one small detail or something the text never
+        describes.
       </>
     ),
     explain: (
@@ -194,8 +206,11 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Look for details / evidence</strong> in the text. Understand the difference between a
-        <em> thing</em> (algae) and a <em>process</em> (algal bloom).
+        <strong>Scan</strong> for the word and <strong>re-read</strong> the clue.{" "}
+        <strong>Look for details / evidence</strong> and understand the difference between a{" "}
+        <em>thing</em> (algae) and a <em>process</em> (the bloom = the quick growth).{" "}
+        <strong>Compare</strong> — some options describe algae itself or a detail from another
+        paragraph, not the bloom.
       </>
     ),
     explain: (
@@ -230,9 +245,11 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Activate</strong> your background knowledge (what helps living things grow?) and{" "}
-        <strong>make inferences</strong> to guess the meaning of the word from the surrounding
-        information.
+        <strong>Scan</strong> for the word <em>nutrients</em> and <strong>re-read</strong> the
+        sentence. <strong>Activate</strong> your background knowledge (what helps living things
+        grow?) and <strong>make an inference</strong> from the surrounding words.{" "}
+        <strong>Compare</strong> — take out the options that are not mentioned in the text or that
+        cannot help algae grow.
       </>
     ),
     explain: (
@@ -260,15 +277,18 @@ export const questions: Question[] = [
     clues: ["q3b", "q7"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> The words are <em>feelings</em>. Re-read Paragraphs 2 and 3. The
+        <strong>💡 Hint:</strong> Re-read Paragraphs 2 and 3. The
         writer talks about <em>danger</em>, <em>safety</em>, and{" "}
         <em>protecting the environment</em>.
       </>
     ),
     strategy: (
       <>
-        <strong>Interpret</strong> intentions, attitudes and feelings: is it positive, neutral or
-        negative? <strong>Make inferences</strong> from the details across the text.
+        <strong>Re-read</strong> Paragraphs 2 and 3 and <strong>interpret</strong> the writer&apos;s
+        attitude and feelings — is it positive, neutral or negative?{" "}
+        <strong>Make an inference</strong> from the details (danger, safety, protecting the
+        environment) that the writer treats red tides as a serious problem, then{" "}
+        <strong>compare</strong> the options.
       </>
     ),
     explain: (
@@ -303,8 +323,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Skim</strong> the whole text to get the gist. Link up the information across the text
-        to make a summary, then <strong>compare</strong> the answers. A good title is not too narrow.
+        <strong>Skim</strong> the whole text and link up the three paragraphs to make a summary,
+        then <strong>re-read</strong> to confirm. <strong>Compare</strong> the titles — a good title
+        covers the whole article and is not too narrow or only one part of it.
       </>
     ),
     explain: (
