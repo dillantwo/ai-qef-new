@@ -797,35 +797,6 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
                     </ul>
                   </div>
 
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
-                        }}
-                      >
-                        <Lightbulb className="size-4" />
-                      </span>
-                      Tips for Next Time
-                    </div>
-                    <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <Eye className="size-3.5" />
-                        </span>
-                        <span>Read like a detective — check whether each answer is relevant.</span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <RotateCcw className="size-3.5" />
-                        </span>
-                        <span>Re-read the relevant parts to confirm your understanding.</span>
-                      </li>
-                    </ul>
-                  </div>
-
                   <div style={{ textAlign: "center", marginTop: 6 }}>
                     <button type="button" className="restart-btn" onClick={resetAll}>
                       <RotateCcw className="size-4" /> Start Over

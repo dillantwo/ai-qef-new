@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type PartId = "part1" | "part2";
+export type PartId = "part1" | "part2" | "part3";
 
 export interface Option {
   val: string;
@@ -77,8 +77,7 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Find the keyword <em>&quot;adult&quot;</em> in the{" "}
-        <em>Safety</em> part: <em>&quot;Ask an adult to help you. Wear safety goggles.&quot;</em>{" "}
-        Why is this in the safety part?
+        <em>Safety</em> part: <em>&quot;Ask an adult to help you.&quot;</em>{" "}Why is this in the safety part?
       </>
     ),
     strategy: (
@@ -201,7 +200,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Connect the <em>Tip</em> with <em>How It Works</em>.
-        More of both makes more gas, and gas puffs up the balloon. Pink liquid (A) is never
+        More baking soda and more vinegar will make more gas, and gas puffs up the balloon. Pink liquid (A) is never
         mentioned, and B and C go against the text.
       </>
     ),
@@ -218,7 +217,7 @@ export const questions: Question[] = [
   },
   {
     id: 6,
-    part: "part2",
+    part: "part3",
     text: "This information would most likely be found in the ______ section of a magazine.",
     options: [
       { val: "A", label: "Story Corner" },

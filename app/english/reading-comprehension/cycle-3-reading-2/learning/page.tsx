@@ -22,9 +22,9 @@ import {
   Replace,
   RotateCcw,
   Scale,
+  ScrollText,
   Search,
   ShieldAlert,
-  Sparkles,
   Star,
   Trophy,
 } from "lucide-react";
@@ -34,12 +34,13 @@ import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 import { useReadingRecord } from "@/lib/english-reading-record";
 
-type Section = "overview" | "part1" | "part2" | "summary";
+type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
   { id: "part1", label: "Part 1: Materials", icon: Beaker },
   { id: "part2", label: "Part 2: Steps", icon: ListOrdered },
+  { id: "part3", label: "Part 3: Whole Text", icon: ScrollText },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
@@ -57,8 +58,9 @@ const sheetStyles = `
 .rc-learning .mat-grid li .dot { color: var(--accent-blue); font-weight: 800; }
 .rc-learning .safety-box { background: rgba(255,140,66,0.08); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 8px; font-size: 13px; line-height: 1.7; color: var(--text-secondary); display: flex; gap: 8px; align-items: flex-start; }
 .rc-learning .safety-box svg { color: var(--accent-orange); flex-shrink: 0; margin-top: 2px; }
-.rc-learning .steps-list { margin: 0; padding-left: 22px; }
+.rc-learning .steps-list { margin: 0; padding-left: 24px; list-style: decimal outside; }
 .rc-learning .steps-list li { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); padding: 2px 0; }
+.rc-learning .steps-list li::marker { color: var(--accent-blue); font-weight: 700; }
 .rc-learning .how-text, .rc-learning .tip-text { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 4px 0 0; }
 .rc-learning .tip-text { font-style: italic; }
 .rc-learning .mat-grid.with-images li { align-items: center; min-height: 42px; }
@@ -113,7 +115,7 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
   const [answered, setAnswered] = useState<Record<number, string>>({});
   const [hints, setHints] = useState<Record<number, boolean>>({});
   const [strategies, setStrategies] = useState<Record<number, boolean>>({});
-  const [step, setStep] = useState<Record<PartId, number>>({ part1: 0, part2: 0 });
+  const [step, setStep] = useState<Record<PartId, number>>({ part1: 0, part2: 0, part3: 0 });
   const [activeClues, setActiveClues] = useState<{ ids: string[]; badge: string }>({
     ids: [],
     badge: "",
@@ -214,30 +216,32 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     setHints({});
     setStrategies({});
     setSkillChecks({});
-    setStep({ part1: 0, part2: 0 });
+    setStep({ part1: 0, part2: 0, part3: 0 });
     clearHighlights();
     setSection("overview");
     mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [clearHighlights]);
 
-  // Part 1 covers Q1–Q2 (materials & safety); Part 2 covers Q3–Q6 (steps, how
-  // it works & the whole text).
+  // Part 1 covers Q1–Q2 (materials & safety); Part 2 covers Q3–Q5 (steps & how
+  // it works); Part 3 covers Q6 (the whole text / text type).
   const part1Done = answered[1] && answered[2];
-  const part2Done = answered[3] && answered[4] && answered[5] && answered[6];
+  const part2Done = answered[3] && answered[4] && answered[5];
+  const part3Done = answered[6];
   const allDone = Object.keys(answered).length === TOTAL_QUESTIONS;
 
   const isTabCompleted = (id: Section) => {
     if (id === "part1") return Boolean(part1Done);
     if (id === "part2") return Boolean(part2Done);
+    if (id === "part3") return Boolean(part3Done);
     if (id === "summary") return allDone;
     return false;
   };
 
-  // Tabs unlock in order: Overview → Part 1 → Part 2 → Summary. Part 2 opens
-  // once Part 1 is fully answered; Summary opens once every question is answered.
+  // Tabs unlock in order: Overview → Part 1 → Part 2 → Part 3 → Summary.
   const isTabUnlocked = (id: Section) => {
     if (id === "overview" || id === "part1") return true;
     if (id === "part2") return Boolean(part1Done);
+    if (id === "part3") return Boolean(part2Done);
     if (id === "summary") return allDone;
     return false;
   };
@@ -258,10 +262,10 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
   const setClueRef = (id: string) => (el: HTMLElement | null) => {
     clueRefs.current[id] = el;
   };
-  const sheetActive = (part: "part1" | "part2") =>
+  const sheetActive = (part: PartId) =>
     `sheet${section === part && activeClues.ids.length > 0 ? " clue-active" : ""}`;
 
-  function renderQuestions(part: "part1" | "part2") {
+  function renderQuestions(part: PartId) {
     const list = questions.filter((q) => q.part === part);
     const current = step[part];
     const currentQ = list[current];
@@ -498,6 +502,18 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     </div>
   );
 
+  // Part 3 shows the whole sheet with clue highlighting (so Q6's clue glows).
+  const sheetWhole = (
+    <div className={sheetActive("part3")}>
+      <div className="sheet-inner">
+        <div className="sheet-title">Make a Balloon Puff Up</div>
+        {materials(true, true)}
+        {safety(true, true)}
+        {steps(true, true)}
+      </div>
+    </div>
+  );
+
   // The complete, plain (no clue highlighting) sheet. Reused by the Overview
   // preview and the Summary's side-by-side Answer Review.
   const fullSheet = (
@@ -714,6 +730,63 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                         <button
                           type="button"
                           className="restart-btn"
+                          onClick={() => switchSection("part3")}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-blue),var(--accent-mint))",
+                          }}
+                        >
+                          Continue to Part 3 <ArrowRight className="size-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PART 3 */}
+            {section === "part3" && (
+              <div className="section-panel">
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ marginBottom: 10 }}>
+                      <div className="card-title" style={{ fontSize: 15 }}>
+                        <span
+                          className="icon"
+                          style={{
+                            background:
+                              "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
+                          }}
+                        >
+                          <ScrollText className="size-4" />
+                        </span>
+                        Part 3: The Whole Text
+                      </div>
+                      <ul className="pre-reading-list">
+                        <li>
+                          <HelpCircle className="size-4" /> Read the whole text again. Where would
+                          you find this text?
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      {sheetWhole}
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <PenLine className="size-3.5" /> Questions
+                    </div>
+                    {renderQuestions("part3")}
+                    {allDone && (
+                      <div style={{ textAlign: "center", marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="restart-btn"
                           onClick={() => switchSection("summary")}
                           style={{
                             background:
@@ -837,35 +910,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
                           />
                         </li>
                       ))}
-                    </ul>
-                  </div>
-
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
-                        }}
-                      >
-                        <Lightbulb className="size-4" />
-                      </span>
-                      Tips for Next Time
-                    </div>
-                    <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <Sparkles className="size-3.5" />
-                        </span>
-                        <span>Visualise each step — picture the action in your mind.</span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <RotateCcw className="size-3.5" />
-                        </span>
-                        <span>Re-read the relevant parts to confirm your understanding.</span>
-                      </li>
                     </ul>
                   </div>
 
