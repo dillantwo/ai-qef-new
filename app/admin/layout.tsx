@@ -3,7 +3,7 @@
 import { ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Loader2, LogOut, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Building2, FolderDown, Library, Loader2, LogOut, ShieldCheck, Users, Wrench } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,8 @@ const NAV = [
   { href: "/admin/schools", label: "學校管理", icon: Building2 },
   { href: "/admin/users", label: "使用者管理", icon: Users },
   { href: "/admin/toolbox", label: "工具管理", icon: Wrench },
+  { href: "/admin/materials", label: "上傳資源", icon: Library },
+  { href: "/admin/school-materials", label: "學校資源", icon: FolderDown },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

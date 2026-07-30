@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Compass, Landmark, Route, Sparkles } from "lucide-react";
+import { ArrowRight, Compass, FolderDown, Landmark, Route, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,6 +33,15 @@ const topics = [
     color: "#ff6b00",
     available: true,
   },
+  {
+    id: "learning-materials",
+    label: "Learning Materials",
+    subtitle: "Resource Library",
+    description: "Download supplementary worksheets, references, and class resources for English.",
+    icon: FolderDown,
+    color: "#7a3dff",
+    available: true,
+  },
 ];
 
 export default function EnglishPage() {
@@ -46,6 +55,10 @@ export default function EnglishPage() {
     }
     if (topicId === "reading-comprehension") {
       router.push("/english/reading-comprehension");
+      return;
+    }
+    if (topicId === "learning-materials") {
+      router.push("/english/materials");
       return;
     }
 

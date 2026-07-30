@@ -643,10 +643,10 @@ export const READING_C3R2_FULL_TEXT = `### Make a Balloon Puff Up
 
 **Tip:** Try using more or less baking soda and vinegar next time. What will be different?`;
 
-// The reading the Cycle 3 - Reading 3 activity is based on (an informational
+// The reading the Cycle 3 - Reading 3 activity is based on (an information
 // article about red tides in Hong Kong). Markdown so it renders nicely as a
 // pinnable chat message.
-export const READING_C3R3_FULL_TEXT = `### Red Tides
+export const READING_C3R3_FULL_TEXT = `### Red Tides in Hong Kong
 
 In April 2026, a red tide appeared at Stanley Bay. Two more red tides happened in Sai Kung in May. The government warned the public about the problem. People were told not to swim there until it was safe again. A few days later, the water was clean and safe. Luckily, no fish died during these red tides.
 
@@ -1112,7 +1112,9 @@ const READING_C3R2_ROLE_SPECIFICS: Record<
   },
 };
 
-const READING_C3R3_REFERENCE = `- The conversation is based on one specific reading: Cycle 3-Reading 3. It is an informational article about red tides. Full text: " Red Tides. In April 2026, a red tide appeared at Stanley Bay. Two more red tides happened in Sai Kung in May. The government warned the public about the problem. People were told not to swim there until it was safe again. A few days later, the water was clean and safe. Luckily, no fish died during these red tides. Red tides happen in many places around the world. They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom. Most red tides that happened in Hong Kong were not harmful. However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm people. People should stay out of the sea when there is a red tide because it may be unsafe. People who drink polluted water or eat polluted seafood can get sick. Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form. Nutrients may often come from dirty water or from farms and gardens after rain. Scientists check the sea water often and warn people when a beach is not safe. To protect the environment, we should keep the sea clean and try to reduce water pollution. "`;
+// Cycle 3 - Reading 3 ("Red Tides in Hong Kong", an information article).
+// Same reading reference is shared by all three roles.
+const READING_C3R3_REFERENCE = `- The conversation is based on one specific reading: Cycle 3-Reading 3. It is an information article with three paragraphs. Full text: " title: Red Tides in Hong Kong. Paragraph 1: In April 2026, a red tide appeared at Stanley Bay. Two more red tides happened in Sai Kung in May. The government warned the public about the problem. People were told not to swim there until it was safe again. A few days later, the water was clean and safe. Luckily, no fish died during these red tides. Paragraph 2: Red tides happen in many places around the world. They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom. Most red tides that happened in Hong Kong were not harmful. However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm people. People should stay out of the sea when there is a red tide because it may be unsafe. People who drink polluted water or eat polluted seafood can get sick. Paragraph 3: Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form. Nutrients may often come from dirty water or from farms and gardens after rain. Scientists check the sea water often and warn people when a beach is not safe. To protect the environment, we should keep the sea clean and try to reduce water pollution. "`;
 
 const READING_C3R3_ROLE_SPECIFICS: Record<
   ReadingRole,
@@ -1128,7 +1130,7 @@ const READING_C3R3_ROLE_SPECIFICS: Record<
 - If student cannot find any new word, you can find one or two in the text and ask them whether they know it.
 - Keep your answers short and concise.
 - Invite student to make a sentence with the new word.
-- Avoid asking about these words: bloom, nutrients.`,
+- Good words to explore include: algae, bloom, nutrients, pollution.`,
     reference: READING_C3R3_REFERENCE,
     constraints: `- There are other roles: a questioner and a summariser, but NOT you.
 - DO NOT summarise the text, even if asked. Do NOT ask questions other than new words, even if required so.`,
@@ -1141,7 +1143,7 @@ const READING_C3R3_ROLE_SPECIFICS: Record<
 - Keep your questions strictly about the reading. Your output short and concise.
 - Ask questions with hints in the text. Ask for the thinking process. 
 - Avoid asking these questions:
-" Do you like going to the beach? Have you ever seen any strange things at the beach? What is the article about? How many paragraphs are there in the article? How many paragraphs are in Part 1? Do red tides happen only in Hong Kong? What happened at Stanley Bay in April 2026? What did the government do after the red tides appeared? People stay out of the sea when there is a red tide because what? What is Paragraph 2 mainly about? What is an algal bloom? What does the word 'nutrients' mean? How does the writer feel about red tides? What is the best title for this article? "`,
+" What is the article about? How many paragraphs are there in the article? Do red tides happen only in Hong Kong? What happened at Stanley Bay in April 2026? What did the government do after the red tides appeared? Why do people stay out of the sea when there is a red tide? What is paragraph 2 mainly about? What is an algal bloom? In paragraph 3, what does the word 'nutrients' mean? Is the writer excited, worried, bored or surprised about red tides? What is the best title for this article? "`,
     reference: READING_C3R3_REFERENCE,
     constraints: `- There are other roles: a vocabulary builder and a summariser, but NOT you.
 - DO NOT give explanation of vocabulary, even if asked. DO NOT summarise the text, even if asked.`,

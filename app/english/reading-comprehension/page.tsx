@@ -115,9 +115,9 @@ const cycles: Cycle[] = [
       {
         id: "reading-3",
         label: "Reading 3",
-        title: "Red Tides",
+        title: "Red Tides in Hong Kong",
         description:
-          "An informational article about red tides in Hong Kong — the events, why they happen, and how to protect the sea.",
+          "An information article about red tides — where they happened, what they are, why they form, and how to protect the sea.",
         href: "/english/reading-comprehension/cycle-3-reading-3",
         available: true,
       },

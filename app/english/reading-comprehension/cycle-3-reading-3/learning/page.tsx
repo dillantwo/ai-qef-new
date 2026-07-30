@@ -7,7 +7,6 @@ import {
   BookOpen,
   BookOpenCheck,
   Brain,
-  Droplets,
   Eye,
   FastForward,
   GraduationCap,
@@ -21,6 +20,7 @@ import {
   Scale,
   ScrollText,
   Search,
+  ShieldAlert,
   Star,
   Trophy,
   Waves,
@@ -34,20 +34,24 @@ type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1", icon: Waves },
-  { id: "part2", label: "Part 2", icon: Droplets },
-  { id: "part3", label: "Part 3", icon: ScrollText },
+  { id: "part1", label: "Part 1: Paras 1-2", icon: Waves },
+  { id: "part2", label: "Part 2: Paras 2-3", icon: ShieldAlert },
+  { id: "part3", label: "Part 3: Whole Text", icon: ScrollText },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
-// Extra styles for the "Red Tides" article.
+// Extra styles for the "Red Tides" news-style article.
 const articleStyles = `
-.rc-learning .article { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); padding: 16px 18px; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.rc-learning .article { background: #FBFDFF; border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .article.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
-.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); text-decoration: underline; margin-bottom: 12px; }
-.rc-learning .article p { font-size: 13.5px; line-height: 1.95; color: var(--text-secondary); margin: 0 0 12px; }
-.rc-learning .article p:last-child { margin-bottom: 0; }
-.rc-learning .para-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-purple); margin-bottom: 4px; }
+.rc-learning .article-inner { padding: 18px 20px 20px; }
+.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 21px; color: #0e5a8a; }
+.rc-learning .article-sub { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.rc-learning .article-rule { height: 2px; background: linear-gradient(90deg, transparent, var(--border-light), transparent); margin: 12px 0 14px; }
+.rc-learning .article-p { font-size: 14px; line-height: 1.9; color: var(--text-secondary); margin: 0 0 14px; text-align: justify; }
+.rc-learning .article-p:last-child { margin-bottom: 0; }
+.rc-learning .article-p .para-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent-blue); background: rgba(20,110,245,0.08); border-radius: 10px; padding: 1px 8px; margin-right: 6px; vertical-align: middle; }
+.rc-learning .article-p.dim { opacity: 0.4; }
 
 /* Locked tabs: greyed out and not clickable until the previous part is done. */
 .rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
@@ -102,7 +106,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-3-reading-3",
-    title: "Cycle 3 · Reading 3: Red Tides",
+    title: "Cycle 3 · Reading 3: Red Tides in Hong Kong",
     questions,
     answered,
     section,
@@ -205,11 +209,13 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   // 3); Part 3 covers Q8 (the whole text / best title).
   const part1Done = answered[1] && answered[2] && answered[3] && answered[4];
   const part2Done = answered[5] && answered[6] && answered[7];
+  const part3Done = answered[8];
   const allDone = Object.keys(answered).length === TOTAL_QUESTIONS;
 
   const isTabCompleted = (id: Section) => {
     if (id === "part1") return Boolean(part1Done);
     if (id === "part2") return Boolean(part2Done);
+    if (id === "part3") return Boolean(part3Done);
     if (id === "summary") return allDone;
     return false;
   };
@@ -241,83 +247,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   };
   const articleActive = (part: PartId) =>
     `article${section === part && activeClues.ids.length > 0 ? " clue-active" : ""}`;
-
-  // Render a sentence either as a highlightable clue span or as plain text.
-  const clue = (id: string, text: string, withClues: boolean): ReactNode =>
-    withClues ? (
-      <span className={clueClass(id)} ref={setClueRef(id)}>
-        {text}
-      </span>
-    ) : (
-      text
-    );
-
-  const paragraph1 = (withClues: boolean) => (
-    <p>
-      {clue("q1", "In April 2026, a red tide appeared at Stanley Bay.", withClues)} Two more red
-      tides happened in Sai Kung in May.{" "}
-      {clue(
-        "q2",
-        "The government warned the public about the problem. People were told not to swim there until it was safe again.",
-        withClues,
-      )}{" "}
-      A few days later, the water was clean and safe. Luckily, no fish died during these red tides.
-    </p>
-  );
-
-  const paragraph2 = (withClues: boolean) => {
-    const body = (
-      <>
-        Red tides happen in many places around the world.{" "}
-        {clue(
-          "q5",
-          "They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom.",
-          withClues,
-        )}{" "}
-        Most red tides that happened in Hong Kong were not harmful.{" "}
-        {clue("q4", "However, a few kinds of algae can be dangerous.", withClues)}{" "}
-        {clue("q3b", "Some algal blooms can kill fish and harm people.", withClues)}{" "}
-        {clue(
-          "q3",
-          "People should stay out of the sea when there is a red tide because it may be unsafe.",
-          withClues,
-        )}{" "}
-        People who drink polluted water or eat polluted seafood can get sick.
-      </>
-    );
-    // Q4 (main idea) highlights the whole of Paragraph 2, so wrap the paragraph
-    // in an outer clue span ("q4all") while keeping the inner sentence spans
-    // (q5/q4/q3b/q3) for the other questions.
-    return (
-      <p>
-        {withClues ? (
-          <span className={clueClass("q4all")} ref={setClueRef("q4all")}>
-            {body}
-          </span>
-        ) : (
-          body
-        )}
-      </p>
-    );
-  };
-
-  const paragraph3 = (withClues: boolean) => (
-    <p>
-      Why do red tides happen?{" "}
-      {clue(
-        "q6",
-        "Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form.",
-        withClues,
-      )}{" "}
-      Nutrients may often come from dirty water or from farms and gardens after rain. Scientists
-      check the sea water often and warn people when a beach is not safe.{" "}
-      {clue(
-        "q7",
-        "To protect the environment, we should keep the sea clean and try to reduce water pollution.",
-        withClues,
-      )}
-    </p>
-  );
 
   function renderQuestions(part: PartId) {
     const list = questions.filter((q) => q.part === part);
@@ -411,6 +340,151 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     );
   }
 
+  // --- Article paragraphs -------------------------------------------------
+  // Each paragraph is rendered by a helper so the same text can be reused
+  // across the overview, the parts (with clue highlighting) and the summary.
+  // `withClues` turns on the highlightable clue spans; `dim` fades a paragraph
+  // that is not the focus of the current part.
+
+  const para1 = (withClues: boolean, dim = false) => (
+    <p className={`article-p${dim ? " dim" : ""}`}>
+      <span className="para-tag">Para 1</span>
+      {withClues ? (
+        <span className={clueClass("q1")} ref={setClueRef("q1")}>
+          In April 2026, a red tide appeared at Stanley Bay.
+        </span>
+      ) : (
+        "In April 2026, a red tide appeared at Stanley Bay."
+      )}{" "}
+      Two more red tides happened in Sai Kung in May.{" "}
+      {withClues ? (
+        <span className={clueClass("q2")} ref={setClueRef("q2")}>
+          The government warned the public about the problem. People were told not to swim there
+          until it was safe again.
+        </span>
+      ) : (
+        "The government warned the public about the problem. People were told not to swim there until it was safe again."
+      )}{" "}
+      A few days later, the water was clean and safe. Luckily, no fish died during these red tides.
+    </p>
+  );
+
+  const para2 = (withClues: boolean, dim = false) => (
+    <p
+      className={`article-p${dim ? " dim" : ""}${
+        withClues && activeClues.ids.includes("q4") ? " highlight-clue glow" : ""
+      }${withClues && activeClues.badge === "q4" ? " clue-badge" : ""}`}
+      ref={withClues ? setClueRef("q4") : undefined}
+    >
+      <span className="para-tag">Para 2</span>
+      Red tides happen in many places around the world.{" "}
+      {withClues ? (
+        <span className={clueClass("q5")} ref={setClueRef("q5")}>
+          They occur when tiny living things called algae grow very quickly in the water. This
+          sudden growth is called an algal bloom.
+        </span>
+      ) : (
+        "They occur when tiny living things called algae grow very quickly in the water. This sudden growth is called an algal bloom."
+      )}{" "}
+      Most red tides that happened in Hong Kong were not harmful.{" "}
+      {withClues ? (
+        <span className={clueClass("q3")} ref={setClueRef("q3")}>
+          However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm
+          people. People should stay out of the sea when there is a red tide because it may be
+          unsafe.
+        </span>
+      ) : (
+        "However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and harm people. People should stay out of the sea when there is a red tide because it may be unsafe."
+      )}{" "}
+      People who drink polluted water or eat polluted seafood can get sick.
+    </p>
+  );
+
+  const para3 = (withClues: boolean, dim = false) => (
+    <p className={`article-p${dim ? " dim" : ""}`}>
+      <span className="para-tag">Para 3</span>
+      Why do red tides happen?{" "}
+      {withClues ? (
+        <span className={clueClass("q6")} ref={setClueRef("q6")}>
+          Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form.
+        </span>
+      ) : (
+        "Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides form."
+      )}{" "}
+      Nutrients may often come from dirty water or from farms and gardens after rain. Scientists
+      check the sea water often and warn people when a beach is not safe.{" "}
+      {withClues ? (
+        <span className={clueClass("q7")} ref={setClueRef("q7")}>
+          To protect the environment, we should keep the sea clean and try to reduce water
+          pollution.
+        </span>
+      ) : (
+        "To protect the environment, we should keep the sea clean and try to reduce water pollution."
+      )}
+    </p>
+  );
+
+  const articleHead = (
+    <>
+      <div className="article-title">Red Tides in Hong Kong</div>
+      <div className="article-sub">An information article · 3 paragraphs</div>
+      <div className="article-rule" />
+    </>
+  );
+
+  // Part 1 focuses on paragraphs 1 & 2.
+  const articlePart1 = (
+    <div className={articleActive("part1")}>
+      <div className="article-inner">
+        {articleHead}
+        {para1(true)}
+        {para2(true)}
+        <p className="article-p dim">
+          <span className="para-tag">Para 3</span>
+          Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea
+          can help red tides form...
+        </p>
+      </div>
+    </div>
+  );
+
+  // Part 2 focuses on paragraphs 2 & 3 (paragraph 1 is dimmed).
+  const articlePart2 = (
+    <div className={articleActive("part2")}>
+      <div className="article-inner">
+        {articleHead}
+        {para1(false, true)}
+        {para2(true)}
+        {para3(true)}
+      </div>
+    </div>
+  );
+
+  // Part 3 shows the whole article with clue highlighting available.
+  const articlePart3 = (
+    <div className={articleActive("part3")}>
+      <div className="article-inner">
+        {articleHead}
+        {para1(true)}
+        {para2(true)}
+        {para3(true)}
+      </div>
+    </div>
+  );
+
+  // The complete, plain (no clue highlighting) article. Reused by the Overview
+  // preview and the Summary's side-by-side Answer Review.
+  const fullArticle = (
+    <div className="article">
+      <div className="article-inner">
+        {articleHead}
+        {para1(false)}
+        {para2(false)}
+        {para3(false)}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Header backHref="/english/reading-comprehension/cycle-3-reading-3" backLabel="Back" />
@@ -423,7 +497,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Cycle 3 — Reading 3: Red Tides (Article)
+                <BookOpenCheck className="size-6" /> Cycle 3 — Reading 3: Red Tides in Hong Kong
               </h1>
             </div>
 
@@ -488,16 +562,11 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                             "linear-gradient(135deg,var(--accent-pink),var(--accent-mint))",
                         }}
                       >
-                        <ScrollText className="size-4" />
+                        <Search className="size-4" />
                       </span>
                       The Article
                     </div>
-                    <div className="article">
-                      <div className="article-title">Red Tides</div>
-                      {paragraph1(false)}
-                      {paragraph2(false)}
-                      {paragraph3(false)}
-                    </div>
+                    {fullArticle}
                   </div>
 
                   <div style={{ textAlign: "center", marginTop: 6 }}>
@@ -506,7 +575,8 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       className="restart-btn"
                       onClick={() => switchSection("part1")}
                       style={{
-                        background: "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
+                        background:
+                          "linear-gradient(135deg,var(--accent-mint),var(--accent-blue))",
                       }}
                     >
                       Start Part 1 <ArrowRight className="size-4" />
@@ -535,7 +605,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                         >
                           <Waves className="size-4" />
                         </span>
-                        Part 1: The Red Tides
+                        Part 1: Paragraphs 1 &amp; 2
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -547,11 +617,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className={articleActive("part1")}>
-                        <div className="article-title">Red Tides</div>
-                        {paragraph1(true)}
-                        {paragraph2(true)}
-                      </div>
+                      {articlePart1}
                     </div>
                   </div>
                   <div className="split-right">
@@ -596,9 +662,9 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                               "linear-gradient(135deg,var(--accent-purple),var(--accent-blue))",
                           }}
                         >
-                          <Droplets className="size-4" />
+                          <ShieldAlert className="size-4" />
                         </span>
-                        Part 2: Causes &amp; Views
+                        Part 2: Paragraphs 2 &amp; 3
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -611,11 +677,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className={articleActive("part2")}>
-                        <div className="article-title">Red Tides</div>
-                        {paragraph2(true)}
-                        {paragraph3(true)}
-                      </div>
+                      {articlePart2}
                     </div>
                   </div>
                   <div className="split-right">
@@ -667,17 +729,12 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       <ul className="pre-reading-list">
                         <li>
                           <HelpCircle className="size-4" /> Read the whole text again. What is the
-                          best title?
+                          best title for this article?
                         </li>
                       </ul>
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className="article">
-                        <div className="article-title">Red Tides</div>
-                        {paragraph1(false)}
-                        {paragraph2(false)}
-                        {paragraph3(false)}
-                      </div>
+                      {articlePart3}
                     </div>
                   </div>
                   <div className="split-right">
@@ -712,7 +769,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
                     <h2>Reading 3 Completed!</h2>
-                    <p>You have just completed Cycle 3 — Reading 3: Red Tides.</p>
+                    <p>You have just completed Cycle 3 — Reading 3: Red Tides in Hong Kong.</p>
                     <div className="final-score">
                       {score} / {TOTAL_QUESTIONS}
                     </div>
@@ -729,12 +786,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                       <BookOpen className="size-3.5" /> Reading Passage
                     </div>
                     <div className="card" style={{ padding: "14px 12px" }}>
-                      <div className="article">
-                        <div className="article-title">Red Tides</div>
-                        {paragraph1(false)}
-                        {paragraph2(false)}
-                        {paragraph3(false)}
-                      </div>
+                      {fullArticle}
                     </div>
                   </div>
                   <div className="split-right">

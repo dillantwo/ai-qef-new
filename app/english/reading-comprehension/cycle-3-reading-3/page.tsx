@@ -11,7 +11,7 @@ const modes = [
     label: "Learn Reading Comprehension",
     subtitle: "Guided Learning",
     description:
-      "Learn skimming, scanning, inference and contextual-clue skills through the 'Red Tides' article and step-by-step practice.",
+      "Learn skimming, scanning, inference and main-idea skills through the 'Red Tides in Hong Kong' information article and step-by-step practice.",
     icon: BookOpen,
     color: "#ff6b00",
     available: true,
@@ -55,7 +55,7 @@ export default function EnglishReadingComprehensionCycle3Reading3ModesPage() {
           <div className="flex w-full flex-col gap-10 py-2">
             <section className="space-y-3 px-2 sm:px-0">
               <p className="text-[12px] font-semibold uppercase tracking-[1.2px] text-[#ababab]">
-                Cycle 3 · Reading 3 — Red Tides (Article)
+                Cycle 3 · Reading 3 — Red Tides in Hong Kong (Information Article)
               </p>
               <h1 className="text-[34px] leading-[1.04] font-semibold tracking-[-0.03em] text-[#080808] sm:text-[40px]">
                 Choose how you want to learn

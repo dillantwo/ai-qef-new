@@ -11,7 +11,7 @@ export interface Question {
   id: number;
   part: PartId;
   text: string;
-  /** Optional rich block shown above the options. */
+  /** Optional rich block (e.g. a picture grid) shown above the options. */
   extra?: ReactNode;
   options: Option[];
   answer: string;
@@ -39,16 +39,17 @@ export const questions: Question[] = [
     clues: ["q1"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Look for the keywords <em>Stanley Bay</em> and <em>April 2026</em>{" "}
-        in Paragraph 1. The clue is: <em>&quot;In April 2026, a red tide appeared at Stanley Bay.&quot;</em>
+        <strong>💡 Hint:</strong> Look for the keywords <em>&quot;Stanley Bay&quot;</em> and{" "}
+        <em>&quot;April 2026&quot;</em>:{" "}
+        <em>&quot;In April 2026, a red tide appeared at Stanley Bay.&quot;</em>
       </>
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the keywords <em>Stanley Bay</em> and <em>April 2026</em> to find
-        the clue, then <strong>re-read</strong> to confirm. <strong>Compare</strong> all four
-        options and take out the ones the text disproves: nobody swam, only one red tide was here
-        (two were in Sai Kung), and no fish died.
+        Scan for the keywords and read the first sentence. A red tide{" "}
+        <em>appeared</em> at Stanley Bay — that is the clue. People were told <em>not</em> to swim
+        (so A is wrong), the three red tides were in different places (C), and{" "}
+        <em>&quot;no fish died&quot;</em> (D).
       </>
     ),
     explain: (
@@ -56,10 +57,9 @@ export const questions: Question[] = [
         <strong>✅ Correct: B. A red tide happened there.</strong>
         <br />
         <br />
-        The text says <em>&quot;a red tide appeared at Stanley Bay&quot;</em>, so B matches exactly.
-        People were told <em>not</em> to swim (so A is wrong). Only one red tide appeared at Stanley
-        Bay — the two more were in Sai Kung (so C is wrong). And <em>&quot;no fish died&quot;</em> (so
-        D is wrong).
+        The text says <em>&quot;In April 2026, a red tide appeared at Stanley Bay.&quot;</em> People
+        were told not to swim, so A is wrong. Only one red tide was at Stanley Bay — the other two
+        were in Sai Kung (C). <em>&quot;Luckily, no fish died&quot;</em> makes D wrong.
       </>
     ),
   },
@@ -77,7 +77,7 @@ export const questions: Question[] = [
     clues: ["q2"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Find the keyword <em>government</em> in Paragraph 1:{" "}
+        <strong>💡 Hint:</strong> Find the keyword <em>&quot;government&quot;</em>:{" "}
         <em>
           &quot;The government warned the public about the problem. People were told not to swim
           there until it was safe again.&quot;
@@ -86,10 +86,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the keyword <em>government</em> and <strong>re-read</strong> to
-        confirm. <strong>Look for details / evidence</strong> and <strong>compare</strong> the
-        options: some seem possible but have no supporting evidence, and others are never mentioned
-        — those are just distractors.
+        Scan for <em>&quot;government&quot;</em> and read the sentences after
+        it. People were told <em>not</em> to swim, so A is wrong. Closing all beaches (C) and not
+        eating fish (D) are not in the text — they are distractors.
       </>
     ),
     explain: (
@@ -97,9 +96,9 @@ export const questions: Question[] = [
         <strong>✅ Correct: B. It told people not to swim there.</strong>
         <br />
         <br />
-        The text says people were told <em>not to swim</em> (so A is wrong). Closing all beaches (C)
-        is not mentioned. Not eating fish (D) seems possible, but there is no supporting evidence in
-        the text — it is just a distractor.
+        <em>&quot;People were told not to swim there until it was safe again.&quot;</em> A is the
+        opposite. C (closing all beaches) is never said. D may seem possible, but there is no
+        evidence for it in the text.
       </>
     ),
   },
@@ -114,24 +113,22 @@ export const questions: Question[] = [
       { val: "D", label: "the sea becomes too hot." },
     ],
     answer: "A",
-    clues: ["q3", "q4", "q3b"],
+    clues: ["q3"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> The text says the sea <em>&quot;may be unsafe&quot;</em>. Read the
-        nearby sentences to find out <em>why</em>:{" "}
+        <strong>💡 Hint:</strong> Read paragraph 2:{" "}
         <em>
-          &quot;However, a few kinds of algae can be dangerous. Some algal blooms can kill fish and
-          harm people.&quot;
-        </em>
+          &quot;Some algal blooms can kill fish and harm people. People should stay out of the sea
+          when there is a red tide because it may be unsafe.&quot;
+        </em>{" "}
+        Why is the sea unsafe?
       </>
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the reason and <strong>re-read</strong> the nearby sentences. The
-        text only says &quot;unsafe&quot;, so <strong>understand the cause and effect</strong> and{" "}
-        <strong>make an inference</strong> by linking sentences (algae can be dangerous → harm
-        people). <strong>Compare</strong> — some options may be true but do not answer <em>why</em>{" "}
-        people stay out of the sea.
+        The text says the sea <em>&quot;may be unsafe&quot;</em>. Re-read the
+        nearby sentences to find <em>why</em>: some algal blooms can harm people. Fish attacks (B)
+        are never mentioned; C and D do not answer the question.
       </>
     ),
     explain: (
@@ -139,9 +136,9 @@ export const questions: Question[] = [
         <strong>✅ Correct: A. some algal blooms may harm people.</strong>
         <br />
         <br />
-        The sea is unsafe because <em>&quot;a few kinds of algae can be dangerous&quot;</em> and{" "}
-        <em>&quot;some algal blooms can kill fish and harm people&quot;</em>. Fish attacking (B) is
-        not mentioned. C and D may be true, but they do not answer <em>why people stay out</em>.
+        The sea <em>&quot;may be unsafe&quot;</em> because{" "}
+        <em>&quot;some algal blooms can kill fish and harm people.&quot;</em> Fish attacking people
+        (B) is not in the text. C and D may be true, but they do not answer why the sea is unsafe.
       </>
     ),
   },
@@ -156,30 +153,29 @@ export const questions: Question[] = [
       { val: "D", label: "how to swim safely when there is a red tide" },
     ],
     answer: "C",
-    clues: ["q4all"],
+    clues: ["q4"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Skim the <em>whole</em> of Paragraph 2 for the <em>main idea</em>.
-        It talks about algae that <em>&quot;can be dangerous&quot;</em> and{" "}
-        <em>&quot;can kill fish and harm people&quot;</em>.
+        <strong>💡 Hint:</strong> Read the whole of paragraph 2 again to get the{" "}
+        <strong>main idea</strong>. It talks about algae being <em>dangerous</em>, blooms that{" "}
+        <em>kill fish and harm people</em>, and staying out of the <em>unsafe</em> sea.
       </>
     ),
     strategy: (
       <>
-        <strong>Skim</strong> the whole paragraph for the gist and <strong>re-read</strong> to
-        confirm the main idea. <strong>Compare</strong> the options: a good main-idea answer covers
-        the <em>whole</em> paragraph, not just one small detail or something the text never
-        describes.
+        Skim for the main idea, not one small detail. Blooms around the
+        world (A) is only one line; the paragraph never describes what algae look like (B); it says
+        to stay <em>out</em> of the sea, not how to swim safely (D). The big idea is the danger.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: C. the dangers of red tides.</strong>
+        <strong>✅ Correct: C. the dangers of red tides</strong>
         <br />
         <br />
-        Paragraph 2 explains what red tides are and how they can be harmful. &quot;Algal blooms
-        around the world&quot; (A) is just one small part. The paragraph does not describe what algae
-        look like (B), and people are told <em>not</em> to swim, so D is wrong.
+        Paragraph 2 is mostly about how red tides can be dangerous — algae can be harmful, blooms
+        can kill fish and harm people, and the sea can be unsafe. A and B are small details, and D
+        is wrong because the text says to stay <em>out</em> of the sea.
       </>
     ),
   },
@@ -197,7 +193,7 @@ export const questions: Question[] = [
     clues: ["q5"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Find the clue in Paragraph 2:{" "}
+        <strong>💡 Hint:</strong> Find <em>&quot;algal bloom&quot;</em> in paragraph 2:{" "}
         <em>
           &quot;They occur when tiny living things called algae grow very quickly in the water. This
           sudden growth is called an algal bloom.&quot;
@@ -206,28 +202,26 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the word and <strong>re-read</strong> the clue.{" "}
-        <strong>Look for details / evidence</strong> and understand the difference between a{" "}
-        <em>thing</em> (algae) and a <em>process</em> (the bloom = the quick growth).{" "}
-        <strong>Compare</strong> — some options describe algae itself or a detail from another
-        paragraph, not the bloom.
+        Look for the exact words <em>&quot;algal bloom&quot;</em>. The sentence
+        before it explains it is the <em>sudden growth</em> of algae. Be careful: <em>algae</em>{" "}
+        (D) are the living things, not the bloom. C is a distractor from paragraph 3.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: B. the quick growth of algae in the water.</strong>
+        <strong>✅ Correct: B. the quick growth of algae in the water</strong>
         <br />
         <br />
-        The text says <em>&quot;this sudden growth is called an algal bloom&quot;</em>. Dirty water
-        (C) is mentioned in Paragraph 3 but does not answer the question. D describes <em>algae</em>,
-        not the <em>algal bloom</em>.
+        The text says algae <em>&quot;grow very quickly in the water. This sudden growth is called
+        an algal bloom.&quot;</em> A is not correct; C is about nutrients (paragraph 3); D describes{" "}
+        <em>algae</em>, not the <em>bloom</em>.
       </>
     ),
   },
   {
     id: 6,
     part: "part2",
-    text: 'In Paragraph 3, what does the word "nutrients" mean?',
+    text: 'In paragraph 3, what does the word "nutrients" mean?',
     options: [
       { val: "A", label: "things in water that help algae grow" },
       { val: "B", label: "small animals that eat algae" },
@@ -238,28 +232,29 @@ export const questions: Question[] = [
     clues: ["q6"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Find the word <em>nutrients</em> in Paragraph 3:{" "}
-        <em>&quot;too many nutrients in the sea can help red tides form.&quot;</em> Nutrients are
-        something that helps algae grow.
+        <strong>💡 Hint:</strong> Find the word <em>&quot;nutrients&quot;</em> in paragraph 3:{" "}
+        <em>
+          &quot;Warm water, a lot of sunlight, and too many nutrients in the sea can help red tides
+          form.&quot;
+        </em>{" "}
+        What do nutrients do?
       </>
     ),
     strategy: (
       <>
-        <strong>Scan</strong> for the word <em>nutrients</em> and <strong>re-read</strong> the
-        sentence. <strong>Activate</strong> your background knowledge (what helps living things
-        grow?) and <strong>make an inference</strong> from the surrounding words.{" "}
-        <strong>Compare</strong> — take out the options that are not mentioned in the text or that
-        cannot help algae grow.
+        Use the words around <em>&quot;nutrients&quot;</em> to guess its
+        meaning. They <em>help red tides form</em> (help algae grow). B is never mentioned;{" "}
+        <em>&quot;only on beaches&quot;</em> (C) does not match; colours (D) cannot help algae grow.
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: A. things in water that help algae grow.</strong>
+        <strong>✅ Correct: A. things in water that help algae grow</strong>
         <br />
         <br />
-        The clue shows nutrients <em>help algae grow</em>. Small animals (B) are not mentioned.
-        Nutrients come from dirty water, farms and gardens — not <em>only</em> beaches (C). Colours
-        (D) cannot help algae grow.
+        Nutrients <em>&quot;can help red tides form&quot;</em>, so they help algae grow. B is not in
+        the text; nutrients come from dirty water, farms and gardens too, not <em>only</em> beaches
+        (C); and colours cannot make algae grow (D).
       </>
     ),
   },
@@ -274,39 +269,37 @@ export const questions: Question[] = [
       { val: "D", label: "surprised by" },
     ],
     answer: "B",
-    clues: ["q3b", "q7"],
+    clues: ["q7", "q3"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Re-read Paragraphs 2 and 3. The
-        writer talks about <em>danger</em>, <em>safety</em>, and{" "}
-        <em>protecting the environment</em>.
+        <strong>💡 Hint:</strong> Think about the writer&apos;s feeling. The writer talks about{" "}
+        <em>danger</em>, <em>safety</em>, and how{" "}
+        <em>&quot;we should keep the sea clean and try to reduce water pollution.&quot;</em>
       </>
     ),
     strategy: (
       <>
-        <strong>Re-read</strong> Paragraphs 2 and 3 and <strong>interpret</strong> the writer&apos;s
-        attitude and feelings — is it positive, neutral or negative?{" "}
-        <strong>Make an inference</strong> from the details (danger, safety, protecting the
-        environment) that the writer treats red tides as a serious problem, then{" "}
-        <strong>compare</strong> the options.
+        Interpret the writer&apos;s attitude: is it positive, neutral or
+        negative? Warnings about danger and a call to protect the sea show the writer is{" "}
+        <em>worried</em>. There is no evidence of excitement (A) or boredom (C); red tides are a
+        known problem, not a surprise (D).
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: B. worried about.</strong>
+        <strong>✅ Correct: B. worried about</strong>
         <br />
         <br />
-        The writer explains dangers, warnings and how to protect the environment, so they think red
-        tides are a serious problem. There is no evidence of being excited (A). The writer gives
-        important warnings, so &quot;bored&quot; (C) is wrong. Red tides are a known problem, so
-        &quot;surprised&quot; (D) is not the best answer.
+        The writer warns about danger and safety and asks us to keep the sea clean, which shows
+        worry. There is no sign of excitement (A) or boredom (C). The text calls red tides a known
+        problem, so the writer is not surprised (D).
       </>
     ),
   },
   {
     id: 8,
     part: "part3",
-    text: "______ is the best title for this article?",
+    text: "______ is the best title for this article.",
     options: [
       { val: "A", label: "The Sea Water Turns Red" },
       { val: "B", label: "Red Tides in Hong Kong" },
@@ -317,25 +310,26 @@ export const questions: Question[] = [
     clues: [],
     hint: (
       <>
-        <strong>💡 Hint:</strong> A good title covers the <em>whole</em> article. Think about the
-        main idea of all three paragraphs together.
+        <strong>💡 Hint:</strong> A good title covers the <strong>whole</strong> article. This
+        article is about red tides in Hong Kong — where they happened, what they are, why they
+        happen, and what we can do.
       </>
     ),
     strategy: (
       <>
-        <strong>Skim</strong> the whole text and link up the three paragraphs to make a summary,
-        then <strong>re-read</strong> to confirm. <strong>Compare</strong> the titles — a good title
-        covers the whole article and is not too narrow or only one part of it.
+        Skim the whole text for the main idea. The best title must cover
+        everything, not just one part. A is too narrow (only the colour), C is too narrow (only
+        algae growth), and D is only one part (the warnings).
       </>
     ),
     explain: (
       <>
-        <strong>✅ Correct: B. Red Tides in Hong Kong.</strong>
+        <strong>✅ Correct: B. Red Tides in Hong Kong</strong>
         <br />
         <br />
-        The article is about red tides in Hong Kong — the events, what they are, why they happen and
-        what people can do. A and C are too narrow (only the colour, or only algae growth). D
-        (warnings) is only one part of the article.
+        The whole article is about red tides in Hong Kong, so B fits best. A (&quot;The Sea Water
+        Turns Red&quot;) and C (&quot;How Algae Grow&quot;) are too narrow, and D
+        (&quot;Warnings&quot;) covers only one part of the article.
       </>
     ),
   },
