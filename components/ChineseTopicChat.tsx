@@ -80,6 +80,10 @@ export interface ChineseTopicConfig {
    *  students write and locally save their essay drafts, and load one into the
    *  chat input to discuss with the AI. */
   enableDrafts?: boolean;
+  /** Optional preset prompt buttons shown just above the chat input. Clicking
+   *  one appends `text` below whatever is already in the input box (it never
+   *  overwrites the existing content). */
+  promptPresets?: { label: string; text: string }[];
 }
 
 type ChatImage = { mediaType: string; dataUrl: string; filename?: string };
@@ -251,6 +255,7 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     quickStartOptions,
     requireQuickStartSelection = false,
     enableDrafts = false,
+    promptPresets,
   } = config;
   const HeaderIcon = ICON_MAP[icon];
 
@@ -474,13 +479,20 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
     [activeDraftId, refreshDraftList]
   );
 
+  // Append text below whatever is already in the chat input (never overwrites).
+  const appendToInput = useCallback((text: string) => {
+    const addition = text.trim();
+    if (!addition) return;
+    setInput((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")}\n\n${addition}` : addition));
+    textareaRef.current?.focus();
+  }, []);
+
   // Load a draft stage into the chat input so the student can ask the AI about it.
   const handleUseDraft = useCallback(
     (stage: DraftStage) => {
       const text = drafts[stage].trim();
       if (!text) return;
-      const label = DRAFT_STAGES.find((s) => s.key === stage)?.label ?? "文章";
-      setInput(`請幫我看看以下這篇${label}：\n\n${text}`);
+      setInput((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")}\n\n${text}` : text));
       textareaRef.current?.focus();
     },
     [drafts]
@@ -1034,6 +1046,21 @@ export default function ChineseTopicChat({ config }: { config: ChineseTopicConfi
 
         {/* Chat input */}
         <div className="px-4 pb-4 bg-white">
+          {promptPresets && promptPresets.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {promptPresets.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => appendToInput(preset.text)}
+                  disabled={mustSelectFirst}
+                  className="rounded-full border border-[#e5e5e5] bg-white px-3 py-1.5 text-xs font-medium text-[#5a5a5a] transition-colors hover:border-[#146ef5] hover:text-[#146ef5] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="w-full">
             <div className="relative w-full rounded-2xl border border-[#e5e5e5] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
               {chatFiles.length > 0 && (
