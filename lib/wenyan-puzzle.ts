@@ -1,6 +1,6 @@
 // Data + builder for the 挑戰模式 - 常用詞拼圖 (vocabulary jigsaw) game.
 //
-// It reuses the four 學習模式 articles in `wenyan-texts.ts`. For each round we
+// It reuses the six 學習模式 articles in `wenyan-texts.ts`. For each round we
 // pick a passage (one sentence), blank out a few 常用詞 (at most one blank per
 // short clause), and the student drags the right words into the slots. Each
 // draggable token shows the word together with its meaning, and the bank also
@@ -92,6 +92,38 @@ const PUZZLE_CONFIGS: PuzzleConfig[] = [
     blanks: [
       { answer: "蚌", meaning: "河蚌" },
       { answer: "鷸", meaning: "水鳥" },
+    ],
+  },
+  {
+    textId: "zhe-jian",
+    sentenceId: "s2",
+    blanks: [
+      { answer: "謂", meaning: "對……說" },
+      { answer: "奉", meaning: "給予" },
+    ],
+  },
+  {
+    textId: "zhe-jian",
+    sentenceId: "s5",
+    blanks: [
+      { answer: "摧", meaning: "折斷" },
+      { answer: "社稷", meaning: "國家" },
+    ],
+  },
+  {
+    textId: "zhu-zi-jia-xun",
+    sentenceId: "s1",
+    blanks: [
+      { answer: "即", meaning: "就、立刻" },
+      { answer: "庭除", meaning: "庭院" },
+    ],
+  },
+  {
+    textId: "zhu-zi-jia-xun",
+    sentenceId: "s6",
+    blanks: [
+      { answer: "質", meaning: "樸素" },
+      { answer: "瓦缶", meaning: "瓦製的容器" },
     ],
   },
 ];

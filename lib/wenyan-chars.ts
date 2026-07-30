@@ -1,9 +1,9 @@
 // Common classical-Chinese characters bank for the 挑戰模式 - 常用詞翻譯
 // (translation challenge) of the 學習文言文 topic.
 //
-// Every word and example sentence is drawn from the four passages currently in
-// the 學習模式 (see `wenyan-texts.ts`): 論語四則、二子學弈、鄭人買履、鷸蚌相爭.
-// This keeps the challenge in sync with what the student studies.
+// Every word and example sentence is drawn from the six passages currently in
+// the 學習模式 (see `wenyan-texts.ts`): 論語四則、二子學弈、鄭人買履、鷸蚌相爭、
+// 折箭、朱子家訓（節錄）. This keeps the challenge in sync with what the student studies.
 //
 // The challenge picks a character, shows one of its example sentences (the
 // "片段") with the character highlighted, and asks the student to choose the
@@ -246,6 +246,101 @@ export const WENYAN_CHARS: WenyanChar[] = [
     pinyin: "yì",
     meaning: "也",
     examples: ["蚌亦謂鷸曰：「今日不出，明日不出，即有死鷸。」"],
+  },
+
+  /* ------------------------------------------------------------- 折箭 */
+  {
+    id: "feng-give",
+    char: "奉",
+    pinyin: "fèng",
+    meaning: "給予",
+    examples: ["汝等各奉吾一支箭，折之地下。"],
+  },
+  {
+    id: "wei-say",
+    char: "謂",
+    pinyin: "wèi",
+    meaning: "對……說",
+    examples: ["阿豺又謂曰：「汝等各奉吾一支箭，折之地下。」"],
+  },
+  {
+    id: "e-er-soon",
+    char: "俄而",
+    pinyin: "é ér",
+    meaning: "一會兒、不久",
+    examples: ["俄而命母弟慕利延曰：「汝取一支箭折之。」"],
+  },
+  {
+    id: "cui-break",
+    char: "摧",
+    pinyin: "cuī",
+    meaning: "折斷",
+    examples: ["單者易折，眾則難摧。"],
+  },
+  {
+    id: "lu-join-force",
+    char: "戮",
+    pinyin: "lù",
+    meaning: "合力（戮力）",
+    examples: ["戮力一心，然後社稷可固。"],
+  },
+  {
+    id: "she-ji-state",
+    char: "社稷",
+    pinyin: "shè jì",
+    meaning: "國家",
+    examples: ["戮力一心，然後社稷可固。"],
+  },
+
+  /* --------------------------------------------------- 朱子家訓（節錄） */
+  {
+    id: "ji-at-once",
+    char: "即",
+    pinyin: "jí",
+    meaning: "就、立刻",
+    examples: ["黎明即起，灑掃庭除。"],
+  },
+  {
+    id: "ji-already",
+    char: "既",
+    pinyin: "jì",
+    meaning: "已經",
+    examples: ["既昏便息，關鎖門戶。"],
+  },
+  {
+    id: "heng-often",
+    char: "恒",
+    pinyin: "héng",
+    meaning: "經常",
+    examples: ["半絲半縷，恒念物力維艱。"],
+  },
+  {
+    id: "wu-do-not",
+    char: "毋",
+    pinyin: "wú",
+    meaning: "不要",
+    examples: ["宜未雨而綢繆，毋臨渴而掘井。"],
+  },
+  {
+    id: "zhi-plain",
+    char: "質",
+    pinyin: "zhì",
+    meaning: "樸素",
+    examples: ["器具質而潔，瓦缶勝金玉。"],
+  },
+  {
+    id: "yu-surpass",
+    char: "愈",
+    pinyin: "yù",
+    meaning: "勝過",
+    examples: ["飲食約而精，園蔬愈珍饈。"],
+  },
+  {
+    id: "zhen-xiu-delicacy",
+    char: "珍饈",
+    pinyin: "zhēn xiū",
+    meaning: "珍貴的食物",
+    examples: ["飲食約而精，園蔬愈珍饈。"],
   },
 ];
 

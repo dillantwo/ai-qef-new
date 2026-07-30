@@ -5,8 +5,8 @@
 // show a passage (原文 + 白話翻譯) and work with its 主旨 — the implied 道理/教訓.
 //
 // 《論語四則》本身包含四則獨立的語錄，各有各的道理，所以拆成四題（每則一題）；
-// 其餘三篇各作一題。主旨理解題每題有一個正確答案加四個干擾選項；理解應用題則由
-// AI 為學生寫的生活隱喻評分。
+// 其餘五篇（二子學弈、鄭人買履、鷸蚌相爭、折箭、朱子家訓）各作一題。主旨理解題
+// 每題有一個正確答案加四個干擾選項；理解應用題則由 AI 為學生寫的生活隱喻評分。
 
 import { WENYAN_TEXTS, getWenyanText } from "./wenyan-texts";
 
@@ -77,6 +77,18 @@ export const WENYAN_THEMES: ThemeEntry[] = [
     title: "鷸蚌相爭",
     theme: "雙方爭執互不相讓，最後往往只會讓第三者坐收漁利。",
   },
+  {
+    id: "zhe-jian",
+    textId: "zhe-jian",
+    title: "折箭",
+    theme: "團結就是力量：眾人同心合力便難以被擊破，國家才能穩固；力量分散則容易被逐一擊破。",
+  },
+  {
+    id: "zhu-zi-jia-xun",
+    textId: "zhu-zi-jia-xun",
+    title: "朱子家訓（節錄）",
+    theme: "為人治家應勤儉節約、愛惜物力、凡事預先準備，過樸素而不浪費的生活。",
+  },
 ];
 
 /** Plausible-but-wrong morals, used to top up distractors to four per question. */
@@ -84,10 +96,8 @@ export const THEME_DISTRACTOR_POOL: string[] = [
   "做人要誠實守信，答應別人的事就一定要做到。",
   "要珍惜光陰，今天能做的事不要拖延到明天。",
   "遇到困難要勇敢面對，絕不可以輕言放棄。",
-  "凡事要未雨綢繆，事先做好周全的準備。",
   "要孝順父母、尊敬師長，做一個有禮的人。",
   "貪心不足往往招來禍患，知足才能常樂。",
-  "團結合作的力量強大，眾人同心就能成事。",
 ];
 
 export function getWenyanTheme(id: string): ThemeEntry | undefined {
