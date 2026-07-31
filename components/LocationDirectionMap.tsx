@@ -34,7 +34,7 @@ const FACING: Record<Direction, string> = {
 // Each task has its own map image. None have a compass baked into the image, so
 // the reserved side column (recreated compass + relocated controls) is always
 // shown.
-const DEFAULT_MAP_SRC = `${basePath}/english/task 1 map.png`;
+const DEFAULT_MAP_SRC = `${basePath}/english/map org.png`;
 const MAP_SRC_BY_TASK: Record<number, string> = {
   1: `${basePath}/english/task 1 map.png`,
   2: `${basePath}/english/task 2 map.png`,
