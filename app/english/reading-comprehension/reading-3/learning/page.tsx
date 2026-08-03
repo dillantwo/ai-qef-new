@@ -56,6 +56,7 @@ const reading3Styles = `
 .rc-learning .story-part-label:first-child { margin-top: 4px; }
 .rc-learning .story-text { font-size: 14px; line-height: 1.9; color: var(--text-primary); margin: 0 0 10px; }
 .rc-learning .story-text:last-child { margin-bottom: 0; }
+.rc-learning .story-text > .highlight-clue:first-child { padding-left: 0; }
 .rc-learning .doc-underline { text-decoration: underline; font-weight: 600; }
 `;
 
