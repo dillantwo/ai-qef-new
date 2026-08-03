@@ -12,6 +12,7 @@ import {
   GraduationCap,
   HelpCircle,
   Lightbulb,
+  Lock,
   Mail,
   MapPin,
   PenLine,
@@ -31,13 +32,6 @@ import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questi
 import { useReadingRecord } from "@/lib/english-reading-record";
 
 type Section = "overview" | "part1" | "part2" | "part3" | "summary";
-
-interface ModalData {
-  emoji: string;
-  title: string;
-  msg: string;
-  ok: boolean;
-}
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
@@ -59,6 +53,45 @@ const emailStyles = `
 .rc-learning .email-body p:last-child { margin-bottom: 0; }
 .rc-learning .email-greeting { font-weight: 600; color: var(--text-primary); }
 .rc-learning .email-sign { margin-top: 2px; font-weight: 600; color: var(--text-primary); }
+
+/* Locked tabs: greyed out and not clickable until the previous part is done. */
+.rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
+.rc-learning .nav-tab.locked:hover { border-color: var(--border-light); color: var(--text-muted); }
+
+/* Neutral "selected" state for options while answering (no right/wrong reveal). */
+.rc-learning .option-btn.selected { border-color: var(--accent-blue); background: rgba(20,110,245,0.08); }
+.rc-learning .option-btn.selected .opt-letter { background: var(--accent-blue); color: #fff; }
+.rc-learning .question-card.answered { border-color: var(--accent-blue); }
+
+/* Answer Review list shown on the Summary tab. */
+.rc-learning .answer-review { list-style: none; padding: 0; margin: 0; }
+.rc-learning .answer-review > li {
+  padding: 14px 14px; margin-bottom: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); border-left: 4px solid var(--border-light);
+  background: var(--bg-article);
+}
+.rc-learning .answer-review > li.correct { border-left-color: var(--correct-border); background: var(--bg-card); }
+.rc-learning .answer-review > li.wrong { border-left-color: var(--wrong-border); background: var(--bg-card); }
+.rc-learning .answer-review .ar-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.rc-learning .answer-review .ar-badge {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; background: var(--wrong-border);
+}
+.rc-learning .answer-review .ar-badge.ok { background: var(--correct-border); }
+.rc-learning .answer-review .ar-qtext { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text-primary); }
+.rc-learning .answer-review .ar-options { list-style: none; padding: 0; margin: 0 0 8px 34px; display: flex; flex-direction: column; gap: 5px; }
+.rc-learning .answer-review .ar-option { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: transparent; font-size: 13px; color: var(--text-secondary); }
+.rc-learning .answer-review .ar-option.correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--text-primary); }
+.rc-learning .answer-review .ar-opt-letter { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 12px; background: var(--border-light); color: var(--text-primary); }
+.rc-learning .answer-review .ar-option.correct .ar-opt-letter { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-option.wrong .ar-opt-letter { background: var(--wrong-border); color: #fff; }
+.rc-learning .answer-review .ar-opt-label { flex: 1; }
+.rc-learning .answer-review .ar-tag { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.rc-learning .answer-review .ar-tag.ok { background: var(--correct-border); color: #fff; }
+.rc-learning .answer-review .ar-tag.you { background: var(--accent-blue); color: #fff; }
+.rc-learning .answer-review .explain-box { margin-left: 34px; }
 `;
 
 export default function EnglishReadingComprehensionCycle2Reading3LearningPage() {
@@ -71,7 +104,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
     ids: [],
     badge: "",
   });
-  const [modal, setModal] = useState<ModalData | null>(null);
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-2-reading-3",
@@ -125,29 +157,12 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
     [clearHighlights],
   );
 
-  const handleAnswer = useCallback(
-    (q: Question, val: string) => {
-      if (answered[q.id]) return;
-      setAnswered((prev) => ({ ...prev, [q.id]: val }));
-      if (val === q.answer) {
-        setModal({
-          emoji: "🎉",
-          title: "Correct!",
-          msg: "Well done! You found the right answer.",
-          ok: true,
-        });
-      } else {
-        setModal({
-          emoji: "🤔",
-          title: "Not quite!",
-          msg: "The correct answer is highlighted in green. Read the explanation below.",
-          ok: false,
-        });
-      }
-      highlightClues(q);
-    },
-    [answered, highlightClues],
-  );
+  // Record the student's choice without revealing whether it is right or wrong.
+  // Feedback (correct/wrong + explanations) is deferred to the Summary tab.
+  // Students may change their choice until they move on.
+  const handleAnswer = useCallback((q: Question, val: string) => {
+    setAnswered((prev) => ({ ...prev, [q.id]: val }));
+  }, []);
 
   const toggleHint = useCallback(
     (q: Question) => {
@@ -206,6 +221,15 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
     return false;
   };
 
+  // Tabs unlock in order: Overview → Part 1 → Part 2 → Part 3 → Summary.
+  const isTabUnlocked = (id: Section) => {
+    if (id === "overview" || id === "part1") return true;
+    if (id === "part2") return Boolean(part1Done);
+    if (id === "part3") return Boolean(part2Done);
+    if (id === "summary") return allDone;
+    return false;
+  };
+
   const summaryMsg =
     score === TOTAL_QUESTIONS
       ? "Perfect score! You're a reading superstar!"
@@ -250,11 +274,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
         </div>
         {list.slice(current, current + 1).map((q) => {
           const picked = answered[q.id];
-          const cardClass = picked
-            ? picked === q.answer
-              ? "question-card answered-correct"
-              : "question-card answered-wrong"
-            : "question-card";
+          const cardClass = picked ? "question-card answered" : "question-card";
           return (
             <div className={cardClass} key={q.id}>
               <div className="q-number">Question {q.id}</div>
@@ -263,11 +283,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
               <ul className="options-list">
                 {q.options.map((opt) => {
                   let cls = "option-btn";
-                  if (picked) {
-                    cls += " disabled";
-                    if (opt.val === q.answer) cls += " correct";
-                    else if (opt.val === picked) cls += " wrong";
-                  }
+                  if (picked === opt.val) cls += " selected";
                   return (
                     <li key={opt.val}>
                       <button
@@ -300,7 +316,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                   <span>{q.strategy}</span>
                 </div>
               )}
-              {picked && <div className="explain-box">{q.explain}</div>}
             </div>
           );
         })}
@@ -454,6 +469,52 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
     </div>
   );
 
+  // The complete, plain (no clue highlighting) email. Reused by the Overview
+  // preview and the Summary's side-by-side Answer Review.
+  const fullEmail = (
+    <div className="email">
+      {emailHead}
+      <div className="email-body">
+        <p className="email-greeting">Hi Rebecca,</p>
+        <p>
+          How are you? How&apos;s your family? I want to tell you about my graduation school study
+          tour. I came back from Iceland yesterday, and I had a wonderful time there.
+        </p>
+        <p>
+          On the first day, we visited a local school in Reykjavík. In the morning, we had to stand
+          up and introduce ourselves. When my turn came, I could not speak and I was shaking like a
+          leaf. The students smiled and clapped their hands to encourage me. After that, we played
+          games together and I made a few new Icelandic friends.
+        </p>
+        <p>
+          The second day was also interesting. We joined lessons with the local students. I sat in
+          their English and Maths classes. I learnt about their school life and what they did after
+          school. We were quite different, but we also had something in common. We all liked music.
+        </p>
+        <p>
+          We visited some famous places. On the third day, we went to Perlan and enjoyed the
+          beautiful city view. Later, we went on a boat for a whale and puffin watching tour. It was
+          awesome! We saw whales breaching the surface. They were beautiful! I bought a postcard of
+          one for you. Sadly, I did not see any puffins. It was not the right season yet.
+        </p>
+        <p>
+          On the last day, we went to the Reykjavík Family Park and Zoo. We saw reindeer, seals and
+          Arctic foxes. Before we went to the airport, we had Icelandic hot dogs. They were
+          delicious.
+        </p>
+        <p>
+          I hope we can travel together one day. Write back soon and tell me when your next school
+          holiday is.
+        </p>
+        <p className="email-sign">
+          Best wishes,
+          <br />
+          Susan
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Header backHref="/english/reading-comprehension/cycle-2-reading-3" backLabel="Back" />
@@ -472,17 +533,25 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
 
             {/* Tabs */}
             <div className="nav-tabs">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`nav-tab${section === id ? " active" : ""}`}
-                  onClick={() => switchSection(id)}
-                >
-                  <Icon className="size-3.5" /> {label}
-                  {isTabCompleted(id) ? " ✓" : ""}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon: Icon }) => {
+                const unlocked = isTabUnlocked(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`nav-tab${section === id ? " active" : ""}${
+                      unlocked ? "" : " locked"
+                    }`}
+                    onClick={() => unlocked && switchSection(id)}
+                    disabled={!unlocked}
+                    aria-disabled={!unlocked}
+                    title={unlocked ? undefined : "Finish the previous part to unlock"}
+                  >
+                    <Icon className="size-3.5" /> {label}
+                    {isTabCompleted(id) ? " ✓" : !unlocked ? <Lock className="size-3" /> : ""}
+                  </button>
+                );
+              })}
             </div>
 
             {/* OVERVIEW */}
@@ -529,51 +598,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                       </span>
                       The Email
                     </div>
-                    <div className="email">
-                      {emailHead}
-                      <div className="email-body">
-                        <p className="email-greeting">Hi Rebecca,</p>
-                        <p>
-                          How are you? How&apos;s your family? I want to tell you about my graduation
-                          school study tour. I came back from Iceland yesterday, and I had a wonderful
-                          time there.
-                        </p>
-                        <p>
-                          On the first day, we visited a local school in Reykjavík. In the morning,
-                          we had to stand up and introduce ourselves. When my turn came, I could not
-                          speak and I was shaking like a leaf. The students smiled and clapped their
-                          hands to encourage me. After that, we played games together and I made a
-                          few new Icelandic friends.
-                        </p>
-                        <p>
-                          The second day was also interesting. We joined lessons with the local
-                          students. I sat in their English and Maths classes. I learnt about their
-                          school life and what they did after school. We were quite different, but we
-                          also had something in common. We all liked music.
-                        </p>
-                        <p>
-                          We visited some famous places. On the third day, we went to Perlan and
-                          enjoyed the beautiful city view. Later, we went on a boat for a whale and
-                          puffin watching tour. It was awesome! We saw whales breaching the surface.
-                          They were beautiful! I bought a postcard of one for you. Sadly, I did not
-                          see any puffins. It was not the right season yet.
-                        </p>
-                        <p>
-                          On the last day, we went to the Reykjavík Family Park and Zoo. We saw
-                          reindeer, seals and Arctic foxes. Before we went to the airport, we had
-                          Icelandic hot dogs. They were delicious.
-                        </p>
-                        <p>
-                          I hope we can travel together one day. Write back soon and tell me when
-                          your next school holiday is.
-                        </p>
-                        <p className="email-sign">
-                          Best wishes,
-                          <br />
-                          Susan
-                        </p>
-                      </div>
-                    </div>
+                    {fullEmail}
                   </div>
 
                   <div style={{ textAlign: "center", marginTop: 6 }}>
@@ -780,7 +805,61 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                       <RotateCcw className="size-4" /> Start Over
                     </button>
                   </div>
+                </div>
 
+                <div className="split-layout">
+                  <div className="split-left">
+                    <div className="pane-label">
+                      <BookOpen className="size-3.5" /> Reading Passage
+                    </div>
+                    <div className="card" style={{ padding: "14px 12px" }}>
+                      {fullEmail}
+                    </div>
+                  </div>
+                  <div className="split-right">
+                    <div className="pane-label questions">
+                      <BookOpenCheck className="size-3.5" /> Answer Review
+                    </div>
+                    <ul className="answer-review">
+                      {questions.map((q) => {
+                        const picked = answered[q.id];
+                        const isCorrect = picked === q.answer;
+                        return (
+                          <li key={q.id} className={isCorrect ? "correct" : "wrong"}>
+                            <div className="ar-head">
+                              <span className={`ar-badge${isCorrect ? " ok" : ""}`}>
+                                {isCorrect ? "✓" : "✗"}
+                              </span>
+                              <span className="ar-qtext">
+                                <strong>Q{q.id}.</strong> {q.text}
+                              </span>
+                            </div>
+                            <ul className="ar-options">
+                              {q.options.map((opt) => {
+                                const optCorrect = opt.val === q.answer;
+                                const optPicked = opt.val === picked;
+                                let cls = "ar-option";
+                                if (optCorrect) cls += " correct";
+                                else if (optPicked) cls += " wrong";
+                                return (
+                                  <li key={opt.val} className={cls}>
+                                    <span className="ar-opt-letter">{opt.val}</span>
+                                    <span className="ar-opt-label">{opt.label}</span>
+                                    {optCorrect && <span className="ar-tag ok">✓ Correct</span>}
+                                    {optPicked && <span className="ar-tag you">Your answer</span>}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <div className="explain-box">{q.explain}</div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="narrow">
                   <div className="card">
                     <div className="card-title">
                       <span
@@ -821,35 +900,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                     </ul>
                   </div>
 
-                  <div className="card">
-                    <div className="card-title">
-                      <span
-                        className="icon"
-                        style={{
-                          background:
-                            "linear-gradient(135deg,var(--accent-yellow),var(--accent-orange))",
-                        }}
-                      >
-                        <Lightbulb className="size-4" />
-                      </span>
-                      Tips for Next Time
-                    </div>
-                    <ul className="summary-skills">
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-blue)" }}>
-                          <Eye className="size-3.5" />
-                        </span>
-                        <span>Read like a detective — check whether each answer is relevant.</span>
-                      </li>
-                      <li>
-                        <span className="skill-icon" style={{ background: "var(--accent-mint)" }}>
-                          <RotateCcw className="size-3.5" />
-                        </span>
-                        <span>Re-read the relevant parts to confirm your understanding.</span>
-                      </li>
-                    </ul>
-                  </div>
-
                   <div style={{ textAlign: "center", marginTop: 6 }}>
                     <button type="button" className="restart-btn" onClick={resetAll}>
                       <RotateCcw className="size-4" /> Start Over
@@ -859,24 +909,6 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
               </div>
             )}
           </div>
-
-          {/* Modal */}
-          {modal && (
-            <div className="modal-overlay" onClick={() => setModal(null)}>
-              <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-emoji">{modal.emoji}</div>
-                <div className="modal-title">{modal.title}</div>
-                <div className="modal-msg">{modal.msg}</div>
-                <button
-                  type="button"
-                  className={`modal-ok ${modal.ok ? "green" : "pink"}`}
-                  onClick={() => setModal(null)}
-                >
-                  Got it!
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </>
