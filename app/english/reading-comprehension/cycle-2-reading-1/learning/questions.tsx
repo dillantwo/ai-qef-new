@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { basePath } from "@/lib/utils";
 
 export type PartId = "part1" | "part2";
 
@@ -13,6 +14,8 @@ export interface Question {
   text: string;
   /** Optional rich block (e.g. a picture grid) shown above the options. */
   extra?: ReactNode;
+  /** When true, the options are images shown in a 2x2 grid. */
+  imageOptions?: boolean;
   options: Option[];
   answer: string;
   /** Clue ids highlighted in the poster when this question is hinted/answered. */
@@ -67,11 +70,24 @@ export const questions: Question[] = [
     id: 2,
     part: "part1",
     text: "Which student is wearing or bringing the right things on Story Day?",
+    imageOptions: true,
     options: [
-      { val: "A", label: "🗡️🛡️ A boy holding a sword and a shield" },
-      { val: "B", label: "🏀 A boy wearing a top with no sleeves" },
-      { val: "C", label: "👗 A girl in a knee-length dress with sleeves" },
-      { val: "D", label: "👻 A student covered in a white cloth, like a ghost" },
+      {
+        val: "A",
+        label: <img className="opt-img" src={`${basePath}/english/A.png`} alt="Option A" />,
+      },
+      {
+        val: "B",
+        label: <img className="opt-img" src={`${basePath}/english/B.png`} alt="Option B" />,
+      },
+      {
+        val: "C",
+        label: <img className="opt-img" src={`${basePath}/english/C.png`} alt="Option C" />,
+      },
+      {
+        val: "D",
+        label: <img className="opt-img" src={`${basePath}/english/D.png`} alt="Option D" />,
+      },
     ],
     answer: "C",
     clues: ["q2a", "q2b", "q2c", "q2d"],

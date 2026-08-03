@@ -62,6 +62,7 @@ const sheetStyles = `
 .rc-learning .steps-list li { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); padding: 2px 0; }
 .rc-learning .steps-list li::marker { color: var(--accent-blue); font-weight: 700; }
 .rc-learning .how-text, .rc-learning .tip-text { font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 4px 0 0; }
+.rc-learning .how-text > .highlight-clue { padding-left: 0; }
 .rc-learning .tip-text { font-style: italic; }
 .rc-learning .mat-grid.with-images li { align-items: center; min-height: 42px; }
 .rc-learning .mat-grid.with-images li { justify-content: flex-start; }
@@ -364,7 +365,15 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
   // is set, each item shows its illustration (used in the overview).
   const materials = (withClues: boolean, withImages = false) => (
     <>
-      <div className="sheet-h">Materials:</div>
+      <div className="sheet-h">
+        {withClues ? (
+          <span className={clueClass("q6")} ref={setClueRef("q6")}>
+            Materials:
+          </span>
+        ) : (
+          "Materials:"
+        )}
+      </div>
       <ul className={`mat-grid${withImages ? " with-images" : ""}`}>
         <li>
           <span className="dot">•</span> vinegar
@@ -413,7 +422,15 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     <div className="safety-box">
       <ShieldAlert className="size-4" />
       <span>
-        <strong>Safety:</strong>{" "}
+        <strong>
+          {withClues ? (
+            <span className={clueClass("q6")} ref={setClueRef("q6safety")}>
+              Safety:
+            </span>
+          ) : (
+            "Safety:"
+          )}
+        </strong>{" "}
         {withClues ? (
           <span className={clueClass("q2")} ref={setClueRef("q2")}>
             Ask an adult to help you.
@@ -431,7 +448,15 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
   // `withImages` is set, the puffed-up balloon illustration is shown.
   const steps = (withClues: boolean, withImages = false) => (
     <div className="steps-block">
-      <div className="sheet-h">Steps:</div>
+      <div className="sheet-h">
+        {withClues ? (
+          <span className={clueClass("q6")} ref={setClueRef("q6steps")}>
+            Steps:
+          </span>
+        ) : (
+          "Steps:"
+        )}
+      </div>
       <ol className="steps-list">
         <li>Put the plastic bottle on the tray.</li>
         <li>Pour some vinegar into the bottle.</li>
@@ -455,22 +480,35 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
           {sheetImg("mix bottle.png", "A balloon puffing up on top of a bottle", "")}
         </div>
       )}
-      <div className="sheet-h">How It Works:</div>
+      <div className="sheet-h">
+        {withClues ? (
+          <span className={clueClass("q6")} ref={setClueRef("q6how")}>
+            How It Works:
+          </span>
+        ) : (
+          "How It Works:"
+        )}
+      </div>
       <p className="how-text">
         {withClues ? (
           <span className={clueClass("q4")} ref={setClueRef("q4")}>
-            When baking soda and vinegar mix, you can see some bubbles. This is a{" "}
-            <span className={clueClass("q6")} ref={setClueRef("q6")}>
-              chemical reaction
-            </span>
-            . It makes a gas called carbon dioxide. The gas moves into the balloon and makes it puff
-            up!
+            When baking soda and vinegar mix, you can see some bubbles. This is a chemical
+            reaction. It makes a gas called carbon dioxide. The gas moves into the balloon and makes
+            it puff up!
           </span>
         ) : (
           "When baking soda and vinegar mix, you can see some bubbles. This is a chemical reaction. It makes a gas called carbon dioxide. The gas moves into the balloon and makes it puff up!"
         )}
       </p>
-      <div className="sheet-h">Tip:</div>
+      <div className="sheet-h">
+        {withClues ? (
+          <span className={clueClass("q6")} ref={setClueRef("q6tip")}>
+            Tip:
+          </span>
+        ) : (
+          "Tip:"
+        )}
+      </div>
       <p className="tip-text">
         {withClues ? (
           <span className={clueClass("q5")} ref={setClueRef("q5")}>

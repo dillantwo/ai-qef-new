@@ -44,7 +44,7 @@ const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
 
 // Extra styles for the Story Day poster.
 const posterStyles = `
-.rc-learning .poster { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.rc-learning .poster { background: #ffffff; border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .poster.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
 .rc-learning .poster-inner { padding: 16px 16px 18px; }
 .rc-learning .poster-title { text-align: center; font-weight: 800; font-size: 22px; color: var(--text-primary); text-decoration: underline; }
@@ -69,7 +69,7 @@ const posterStyles = `
 .rc-learning .activity-name { font-weight: 700; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
 .rc-learning .activity-name svg { color: var(--accent-purple); flex-shrink: 0; }
 .rc-learning .activity-text { font-size: 13px; line-height: 1.6; color: var(--text-secondary); margin: 4px 0 0; padding-left: 24px; }
-.rc-learning .book-list { margin: 4px 0 0; padding-left: 40px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
+.rc-learning .book-list { margin: 4px 0 0; padding-left: 40px; font-size: 12.5px; color: var(--text-muted); font-style: normal; }
 .rc-learning .award-table { clear: both; width: calc(100% - 28px); margin: 8px 14px 4px; border-collapse: collapse; font-size: 12.5px; }
 .rc-learning .award-table caption { font-weight: 700; font-size: 13px; color: var(--text-primary); padding: 4px; }
 .rc-learning .award-table th, .rc-learning .award-table td { border: 1px solid var(--border-light); padding: 6px 8px; text-align: left; color: var(--text-secondary); }
@@ -77,6 +77,11 @@ const posterStyles = `
 .rc-learning .poster-note { font-size: 12px; font-style: italic; color: var(--text-muted); padding: 8px 14px 2px; }
 .rc-learning .q-image { margin: 0 0 14px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-card); }
 .rc-learning .q-image img { display: block; width: 100%; height: auto; }
+.rc-learning .options-list.image-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rc-learning .options-list.image-grid li { margin: 0; }
+.rc-learning .options-list.image-grid .option-btn { flex-direction: column; align-items: center; gap: 8px; height: 100%; padding: 12px; margin-bottom: 0; }
+.rc-learning .option-btn .opt-img { width: 100%; height: auto; max-height: 180px; object-fit: contain; border-radius: 8px; display: block; background: #fff; }
+@media (max-width: 520px) { .rc-learning .options-list.image-grid { grid-template-columns: 1fr; } }
 .rc-learning .options-list.letter-only { display: flex; flex-wrap: wrap; gap: 10px; }
 .rc-learning .options-list.letter-only li { flex: 1 1 0; min-width: 64px; }
 .rc-learning .options-list.letter-only .option-btn { justify-content: center; padding: 12px 10px; margin-bottom: 0; }
@@ -302,7 +307,15 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
               <div className="q-number">Question {q.id}</div>
               <div className="q-text">{q.text}</div>
               {q.extra}
-              <ul className={`options-list${q.options.every((o) => !o.label) ? " letter-only" : ""}`}>
+              <ul
+                className={`options-list${
+                  q.imageOptions
+                    ? " image-grid"
+                    : q.options.every((o) => !o.label)
+                      ? " letter-only"
+                      : ""
+                }`}
+              >
                 {q.options.map((opt) => {
                   let cls = "option-btn";
                   if (picked === opt.val) cls += " selected";
@@ -454,7 +467,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
         <p className="activity-text">Go to the reading room at recess and listen to exciting stories.</p>
         <ul className="book-list">
           <li>The Hidden Island written by Peter Lam</li>
-          <li>Lulu and the Moon Rocket written by Dillan Rumelhart</li>
+          <li><em>Lulu and the Moon Rocket</em> written by Dillan Rumelhart</li>
         </ul>
       </div>
       <div className="activity">
@@ -563,7 +576,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
         </p>
         <ul className="book-list">
           <li>The Hidden Island written by Peter Lam</li>
-          <li>Lulu and the Moon Rocket written by Dillan Rumelhart</li>
+          <li><em>Lulu and the Moon Rocket</em> written by Dillan Rumelhart</li>
         </ul>
       </div>
       <div className="activity">

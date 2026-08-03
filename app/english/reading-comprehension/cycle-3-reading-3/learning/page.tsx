@@ -26,6 +26,7 @@ import {
   Waves,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { basePath } from "@/lib/utils";
 import { learningStyles } from "../../learning/styles";
 import { questions, TOTAL_QUESTIONS, type PartId, type Question } from "./questions";
 import { useReadingRecord } from "@/lib/english-reading-record";
@@ -52,6 +53,8 @@ const articleStyles = `
 .rc-learning .article-p:last-child { margin-bottom: 0; }
 .rc-learning .article-p .para-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent-blue); background: rgba(20,110,245,0.08); border-radius: 10px; padding: 1px 8px; margin-right: 6px; vertical-align: middle; }
 .rc-learning .article-p.dim { opacity: 0.4; }
+.rc-learning .article-figure { margin: 16px 0 0; text-align: center; }
+.rc-learning .article-figure img { max-width: 100%; height: auto; border-radius: var(--radius-sm); display: inline-block; }
 
 /* Locked tabs: greyed out and not clickable until the previous part is done. */
 .rc-learning .nav-tab.locked { opacity: 0.45; cursor: not-allowed; }
@@ -429,6 +432,16 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     </>
   );
 
+  const articleFigure = (
+    <div className="article-figure">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`${basePath}/english/${encodeURIComponent("cycle 3 reading 3.png")}`}
+        alt="Red tide in the sea"
+      />
+    </div>
+  );
+
   // Part 1 focuses on paragraphs 1 & 2.
   const articlePart1 = (
     <div className={articleActive("part1")}>
@@ -441,6 +454,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
           Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea
           can help red tides form...
         </p>
+        {articleFigure}
       </div>
     </div>
   );
@@ -453,6 +467,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
         {para1(false, true)}
         {para2(true)}
         {para3(true)}
+        {articleFigure}
       </div>
     </div>
   );
@@ -465,6 +480,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
         {para1(true)}
         {para2(true)}
         {para3(true)}
+        {articleFigure}
       </div>
     </div>
   );
@@ -478,6 +494,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
         {para1(false)}
         {para2(false)}
         {para3(false)}
+        {articleFigure}
       </div>
     </div>
   );
