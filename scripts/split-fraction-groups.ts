@@ -28,7 +28,7 @@ const CONCEPT_TOOLS = [
   { key: "fraction-comparison", label: "分數比較", sub: "FractionApp (Comparison)", icon: "ArrowUpDown", bg: "bg-cyan-100", iconBg: "bg-cyan-500", border: "border-cyan-200", hover: "hover:bg-cyan-200 hover:border-cyan-300", text: "text-cyan-700" },
   { key: "fraction-expanding-simplifying", label: "相等分數", sub: "FractionApp13 (Expanding & Simplifying)", icon: "ArrowLeftRight", bg: "bg-orange-100", iconBg: "bg-orange-500", border: "border-orange-200", hover: "hover:bg-orange-200 hover:border-orange-300", text: "text-orange-700" },
   { key: "fraction-converting", label: "整數與分數互換", sub: "FractionApp (Converting)", icon: "Repeat", bg: "bg-pink-100", iconBg: "bg-pink-500", border: "border-pink-200", hover: "hover:bg-pink-200 hover:border-pink-300", text: "text-pink-700" },
-  { key: "fraction-integer", label: "分數是整數的部份", sub: "FractionApp (Integer)", icon: "Grid3x3", bg: "bg-lime-100", iconBg: "bg-lime-500", border: "border-lime-200", hover: "hover:bg-lime-200 hover:border-lime-300", text: "text-lime-700" },
+  { key: "fraction-integer", label: "整數的部分", sub: "FractionApp (Integer)", icon: "Grid3x3", bg: "bg-lime-100", iconBg: "bg-lime-500", border: "border-lime-200", hover: "hover:bg-lime-200 hover:border-lime-300", text: "text-lime-700" },
 ];
 
 async function run() {

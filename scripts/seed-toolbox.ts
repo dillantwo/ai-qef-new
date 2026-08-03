@@ -133,7 +133,7 @@ const seedData = [
       },
       {
         key: "fraction-integer",
-        label: "分數是整數的部份",
+        label: "整數的部分",
         sub: "FractionApp (Integer)",
         icon: "Grid3x3",
         bg: "bg-lime-100",

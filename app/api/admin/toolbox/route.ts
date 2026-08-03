@@ -51,10 +51,12 @@ export async function GET() {
   return NextResponse.json(result);
 }
 
-// PATCH /api/admin/toolbox — toggle a group or an individual tool on/off.
-// Body:
-//   { type, isActive }            → toggle a whole group
-//   { type, toolKey, isActive }   → toggle a single tool within a group
+// PATCH /api/admin/toolbox — toggle on/off or rename a group / individual tool.
+// Body (isActive and/or label may be supplied):
+//   { type, isActive }             → toggle a whole group
+//   { type, label }                → rename a whole group
+//   { type, toolKey, isActive }    → toggle a single tool within a group
+//   { type, toolKey, label }       → rename a single tool within a group
 export async function PATCH(req: NextRequest) {
   if (!(await requireAdmin())) {
     return NextResponse.json({ error: "需要管理員權限" }, { status: 403 });
@@ -64,17 +66,28 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const type = (body.type ?? "").toString().trim();
     const toolKey = body.toolKey ? body.toolKey.toString().trim() : null;
-    const isActive = body.isActive;
 
-    if (!type || typeof isActive !== "boolean") {
+    const hasIsActive = typeof body.isActive === "boolean";
+    const isActive: boolean | undefined = hasIsActive ? body.isActive : undefined;
+
+    const hasLabel = typeof body.label === "string";
+    const label = hasLabel ? body.label.trim() : undefined;
+
+    if (!type) {
       return NextResponse.json({ error: "缺少必要參數" }, { status: 400 });
+    }
+    if (!hasIsActive && !hasLabel) {
+      return NextResponse.json({ error: "缺少必要參數" }, { status: 400 });
+    }
+    if (hasLabel && !label) {
+      return NextResponse.json({ error: "名稱不可為空白" }, { status: 400 });
     }
 
     await connectDB();
     let config = await ToolboxConfig.findOne({ type });
     if (!config) {
       // Group isn't in the DB yet. If it's a known built-in default (journey),
-      // create it now so the toggle persists; otherwise it genuinely doesn't exist.
+      // create it now so the change persists; otherwise it genuinely doesn't exist.
       const def: ToolboxConfigDefault | undefined = TOOLBOX_DEFAULTS[type];
       if (!def) {
         return NextResponse.json({ error: "找不到工具群組" }, { status: 404 });
@@ -87,18 +100,25 @@ export async function PATCH(req: NextRequest) {
       if (!tool) {
         return NextResponse.json({ error: "找不到工具" }, { status: 404 });
       }
-      tool.isActive = isActive;
+      if (isActive !== undefined) tool.isActive = isActive;
+      if (label !== undefined) tool.label = label;
       config.markModified("tools");
     } else {
-      config.isActive = isActive;
+      if (isActive !== undefined) config.isActive = isActive;
+      if (label !== undefined) config.label = label;
     }
 
     await config.save();
 
     return NextResponse.json({
       type: config.type,
+      label: config.label,
       isActive: config.isActive !== false,
-      tools: config.tools.map((t: ITool) => ({ key: t.key, isActive: t.isActive !== false })),
+      tools: config.tools.map((t: ITool) => ({
+        key: t.key,
+        label: t.label,
+        isActive: t.isActive !== false,
+      })),
     });
   } catch (err) {
     console.error("[admin/toolbox:PATCH]", err);
