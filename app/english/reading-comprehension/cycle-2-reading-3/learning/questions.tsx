@@ -156,8 +156,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Be careful — clapping and introducing themselves
-        happened on the <em>first</em> day, not the second. Games were on the first day too, not
+        Reread some parts to confirm your understanding. Check each answer. Be careful — clapping and introducing themselves
+        happened on the <em>first</em> day, not the second. Games were on the first{" "}day too, not
         &quot;every lesson&quot;.
       </>
     ),
@@ -194,8 +194,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;They&quot; and &quot;one&quot; both
-        refer to the nearest noun — <em>whales</em>. The boat is only transport; the puffin appears
-        later and Susan never saw one; the city is too far away in the text.
+        refer to the nearest noun. The boat is only transport; the puffin appears
+        later and Susan never saw one.
       </>
     ),
     explain: (
@@ -230,9 +230,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        &quot;Sadly&quot; shows a negative feeling
+        Interpret the feelings expressed by the writer. &quot;Sadly&quot; shows a negative feeling
         like disappointment. Susan <em>saw</em> whales breaching (so they swam) and <em>saw</em>{" "}
-        Arctic foxes (so they were not hiding). Icelandic horses are never mentioned.
+        Arctic foxes (so they were not hiding).
       </>
     ),
     explain: (
@@ -267,8 +267,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         If Susan hopes they can travel together, then going
-        on a trip together is the most reasonable future plan. Designing a postcard, opening a zoo,
-        and visiting Hong Kong Park are never mentioned.
+        on a trip together is the most reasonable future plan. Check each answer. Some of them are never mentioned in the text.
       </>
     ),
     explain: (
@@ -303,9 +302,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        The best subject covers the whole email. Animals,
-        friends and food are each only one small part, but <em>&quot;a wonderful time&quot;</em> on
-        the study tour describes everything.
+        Skim the whole email again to get the main idea. The best subject covers the whole email. Animals,
+        friends and food are each only one part of the trip.
       </>
     ),
     explain: (

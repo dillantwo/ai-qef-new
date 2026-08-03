@@ -121,9 +121,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        The best answer covers most of the paragraph.
-        Customers, the steps of making a chop, and Chop Alley are each only a small part — the
-        paragraph is really about the work chop makers did.
+        You can look for a topic sentence. The best answer covers most of the paragraph.
+        Customers, the steps of making a chop, and Chop Alley are each only a small part.
       </>
     ),
     explain: (
@@ -186,8 +185,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Use the words around &quot;peak&quot;. Because there
-        were <em>many</em> stalls, it was the time when chop makers were most successful — meaning 1.
-        Meanings 2–4 (mountain, pointed shape, cap) do not fit.
+        were <em>many</em> stalls, it was the time when chop makers were most successful. Use your background knowledge to fill in the gap and make an inference.
       </>
     ),
     explain: (
@@ -262,8 +260,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Link clues from more than one paragraph. Chop makers do
-        not draw paintings or carve fortune cats, and writing emails is not their work — but making a
-        company chop matches both what they do and who their customers are.
+        not draw paintings or carve fortune cats, and writing emails is not their work — The correct answer
+        matches both what they do and who their customers are.
       </>
     ),
     explain: (

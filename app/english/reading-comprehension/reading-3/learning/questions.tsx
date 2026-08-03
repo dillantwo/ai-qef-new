@@ -86,7 +86,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Put each option into &quot;___ broken
-        things&quot;. You would not <em>damage</em> something already broken, and &quot;build&quot;
+        things&quot;. You would not <em>damage</em>{" "} something already broken, and &quot;build&quot;
         or &quot;touch&quot; do not fit. &quot;Repair&quot; means to make it good again.
       </>
     ),
@@ -198,7 +198,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         The main idea covers the whole paragraph.
-        It was Pip (not the villagers) who fixed things, so A is only a small, wrong detail.
+        It was Pip (not the villagers) who fixed things, so &quot;the villagers fixed their houses&quot; is only a small and wrong detail.
         &quot;Greta scared the villagers&quot; is Part 2&apos;s first paragraph, and &quot;argued&quot;
         is never mentioned.
       </>

@@ -50,8 +50,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Find the clue that tells you the purpose, then check
-        each answer. &quot;22nd March&quot; is a date, not an anniversary. Acting and dressing up
-        are only activities, not the main purpose.
+        each answer. Compare the answers. The one with most supporting evidence is the best answer.
       </>
     ),
     explain: (
@@ -101,8 +100,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Look at what each student wears or
-        carries, then match it against the rules. A sword is a thing used for fighting; a white
-        cloth makes a ghost (a horror theme); a sleeveless top is not allowed.
+        carries, then match it against the rules. Activate your background knowledge: A sword is a thing used for fighting; a white
+        cloth makes the student look liked a ghost (a horror theme).
       </>
     ),
     explain: (
@@ -139,9 +138,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;Perform&quot; and &quot;act
-        out&quot; have similar meanings. Walking on the stage is only for the best-dressed students,
-        and the reading room is for listening, not writing — so those are not for{" "}
-        <em>all</em> students.
+        out&quot; have similar meanings. Check each answer and re-read relevant parts in the text. Activate your knowledge of synonyms.
       </>
     ),
     explain: (
@@ -175,9 +172,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        <em>&quot;...written by Peter Lam&quot;</em>{" "}
-        means Peter Lam is the author of a book, not the storyteller. Lulu is a character in a book
-        title. The person named in <em>&quot;Story Corner with Ms Lee&quot;</em> is the storyteller.
+        Check each answer and re-read relevant parts in the text. Activate your knowledge about the topic. &quot;...written by Peter Lam&quot;
+        means Peter Lam is the author of a book, not the storyteller. Lulu is a character in a book title.
       </>
     ),
     explain: (
@@ -214,7 +210,7 @@ export const questions: Question[] = [
       <>
         When you do not know a word, use the words around it.
         &quot;Best-dressed&quot; and &quot;Fashion Show&quot; refer to clothing, so
-        &quot;costume&quot; means the clothes students wear to dress up.
+        &quot;costume&quot; means something students wear to dress up.
       </>
     ),
     explain: (
@@ -250,8 +246,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         The best answer summarises most of the poster.
-        Recess, rules and prizes are each only one small part, but &quot;a school event&quot; covers
-        the whole Story Day.
+        Activity, rules and prizes are each only one small part.
       </>
     ),
     explain: (
