@@ -36,9 +36,9 @@ type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: The Past", icon: ScrollText },
-  { id: "part2", label: "Part 2: Their Work", icon: Stamp },
-  { id: "part3", label: "Part 3: Today", icon: History },
+  { id: "part1", label: "Part 1", icon: ScrollText },
+  { id: "part2", label: "Part 2", icon: Stamp },
+  { id: "part3", label: "Part 3", icon: History },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
@@ -614,7 +614,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                         >
                           <ScrollText className="size-4" />
                         </span>
-                        Part 1: The Past
+                        Part 1
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -671,7 +671,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                         >
                           <Stamp className="size-4" />
                         </span>
-                        Part 2: Their Work
+                        Part 2
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -728,7 +728,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
                         >
                           <History className="size-4" />
                         </span>
-                        Part 3: Today
+                        Part 3
                       </div>
                       <ul className="pre-reading-list">
                         <li>

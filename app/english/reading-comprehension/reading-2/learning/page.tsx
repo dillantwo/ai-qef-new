@@ -43,8 +43,8 @@ interface ModalData {
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: From the Sea", icon: Fish },
-  { id: "part2", label: "Part 2: From the Far North", icon: Bird },
+  { id: "part1", label: "Part 1", icon: Fish },
+  { id: "part2", label: "Part 2", icon: Bird },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
@@ -522,7 +522,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                         >
                           <Fish className="size-4" />
                         </span>
-                        Part 1: From the Sea
+                        Part 1
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -582,7 +582,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                         >
                           <Bird className="size-4" />
                         </span>
-                        Part 2: From the Far North
+                        Part 2
                       </div>
                       <ul className="pre-reading-list">
                         <li>

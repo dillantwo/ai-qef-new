@@ -35,9 +35,9 @@ type Section = "overview" | "part1" | "part2" | "part3" | "summary";
 
 const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "part1", label: "Part 1: School Visit", icon: School },
-  { id: "part2", label: "Part 2: Sightseeing", icon: MapPin },
-  { id: "part3", label: "Part 3: The Whole Email", icon: Mail },
+  { id: "part1", label: "Part 1", icon: School },
+  { id: "part2", label: "Part 2", icon: MapPin },
+  { id: "part3", label: "Part 3", icon: Mail },
   { id: "summary", label: "Summary", icon: Trophy },
 ];
 
@@ -634,7 +634,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                         >
                           <School className="size-4" />
                         </span>
-                        Part 1: School Days
+                        Part 1
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -691,7 +691,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                         >
                           <MapPin className="size-4" />
                         </span>
-                        Part 2: Sightseeing
+                        Part 2
                       </div>
                       <ul className="pre-reading-list">
                         <li>
@@ -748,7 +748,7 @@ export default function EnglishReadingComprehensionCycle2Reading3LearningPage() 
                         >
                           <Mail className="size-4" />
                         </span>
-                        Part 3: The Whole Email
+                        Part 3
                       </div>
                       <ul className="pre-reading-list">
                         <li>
