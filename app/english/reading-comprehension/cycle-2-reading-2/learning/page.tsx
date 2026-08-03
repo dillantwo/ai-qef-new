@@ -275,9 +275,6 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
     return (
       <>
         <div className="q-progress">
-          <span className="q-progress-label">
-            Question {Math.min(current + 1, list.length)} of {list.length}
-          </span>
           <span className="q-progress-track">
             {list.map((q, i) => (
               <span
@@ -396,14 +393,14 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
       <p>
         <span className={clueClass("q3")} ref={setClueRef("q3")}>
           Chop makers did many kinds of work.
-        </span>{" "}
-        They usually carved names or words into stone, wood or rubber.{" "}
+        </span>
+        They usually carved names or words into stone, wood or rubber.
         <span className={clueClass("q6a")} ref={setClueRef("q6a")}>
           They made personal name chops and company chops.
-        </span>{" "}
+        </span>
         <span className={clueClass("q2")} ref={setClueRef("q2")}>
           Before carving, they asked customers what materials, words and styles they wanted.
-        </span>{" "}
+        </span>
         <span className={clueClass("q4")} ref={setClueRef("q4")}>
           At its peak, there were many chop maker stalls in Man Wa Lane, a place people now call Chop
           Alley at Sheung Wan.

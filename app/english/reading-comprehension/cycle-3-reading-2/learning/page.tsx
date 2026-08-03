@@ -274,9 +274,6 @@ export default function EnglishReadingComprehensionCycle3Reading2LearningPage() 
     return (
       <>
         <div className="q-progress">
-          <span className="q-progress-label">
-            Question {Math.min(current + 1, list.length)} of {list.length}
-          </span>
           <span className="q-progress-track">
             {list.map((q, i) => (
               <span

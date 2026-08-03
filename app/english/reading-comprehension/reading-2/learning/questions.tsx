@@ -28,7 +28,7 @@ export const questions: Question[] = [
   {
     id: 1,
     part: "part1",
-    text: 'The word "intelligent" means ______.',
+    text: 'The underlined word "intelligent" means ______.',
     options: [
       { val: "A", label: "beautiful" },
       { val: "B", label: "clever" },
@@ -74,7 +74,7 @@ export const questions: Question[] = [
       { val: "D", label: "can change colour" },
     ],
     answer: "D",
-    clues: ["q2"],
+    clues: ["q2", "q2b"],
     hint: (
       <>
         <strong>💡 Hint:</strong> The keyword is <em>&quot;hide&quot;</em>. Read the sentences near
@@ -114,7 +114,7 @@ export const questions: Question[] = [
     clues: ["q3"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> &quot;This&quot; is a reference word — it usually points to
+        <strong>💡 Hint:</strong> &quot;This&quot; is a reference word — it usually refers to
         something just before it. Read the sentence right before:{" "}
         <em>&quot;It can shoot ink when it is in danger.&quot;</em>
       </>
@@ -214,7 +214,7 @@ export const questions: Question[] = [
   {
     id: 6,
     part: "part2",
-    text: 'In the last, what does "nest" mean? The best answer is ______.',
+    text: 'In the last sentence, what does "nest" mean? The best answer is ______.',
     extra: (
       <div className="dict-entry">
         <div className="dict-head">

@@ -80,7 +80,7 @@ export const questions: Question[] = [
       <>
         <strong>💡 Hint:</strong> The clue is{" "}
         <em>&quot;cure sick plants and animals, and mend broken things&quot;</em>. &quot;Cure&quot;
-        makes sick things well again, so &quot;mend&quot; does something similar.
+        makes sick things well again, so &quot;mend&quot; does something similar. It makes something good again.
       </>
     ),
     strategy: (
@@ -122,7 +122,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         &quot;Warm-hearted&quot; is{" "}
-        <em>warm</em> + <em>heart</em>. &quot;Confident&quot; is wrong (the text says he was{" "}
+        <em>warm</em> + <em>heart</em>. It means kind and it matches the clue. &quot;Confident&quot; is wrong (the text says he was{" "}
         <em>not</em>{" "}confident), and &quot;shy&quot; is true about Pip but does not answer this
         question — it is a distractor.
       </>

@@ -154,7 +154,7 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Find the activity at recess: <em>&quot;Story Corner with Ms
-        Lee&quot;</em>. Who is the person at the Story Corner?
+        Lee&quot;</em>. Who is the person to tell stories at the Story Corner?
       </>
     ),
     strategy: (

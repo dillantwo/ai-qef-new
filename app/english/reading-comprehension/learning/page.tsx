@@ -701,7 +701,11 @@ export default function EnglishReadingComprehensionLearningPage() {
                               <span className={clueClass("q5b")} ref={setClueRef("q5b")}>
                                 melted
                               </span>
-                              . It should be called &apos;Tropical Cyclone Ice-cream&apos; instead!
+. It should be called &apos;
+                              <span className={clueClass("q5d")} ref={setClueRef("q5d")}>
+                                Tropical Cyclone Ice-cream
+                              </span>
+                              &apos; instead!
                             </p>
                           </div>
                         </div>

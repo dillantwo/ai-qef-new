@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bird,
+  Book,
   BookOpen,
   BookOpenCheck,
   Brain,
@@ -16,10 +17,12 @@ import {
   Info,
   Lightbulb,
   Link2,
+  Network,
   PenLine,
   Puzzle,
   Replace,
   RotateCcw,
+  Scale,
   Search,
   Star,
   Trophy,
@@ -233,9 +236,6 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
     return (
       <>
         <div className="q-progress">
-          <span className="q-progress-label">
-            Question {Math.min(current + 1, list.length)} of {list.length}
-          </span>
           <span className="q-progress-track">
             {list.map((q, i) => (
               <span
@@ -347,7 +347,11 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           It can remember things and learn from its mistakes.
         </span>{" "}
-        It is also a &quot;hiding master&quot;.{" "}
+        It is also a{" "}
+        <span className={clueClass("q2b")} ref={setClueRef("q2b")}>
+          &quot;hiding master&quot;
+        </span>
+        .{" "}
         <span className={clueClass("q3")} ref={setClueRef("q3")}>
           It can shoot ink when it is in danger.
         </span>{" "}
@@ -649,8 +653,8 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                       Reading Skills You Used
                     </div>
                     <ul className="summary-skills">
-                      {SKILLS_USED.map(({ id, color, icon: Icon, label }) => (
-                        <li key={id}>
+                      {SKILLS_USED.map(({ id, color, icon: Icon, label, indent }) => (
+                        <li key={id} style={indent ? { marginLeft: 30 } : undefined}>
                           <span className="skill-icon" style={{ background: color }}>
                             <Icon className="size-3" />
                           </span>
@@ -707,6 +711,7 @@ const SKILLS_USED: {
   color: string;
   icon: typeof Eye;
   label: React.ReactNode;
+  indent?: boolean;
 }[] = [
   {
     id: "skim",
@@ -714,7 +719,7 @@ const SKILLS_USED: {
     icon: FastForward,
     label: (
       <>
-        <strong>Skim</strong> the reading to get an overview and the main idea.
+        <strong>Skim</strong> the reading to get an overview and get the main idea.
       </>
     ),
   },
@@ -724,39 +729,116 @@ const SKILLS_USED: {
     icon: Search,
     label: (
       <>
-        <strong>Scan</strong> to find the keyword and the information you need.
+        <strong>Scan</strong> in the reading to find the information you need.
       </>
     ),
   },
   {
-    id: "contextual",
+    id: "activate-bg",
+    color: "var(--accent-yellow)",
+    icon: Eye,
+    label: (
+      <>
+        <strong>Activate</strong> your <strong>background knowledge</strong> or{" "}
+        <strong>world knowledge</strong> about the topic.
+      </>
+    ),
+  },
+  {
+    id: "activate-lang",
     color: "var(--accent-orange)",
-    icon: BookOpen,
+    icon: Info,
     label: (
       <>
-        Use <strong>contextual clues</strong> and find details to support your understanding.
+        <strong>Activate</strong> your <strong>knowledge</strong> about{" "}
+        <strong>language features</strong> and <strong>devices</strong>.
       </>
     ),
   },
   {
-    id: "reference",
-    color: "var(--accent-purple)",
-    icon: Link2,
+    id: "details",
+    color: "var(--accent-pink)",
+    icon: BookOpenCheck,
     label: (
       <>
-        Spot <strong>reference words</strong> (this, that, it) and <strong>synonyms</strong> (well
-        known = famous).
+        <strong>Find the details</strong> in the reading to support your understanding.
       </>
     ),
   },
   {
     id: "inferences",
-    color: "var(--accent-pink)",
+    color: "var(--accent-blue)",
     icon: Puzzle,
     label: (
       <>
-        <strong>Make inferences</strong> by linking information and filling gaps with your
-        background knowledge.
+        <strong>Make inferences</strong>
+      </>
+    ),
+  },
+  {
+    id: "contextual",
+    color: "var(--accent-yellow)",
+    icon: Book,
+    indent: true,
+    label: (
+      <>
+        <strong>Contextual inference:</strong> use surrounding information to guess the meaning of
+        an unknown word.
+      </>
+    ),
+  },
+  {
+    id: "bridging",
+    color: "var(--accent-mint)",
+    icon: Link2,
+    indent: true,
+    label: (
+      <>
+        <strong>Bridging inference:</strong> link up the information across the text to make an
+        inference.
+      </>
+    ),
+  },
+  {
+    id: "gap-filling",
+    color: "var(--accent-purple)",
+    icon: Network,
+    indent: true,
+    label: (
+      <>
+        <strong>Gap-filling inference:</strong> use your background knowledge to fill in the gap and
+        make an inference.
+      </>
+    ),
+  },
+  {
+    id: "interpret",
+    color: "var(--accent-mint)",
+    icon: Brain,
+    label: (
+      <>
+        <strong>Interpret</strong> intentions, opinions, attitudes and feelings expressed in the
+        text.
+      </>
+    ),
+  },
+  {
+    id: "reread",
+    color: "var(--accent-orange)",
+    icon: RotateCcw,
+    label: (
+      <>
+        <strong>Re-read</strong> the relevant parts to confirm your understanding.
+      </>
+    ),
+  },
+  {
+    id: "compare",
+    color: "var(--accent-pink)",
+    icon: Scale,
+    label: (
+      <>
+        <strong>Compare</strong> the answers to find the best one.
       </>
     ),
   },

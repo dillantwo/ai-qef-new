@@ -90,7 +90,7 @@ export const questions: Question[] = [
         <br />
         The special offer states &quot;for the Tai Po branch only,&quot; so you must go to the Tai
         Po shop to enjoy the &quot;Buy 1 minicup and get 1 minicup FREE&quot; deal. You only need to
-        buy <em>one</em> minicup, so A is wrong; B and C have no clue in the text.
+        buy <em>one</em> minicup, so A is wrong; There are no clues for B and C in the text.
       </>
     ),
   },
@@ -146,9 +146,8 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Vicky2026 says she prefers &quot;the ordinary flavours to the{" "}
-        <em>strange</em> new mix.&quot; The word &quot;ordinary&quot; is <strong>contrasted</strong>{" "}
-        with &quot;strange.&quot; If &quot;strange&quot; means unusual, what does
-        &quot;ordinary&quot; mean? Think about opposites!
+        <em>strange</em> new mix.&quot; The word &quot;ordinary&quot; is <strong>the opposite of </strong>{" "}
+        &quot;strange.&quot; What does &quot;ordinary&quot; mean?
       </>
     ),
     strategy: (
@@ -165,7 +164,7 @@ export const questions: Question[] = [
         <br />
         Vicky2026 prefers the &quot;ordinary&quot; flavours (chocolate and strawberry) to the
         &quot;strange&quot; new mix. Since &quot;ordinary&quot; is the opposite of
-        &quot;strange,&quot; it means <strong>common</strong> (normal, usual). These flavours are
+        &quot;strange,&quot; it means <strong>common</strong>{" "} (normal, usual). These flavours are
         not &quot;special&quot; or &quot;new,&quot; so B and C are wrong.
       </>
     ),
@@ -181,7 +180,7 @@ export const questions: Question[] = [
       { val: "D", label: "horrible" },
     ],
     answer: "D",
-    clues: ["q5", "q5b", "q5c"],
+    clues: ["q5", "q5b", "q5c", "q5d"],
     hint: (
       <>
         <strong>💡 Hint:</strong> Read what happens after &quot;Yuck!&quot; — the ice-cream{" "}
@@ -235,8 +234,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Match each person&apos;s attitude to the ice-cream.
-        Compare the <strong>feelings</strong> in each comment. &quot;Coming back for more&quot; is
+        Understand each person&apos;s attitude to the ice-cream.
+        Compare the <strong>feelings</strong>{" "} in each comment. &quot;Coming back for more&quot; is
         the most positive statement of all four comments.
       </>
     ),

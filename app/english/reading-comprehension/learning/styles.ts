@@ -125,7 +125,7 @@ export const learningStyles = `
 .rc-learning .skill-tag { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; margin: 3px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--bg-article); border: 1px solid var(--border-light); color: var(--text-secondary); }
 
 .rc-learning .question-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); border: 2px solid var(--border-light); transition: border-color 0.4s ease; }
-.rc-learning .q-progress { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rc-learning .q-progress { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 12px; }
 .rc-learning .q-progress-label { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 .rc-learning .q-progress-track { display: inline-flex; gap: 6px; }
 .rc-learning .q-progress-dot { width: 22px; height: 6px; border-radius: 99px; background: var(--border-light); transition: background 0.3s ease; }
@@ -193,8 +193,6 @@ export const learningStyles = `
 
 .rc-learning .highlight-clue.glow { background: #FFD54F !important; color: #1A1625 !important; box-shadow: 0 0 0 3px #FFD54F, 0 0 16px 4px rgba(255,213,79,0.45) !important; border-radius: 4px; animation: rcHighlightPop 0.5s ease, rcHighlightPulse 1.8s ease-in-out 0.5s infinite; position: relative; z-index: 2; }
 .rc-learning .special-banner .highlight-clue.glow { background: rgba(255,255,255,0.55) !important; color: #1A1625 !important; box-shadow: 0 0 0 3px rgba(255,255,255,0.55), 0 0 16px 4px rgba(255,255,255,0.35) !important; }
-.rc-learning .highlight-clue.glow.clue-badge::before { content: '\\1F4CC Clue'; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--accent-orange); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; white-space: nowrap; box-shadow: 0 2px 8px rgba(255,140,66,0.35); pointer-events: none; animation: rcBadgeBounce 0.5s ease; z-index: 3; }
-.rc-learning .highlight-clue.glow.clue-badge::after { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--accent-orange); pointer-events: none; z-index: 3; }
 .rc-learning .webpage-sim.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
 
 @keyframes rcFadeSlideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
