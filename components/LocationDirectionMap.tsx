@@ -147,7 +147,7 @@ export default function LocationDirectionMap({
   const updateSizes = useCallback(() => {
     const mapWidth = mapRef.current?.offsetWidth ?? 0;
     if (!mapWidth) return;
-    const width = mapWidth / 15;
+    const width = mapWidth / 22;
     setSpriteSize({ width, height: width * 2 });
   }, []);
 
@@ -257,7 +257,7 @@ export default function LocationDirectionMap({
             Upload your own map
           </span>
           <span style={{ fontSize: "clamp(12px, 1.2vw, 15px)", fontWeight: 500, opacity: 0.8 }}>
-            Draw a map from your home to school, then click here to upload the picture.
+            Click here to upload the picture.
           </span>
         </button>
       ) : (

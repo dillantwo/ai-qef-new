@@ -53,14 +53,14 @@ type ChatMsg = {
 
 // Builds the displayed task prompt for a concrete [A] → [B] pair.
 const taskTemplates: Record<number, (a: string, b: string) => string> = {
-  1: () => `Let us start Task 1. Look at the map. How can I go to the train station from the book shop? Use prepositional phrases to describe the direction.`,
-  2: (a, b) => `Let us start Task 2. Look at the map. How can I go from ${a} to ${b}? Write short sentences with the prepositional phrases you learned.`,
-  3: (a, b) => `Let us start Task 3. Look at the map. How can I go from ${a} to ${b}? Write more than one sentence and use linking words (First, Then, After that, Finally).`,
-  4: (a, b) => `Let us start Task 4. Look at the map. How can I go from ${a} to ${b}? Write a complete paragraph with a topic sentence and linking words.`,
+  1: (a, b) => `Let us start Task 1. Look at the map. How can I go from the ${a} to the ${b}? Use prepositional phrases to describe the direction.`,
+  2: (a, b) => `Let us start Task 2. Look at the map. How can I go from the ${a} to the ${b}? Write short sentences with the prepositional phrases you learned.`,
+  3: (a, b) => `Let us start Task 3. Look at the map. How can I go from the ${a} to the ${b}? Write more than one sentence and use linking words.`,
+  4: (a, b) => `Let us start Task 4. Look at the map. How can I go from the ${a} to the ${b}? Write a complete paragraph with a topic sentence and linking words.`,
 };
 
 const TASK_5_PROMPT =
-  "Let us start Task 5. Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing using the map panel on the left.";
+  "Let us start Task 5. Please: 1) Draw a map of the neighborhood from your home to school. 2) Upload your drawing.";
 
 const tasks = [
   { id: 1, label: "Task 1" },
@@ -69,6 +69,71 @@ const tasks = [
   { id: 4, label: "Task 4" },
   { id: 5, label: "Task 5" },
 ];
+
+// The AI sometimes emits its correction table flattened onto a single line
+// (header, separator and rows glued together), which react-markdown/remark-gfm
+// then shows as raw "| ... |" text instead of a table. This rebuilds such a
+// flattened GFM table into proper multi-line markdown so it renders. Well-formed
+// tables (each row already on its own line) are returned unchanged.
+function normalizeAiTables(text: string): string {
+  if (!text || !text.includes("|")) return text;
+  const sepRe = /\|(?:\s*:?-{3,}:?\s*\|)+/;
+  if (!sepRe.test(text)) return text;
+  return text
+    .split("\n")
+    .map((line) => rebuildTableLine(line, sepRe))
+    .join("\n");
+}
+
+function rebuildTableLine(line: string, sepRe: RegExp): string {
+  const m = sepRe.exec(line);
+  if (!m) return line;
+  const sep = m[0];
+  const cols = (sep.match(/-{3,}/g) || []).length;
+  if (cols < 1) return line;
+
+  const before = line.slice(0, m.index);
+  const after = line.slice(m.index + sep.length);
+
+  // Well-formed separator (already on its own line): nothing glued -> leave it.
+  if (!before.includes("|") && after.trim().length === 0) return line;
+
+  // Header = the last (cols + 1) pipes of `before`; anything earlier is prose.
+  const pipeIdx: number[] = [];
+  for (let i = 0; i < before.length; i++) if (before[i] === "|") pipeIdx.push(i);
+  let prose = before;
+  let header = "";
+  if (pipeIdx.length >= cols + 1) {
+    const start = pipeIdx[pipeIdx.length - (cols + 1)];
+    prose = before.slice(0, start).trimEnd();
+    header = before.slice(start);
+  } else if (pipeIdx.length > 0) {
+    prose = before.slice(0, pipeIdx[0]).trimEnd();
+    header = before.slice(pipeIdx[0]);
+  }
+
+  const headerCells = header.split("|").map((s) => s.trim()).filter((s) => s.length > 0);
+  const dataCells = after.split("|").map((s) => s.trim()).filter((s) => s.length > 0);
+
+  const rows: string[] = [];
+  for (let i = 0; i + cols <= dataCells.length; i += cols) {
+    rows.push("| " + dataCells.slice(i, i + cols).join(" | ") + " |");
+  }
+  const remainder = dataCells.slice(rows.length * cols);
+
+  const headerLine = "| " + headerCells.join(" | ") + " |";
+  const sepLine = "| " + Array(cols).fill("---").join(" | ") + " |";
+
+  const parts: string[] = [];
+  if (prose.trim().length) parts.push(prose);
+  parts.push("");
+  parts.push(headerLine);
+  parts.push(sepLine);
+  parts.push(...rows);
+  parts.push("");
+  if (remainder.length) parts.push(remainder.join(" "));
+  return parts.join("\n");
+}
 
 export default function EnglishDashboardPage() {
   return (
@@ -757,7 +822,7 @@ function EnglishDashboardContent() {
                     </div>
                     <div className="prose prose-sm max-w-none break-words text-[13px] leading-relaxed [overflow-wrap:anywhere] [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-1.5 [&_th]:py-0.5 [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-1.5 [&_td]:py-0.5">
                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
-                        {message.text}
+                        {normalizeAiTables(message.text)}
                       </ReactMarkdown>
                     </div>
                   </div>
@@ -781,7 +846,7 @@ function EnglishDashboardContent() {
                     )}
                     <div className="prose prose-sm max-w-none break-words [overflow-wrap:anywhere]">
                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
-                        {message.text}
+                        {normalizeAiTables(message.text)}
                       </ReactMarkdown>
                     </div>
                   </div>
@@ -820,7 +885,7 @@ function EnglishDashboardContent() {
                     {message.text && (
                       <div className="prose prose-sm max-w-none break-words prose-p:my-2 prose-li:my-1 prose-headings:my-2 [overflow-wrap:anywhere] [&_.katex-display]:max-w-full [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-words [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-[#e5e5e5] [&_th]:px-2 [&_th]:py-1 [&_th]:bg-[#fafafa] [&_td]:border [&_td]:border-[#e5e5e5] [&_td]:px-2 [&_td]:py-1">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: false }]]}>
-                          {message.text}
+                          {normalizeAiTables(message.text)}
                         </ReactMarkdown>
                       </div>
                     )}
@@ -889,7 +954,7 @@ function EnglishDashboardContent() {
 
                 <Textarea
                   ref={textareaRef}
-                  placeholder="Ask a question... (paste images allowed)"
+                  placeholder="Type a message, paste images, or use voice input."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
