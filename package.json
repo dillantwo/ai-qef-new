@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "ingest:rag": "tsx scripts/ingest-rag.ts"
+    "ingest:rag": "tsx scripts/ingest-rag.ts",
+    "backfill:token-usage": "tsx scripts/backfill-token-usage.ts"
   },
   "dependencies": {
     "@ai-sdk/azure": "^3.0.42",
@@ -46,6 +47,7 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.184.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

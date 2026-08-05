@@ -38,6 +38,15 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   "gpt-4o": { input: 2.5, cachedInput: 1.25, output: 10.0 },
   // GPT-5 family caches at 10% of the input rate. Used by /api/generate-html.
   "gpt-5.3-codex": { input: 1.75, cachedInput: 0.175, output: 14.0 },
+  // Embedding models: input-only, no prompt cache, no completion. Used by the
+  // RAG retrieval step. Without these entries embedding tokens would fall back
+  // to chat pricing and overstate RAG cost by ~100x.
+  // Rates cross-checked 2026-08 against OpenAI's embedding price announcement
+  // (https://openai.com/blog/new-embedding-models-and-api-updates/) and
+  // https://costgoat.com/pricing/openai-embeddings
+  "text-embedding-3-small": { input: 0.02, cachedInput: 0.02, output: 0 },
+  "text-embedding-3-large": { input: 0.13, cachedInput: 0.13, output: 0 },
+  "text-embedding-ada-002": { input: 0.1, cachedInput: 0.1, output: 0 },
 };
 
 /** Used when a model name has no entry in MODEL_PRICING. */

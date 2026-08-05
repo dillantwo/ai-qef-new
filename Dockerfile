@@ -39,3 +39,16 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
+
+# ---- Tools (one-off maintenance scripts: backfill, seed, RAG ingest) ----
+# Deliberately the LAST stage and NOT on the runner's dependency chain, so
+# `docker compose build app` never builds it. It carries the full source plus
+# devDependencies (tsx) and skips `next build`, so it is cheap: the deps layer
+# is shared with the runner and only `COPY . .` runs.
+# Only reachable via the "tools" compose profile, e.g.
+#   docker compose run --rm tools npx tsx scripts/backfill-token-usage.ts
+FROM base AS tools
+ENV NODE_ENV=development
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+CMD ["npx", "tsx", "scripts/backfill-token-usage.ts"]

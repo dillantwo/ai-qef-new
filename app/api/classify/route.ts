@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { ToolboxConfig } from "@/models/ToolboxConfig";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 
 /**
  * Fix LaTeX commands broken by JSON parsing.
@@ -225,18 +225,13 @@ ${typeDescriptions}
   after(async () => {
     try {
       const session = await getSession().catch(() => null);
-      if (!session || !result.usage) return;
-      await connectDB();
-      await TokenUsage.create({
-        userId: session.userId,
-        username: session.username,
+      await recordTokenUsage({
+        session,
         subject: "math",
+        topic: "question-classify",
         modelName: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o",
-        promptTokens: Math.max(0, (result.usage.inputTokens ?? 0) - (result.usage.cachedInputTokens ?? 0)),
-        cachedInputTokens: result.usage.cachedInputTokens ?? 0,
-        completionTokens: result.usage.outputTokens ?? 0,
-        totalTokens: result.usage.totalTokens ?? ((result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)),
         endpoint: "/api/classify",
+        usage: result.usage,
       });
     } catch (err) {
       console.error("[classify] Failed to record token usage:", err);

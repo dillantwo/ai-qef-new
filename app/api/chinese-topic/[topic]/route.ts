@@ -7,9 +7,8 @@ import {
   CHINESE_SCENERY_DESCRIPTION_SYSTEM_PROMPT,
 } from "@/lib/chinese-prompts";
 import { after } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 
 // Each Chinese writing topic shares the same Azure-backed chat pipeline and
 // only differs by its system prompt. Add a new topic by extending this map and
@@ -106,25 +105,14 @@ export async function POST(
     });
 
     after(async () => {
-      try {
-        if (!session) return;
-        const usage = await result.usage;
-        if (!usage) return;
-        await connectDB();
-        await TokenUsage.create({
-          userId: session.userId,
-          username: session.username,
-          subject: "chinese",
-          modelName: deploymentName,
-          promptTokens: Math.max(0, (usage.inputTokens ?? 0) - (usage.cachedInputTokens ?? 0)),
-          cachedInputTokens: usage.cachedInputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          endpoint,
-        });
-      } catch (err) {
-        console.error(`[chinese-topic:${topic}] Failed to record token usage:`, err);
-      }
+      await recordTokenUsage({
+        session,
+        subject: "chinese",
+        topic,
+        modelName: deploymentName,
+        endpoint,
+        usage: await result.usage,
+      });
     });
 
     return result.toTextStreamResponse();

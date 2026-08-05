@@ -7,9 +7,8 @@ import {
   SCIENCE_AEROSPACE_SYSTEM_PROMPT_EN,
 } from "@/lib/science-prompts";
 import { after } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 import { retrieveContext, buildAugmentedPrompt, latestUserText } from "@/lib/rag";
 
 // A topic either uses one shared prompt (string) or a pair of single-language
@@ -141,26 +140,15 @@ export async function POST(
     });
 
     after(async () => {
-      try {
-        if (!session) return;
-        const usage = await result.usage;
-        if (!usage) return;
-        await connectDB();
-        await TokenUsage.create({
-          userId: session.userId,
-          username: session.username,
-          subject: "science",
-          modelName: deploymentName,
-          promptTokens: Math.max(0, (usage.inputTokens ?? 0) - (usage.cachedInputTokens ?? 0)),
-          cachedInputTokens: usage.cachedInputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          ragTokens,
-          endpoint,
-        });
-      } catch (err) {
-        console.error(`[science-topic:${topic}] Failed to record token usage:`, err);
-      }
+      await recordTokenUsage({
+        session,
+        subject: "science",
+        topic,
+        modelName: deploymentName,
+        endpoint,
+        usage: await result.usage,
+        ragTokens,
+      });
     });
 
     return result.toTextStreamResponse();

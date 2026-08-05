@@ -6,9 +6,8 @@ import {
   HUMANITIES_ANTI_JAPANESE_WAR_SYSTEM_PROMPT,
 } from "@/lib/humanities-prompts";
 import { after } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 import { retrieveContext, buildAugmentedPrompt, latestUserText } from "@/lib/rag";
 
 // Each Humanities topic shares the same Azure-backed chat pipeline and only
@@ -114,26 +113,15 @@ export async function POST(
     });
 
     after(async () => {
-      try {
-        if (!session) return;
-        const usage = await result.usage;
-        if (!usage) return;
-        await connectDB();
-        await TokenUsage.create({
-          userId: session.userId,
-          username: session.username,
-          subject: "humanities",
-          modelName: deploymentName,
-          promptTokens: Math.max(0, (usage.inputTokens ?? 0) - (usage.cachedInputTokens ?? 0)),
-          cachedInputTokens: usage.cachedInputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          ragTokens,
-          endpoint,
-        });
-      } catch (err) {
-        console.error(`[humanities-topic:${topic}] Failed to record token usage:`, err);
-      }
+      await recordTokenUsage({
+        session,
+        subject: "humanities",
+        topic,
+        modelName: deploymentName,
+        endpoint,
+        usage: await result.usage,
+        ragTokens,
+      });
     });
 
     return result.toTextStreamResponse();

@@ -2,9 +2,8 @@ import { azure } from "@ai-sdk/azure";
 import { streamText, type UIMessage } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
 import { after } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 
 interface SceneCube { x: number; y: number; z: number; color: string }
 interface SceneState {
@@ -165,25 +164,14 @@ export async function POST(req: Request) {
     });
 
     after(async () => {
-      try {
-        if (!session) return;
-        const usage = await result.usage;
-        if (!usage) return;
-        await connectDB();
-        await TokenUsage.create({
-          userId: session.userId,
-          username: session.username,
-          subject: "math",
-          modelName: deploymentName,
-          promptTokens: Math.max(0, (usage.inputTokens ?? 0) - (usage.cachedInputTokens ?? 0)),
-          cachedInputTokens: usage.cachedInputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          endpoint: "/api/volume-chat",
-        });
-      } catch (err) {
-        console.error("[volume-chat] Failed to record token usage:", err);
-      }
+      await recordTokenUsage({
+        session,
+        subject: "math",
+        topic: "volume",
+        modelName: deploymentName,
+        endpoint: "/api/volume-chat",
+        usage: await result.usage,
+      });
     });
 
     return result.toUIMessageStreamResponse();

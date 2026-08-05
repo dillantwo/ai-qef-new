@@ -3,9 +3,8 @@ import { streamText } from "ai";
 import type { ModelMessage } from "@ai-sdk/provider-utils";
 import { ENGLISH_THANK_YOU_LETTER_SYSTEM_PROMPT } from "@/lib/english-prompts";
 import { after } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { getSession } from "@/lib/session";
-import { TokenUsage } from "@/models/TokenUsage";
+import { recordTokenUsage } from "@/lib/token-usage";
 
 type InputImage = {
   mediaType: string;
@@ -79,25 +78,14 @@ export async function POST(req: Request) {
     });
 
     after(async () => {
-      try {
-        if (!session) return;
-        const usage = await result.usage;
-        if (!usage) return;
-        await connectDB();
-        await TokenUsage.create({
-          userId: session.userId,
-          username: session.username,
-          subject: "english",
-          modelName: deploymentName,
-          promptTokens: Math.max(0, (usage.inputTokens ?? 0) - (usage.cachedInputTokens ?? 0)),
-          cachedInputTokens: usage.cachedInputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-          totalTokens: usage.totalTokens ?? ((usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)),
-          endpoint: "/api/english-thank-you-letter",
-        });
-      } catch (err) {
-        console.error("[english-thank-you-letter] Failed to record token usage:", err);
-      }
+      await recordTokenUsage({
+        session,
+        subject: "english",
+        topic: "thank-you-letter",
+        modelName: deploymentName,
+        endpoint: "/api/english-thank-you-letter",
+        usage: await result.usage,
+      });
     });
 
     return result.toTextStreamResponse();
