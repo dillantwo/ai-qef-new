@@ -46,8 +46,7 @@ export default function EnglishReadingComprehensionCycle3Reading3ModesPage() {
     <>
       <Header backHref="/english/reading-comprehension" backLabel="Back to Readings" />
 
-      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
-        <div className="absolute inset-0 bg-[linear-gradient(165deg,_#ffffff_0%,_#f7fbff_52%,_#ffffff_100%)]" />
+      <main className="relative flex flex-1 items-start overflow-y-auto overflow-x-hidden bg-[linear-gradient(165deg,_#ffffff_0%,_#f7fbff_52%,_#ffffff_100%)] text-[#080808]">
         <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(20,110,245,0.14),_transparent_48%)]" />
         <div className="absolute right-0 top-20 h-56 w-56 translate-x-1/4 rounded-full bg-[#146ef5]/10 blur-3xl" />
 

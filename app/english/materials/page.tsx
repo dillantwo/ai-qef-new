@@ -67,7 +67,7 @@ export default function EnglishMaterialsPage() {
     <>
       <Header backHref="/english" backLabel="English" />
 
-      <main className="relative flex flex-1 overflow-hidden bg-white text-[#080808]">
+      <main className="relative flex flex-1 items-start overflow-y-auto overflow-x-hidden bg-white text-[#080808]">
         <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="space-y-2">
             <p className="text-[12px] font-semibold uppercase tracking-[1.2px] text-[#9aa39c]">

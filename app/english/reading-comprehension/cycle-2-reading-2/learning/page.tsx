@@ -402,7 +402,7 @@ export default function EnglishReadingComprehensionCycle2Reading2LearningPage() 
           Before carving, they asked customers what materials, words and styles they wanted.
         </span>
         <span className={clueClass("q4")} ref={setClueRef("q4")}>
-          At its peak, there were many chop maker stalls in Man Wa Lane, a place people now call Chop
+          At its <strong><u>peak</u></strong>, there were many chop maker stalls in Man Wa Lane, a place people now call Chop
           Alley at Sheung Wan.
         </span>
       </p>

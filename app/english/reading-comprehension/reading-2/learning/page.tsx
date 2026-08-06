@@ -342,7 +342,7 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
       <p className="doc-text">
         <strong>The common cuttlefish</strong> is a sea animal. It has eight arms and two longer arms
         called tentacles. It can fire out the tentacles to catch its prey. It has three hearts and
-        blue blood. <strong>The common cuttlefish</strong> is an{" "}
+        blue blood. The common cuttlefish is an{" "}
         <span className="doc-underline">intelligent</span> animal.{" "}
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           It can remember things and learn from its mistakes.
@@ -463,9 +463,9 @@ export default function EnglishReadingComprehensionReading2LearningPage() {
                       <div className="doc-title">Amazing Animals</div>
                       <div className="section-bar sea">From the Sea</div>
                       <p className="doc-text">
-                        <strong>The common cuttlefish</strong> is a sea animal. It has eight arms and
+                        <strong>The common cuttlefish </strong>is a sea animal. It has eight arms and
                         two longer arms called tentacles. It can fire out the tentacles to catch its
-                        prey. It has three hearts and blue blood. <strong>The common cuttlefish</strong>{" "}
+                        prey. It has three hearts and blue blood. The common cuttlefish 
                         is an intelligent animal. It can remember things and learn from its mistakes.
                         It is also a &quot;hiding
                         master&quot;. It can shoot ink when it is in danger. This helps it escape. It

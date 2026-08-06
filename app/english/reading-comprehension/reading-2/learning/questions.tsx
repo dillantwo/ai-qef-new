@@ -94,7 +94,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: D. can change colour</strong>
         <br />
         <br />
-        Changing its skin colour to look like the sand helps the cuttlefish hide, which is why it is
+        Changing its skin colour to look like the sand helps the cuttlefish hide, so it is
         a &quot;hiding master&quot;. Blue blood, many hearts and remembering things are mentioned in
         the text, but none of them is about hiding — they are distractors.
       </>
@@ -114,7 +114,7 @@ export const questions: Question[] = [
     clues: ["q3"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> &quot;This&quot; is a reference word — it usually refers to
+        <strong>💡 Hint: </strong>&quot;This&quot; is a reference word — it usually refers to
         something just before it. Read the sentence right before:{" "}
         <em>&quot;It can shoot ink when it is in danger.&quot;</em>
       </>
@@ -131,7 +131,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: C. shooting ink</strong>
         <br />
         <br />
-        The sentence before says <em>&quot;It can shoot ink when it is in danger,&quot;</em> so
+        The sentence before says <em>&quot;It can shoot ink when it is in danger,&quot; </em>so
         &quot;This&quot; refers to <strong>shooting ink</strong>. Firing out its arms is for catching
         prey, and remembering things is about being clever — neither is about escaping. Losing a heart is never mentioned in the text.
       </>

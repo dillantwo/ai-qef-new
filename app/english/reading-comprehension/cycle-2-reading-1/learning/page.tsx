@@ -466,7 +466,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
         </div>
         <p className="activity-text">Go to the reading room at recess and listen to exciting stories.</p>
         <ul className="book-list">
-          <li>The Hidden Island written by Peter Lam</li>
+          <li><em>The Hidden Island</em> written by Peter Lam</li>
           <li><em>Lulu and the Moon Rocket</em> written by Dillan Rumelhart</li>
         </ul>
       </div>
@@ -575,7 +575,7 @@ export default function EnglishReadingComprehensionCycle2Reading1LearningPage() 
           Go to the reading room at recess and listen to exciting stories.
         </p>
         <ul className="book-list">
-          <li>The Hidden Island written by Peter Lam</li>
+          <li><em>The Hidden Island</em> written by Peter Lam</li>
           <li><em>Lulu and the Moon Rocket</em> written by Dillan Rumelhart</li>
         </ul>
       </div>

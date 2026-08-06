@@ -222,7 +222,7 @@ export const questions: Question[] = [
     clues: ["q6"],
     hint: (
       <>
-        <strong>💡 Hint:</strong> Look at each comment&apos;s attitude:
+        <strong>💡 Hint: </strong>Look at each comment&apos;s attitude:
         <br />• Vicky2026 — prefers other flavours (not a fan)
         <br />• Rebecca01 — <em>&quot;I&apos;m coming back for more!&quot;</em> (very positive!)
         <br />• Vera123 — <em>&quot;Smells good, but tastes…&quot;</em> (mixed)

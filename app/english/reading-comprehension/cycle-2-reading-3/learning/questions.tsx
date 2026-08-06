@@ -55,7 +55,7 @@ export const questions: Question[] = [
         <strong>✅ Correct: D. Primary 6 students</strong>
         <br />
         <br />
-        The clue <em>&quot;graduation school study tour&quot;</em> tells us these are students in
+        The clue <em>&quot;graduation school study tour&quot; </em>tells us these are students in
         their last primary year — Primary 6. The other grades (A, B, C) do not fit
         &quot;graduation&quot;.
       </>
