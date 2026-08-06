@@ -380,11 +380,11 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
         <p className="blurb-p">Where is the watch now? Who took it? How was the door opened?</p>
         <p className="blurb-p">
           <span className={clueClass("q1b")} ref={setClueRef("q1b")}>
-            It is a real{" "}
+            It is a real
             <span className={clueClass("q2")} ref={setClueRef("q2")}>
-              mystery
+              mystery.
             </span>
-            . The police have no idea where to start.
+            The police have no idea where to start.
           </span>
         </p>
         <p className="blurb-p">
@@ -410,9 +410,8 @@ export default function EnglishReadingComprehensionCycle3Reading1LearningPage() 
           <span className={clueClass("q4")} ref={setClueRef("q4")}>
             &quot;This story by David Wong is full of surprises! I want to read{" "}
             <span className={clueClass("q5")} ref={setClueRef("q5")}>
-              the other two books in the Detective Lee series
-            </span>{" "}
-            soon.&quot;
+              the other two books in the Detective Lee series soon.&quot;
+            </span>
           </span>
         </p>
         <p className="blurb-reviewer">– Jocelyn Chow, City Book Club</p>

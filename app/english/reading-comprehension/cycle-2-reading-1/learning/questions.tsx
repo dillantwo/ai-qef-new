@@ -137,8 +137,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        &quot;Perform&quot; and &quot;act
-        out&quot; have similar meanings. Check each answer and re-read relevant parts in the text. Activate your knowledge of synonyms.
+        Check each answer and re-read relevant parts in the text. Activate your knowledge of synonyms. &quot;Perform&quot; and &quot;act
+        out&quot; have similar meanings.
       </>
     ),
     explain: (

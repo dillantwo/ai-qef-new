@@ -47,7 +47,7 @@ const posterStyles = `
 .rc-learning .poster { background: #ffffff; border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .poster.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
 .rc-learning .poster-inner { padding: 16px 16px 18px; }
-.rc-learning .poster-title { text-align: center; font-weight: 800; font-size: 22px; color: var(--text-primary); text-decoration: underline; }
+.rc-learning .poster-title { text-align: center; font-weight: 800; font-size: 22px; color: var(--text-primary); }
 .rc-learning .poster-date { text-align: center; font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
 .rc-learning .poster-intro { text-align: center; font-size: 13.5px; line-height: 1.7; color: var(--text-secondary); margin: 12px 0; }
 .rc-learning .poster-h { font-weight: 700; font-size: 14px; color: var(--text-primary); margin: 10px 0 6px; }

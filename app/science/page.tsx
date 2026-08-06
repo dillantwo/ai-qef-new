@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Zap, Rocket, ArrowRight } from "lucide-react";
+import { Zap, Rocket, FolderDown, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 
 const topics: {
@@ -31,6 +31,15 @@ const topics: {
     accent: "#146ef5",
     available: true,
   },
+  {
+    id: "learning-materials",
+    label: "學習資源",
+    labelEn: "Learning Materials",
+    description: "下載科學科的補充教材、工作紙與參考資源。",
+    icon: FolderDown,
+    accent: "#7a3dff",
+    available: true,
+  },
 ];
 
 export default function SciencePage() {
@@ -44,6 +53,10 @@ export default function SciencePage() {
     }
     if (topicId === "aerospace") {
       router.push("/science/aerospace");
+      return;
+    }
+    if (topicId === "learning-materials") {
+      router.push("/science/materials");
       return;
     }
   }

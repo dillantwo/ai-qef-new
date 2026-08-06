@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/admin-auth";
 import { LearningMaterial, MATERIAL_AUDIENCES, type MaterialAudience } from "@/models/LearningMaterial";
 import { SchoolMaterialLayout } from "@/models/SchoolMaterialLayout";
+import { MaterialTemplate } from "@/models/MaterialTemplate";
 import { deleteMaterialFile } from "@/lib/gridfs";
 
 export const runtime = "nodejs";
@@ -82,11 +83,18 @@ export async function DELETE(
     await deleteMaterialFile(material.fileId);
     await material.deleteOne();
 
-    // Remove this material from any school group that referenced it.
-    await SchoolMaterialLayout.updateMany(
-      { "groups.materials": material._id },
-      { $pull: { "groups.$[].materials": material._id } }
-    );
+    // Remove this material from any school group and from the subject template
+    // that referenced it, so a later template sync cannot resurrect the id.
+    await Promise.all([
+      SchoolMaterialLayout.updateMany(
+        { "groups.materials": material._id },
+        { $pull: { "groups.$[].materials": material._id } }
+      ),
+      MaterialTemplate.updateMany(
+        { "groups.materials": material._id },
+        { $pull: { "groups.$[].materials": material._id } }
+      ),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (err) {

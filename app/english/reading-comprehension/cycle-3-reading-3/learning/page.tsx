@@ -46,9 +46,6 @@ const articleStyles = `
 .rc-learning .article { background: #FBFDFF; border: 2px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .article.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
 .rc-learning .article-inner { padding: 18px 20px 20px; }
-.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 21px; color: #0e5a8a; }
-.rc-learning .article-sub { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-.rc-learning .article-rule { height: 2px; background: linear-gradient(90deg, transparent, var(--border-light), transparent); margin: 12px 0 14px; }
 .rc-learning .article-p { font-size: 14px; line-height: 1.9; color: var(--text-secondary); margin: 0 0 14px; text-align: justify; }
 .rc-learning .article-p:last-child { margin-bottom: 0; }
 .rc-learning .article-p .para-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent-blue); background: rgba(20,110,245,0.08); border-radius: 10px; padding: 1px 8px; margin-right: 6px; vertical-align: middle; }
@@ -109,7 +106,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const [skillChecks, setSkillChecks] = useState<Record<string, boolean>>({});
   const { clearRecord } = useReadingRecord({
     readingId: "cycle-3-reading-3",
-    title: "Cycle 3 · Reading 3: Red Tides in Hong Kong",
+    title: "Cycle 3 · Reading 3: A Newspaper Article",
     questions,
     answered,
     section,
@@ -424,13 +421,9 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
     </p>
   );
 
-  const articleHead = (
-    <>
-      <div className="article-title">Red Tides in Hong Kong</div>
-      <div className="article-sub">An information article · 3 paragraphs</div>
-      <div className="article-rule" />
-    </>
-  );
+  // The article is shown as body text only: no headline and no descriptor line.
+  // Part 3 asks students to choose the best title, so printing one here would
+  // give the answer away.
 
   const articleFigure = (
     <div className="article-figure">
@@ -446,7 +439,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const articlePart1 = (
     <div className={articleActive("part1")}>
       <div className="article-inner">
-        {articleHead}
         {para1(true)}
         {para2(true)}
         <p className="article-p dim">
@@ -463,7 +455,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const articlePart2 = (
     <div className={articleActive("part2")}>
       <div className="article-inner">
-        {articleHead}
         {para1(false, true)}
         {para2(true)}
         {para3(true)}
@@ -476,7 +467,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const articlePart3 = (
     <div className={articleActive("part3")}>
       <div className="article-inner">
-        {articleHead}
         {para1(true)}
         {para2(true)}
         {para3(true)}
@@ -490,7 +480,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
   const fullArticle = (
     <div className="article">
       <div className="article-inner">
-        {articleHead}
         {para1(false)}
         {para2(false)}
         {para3(false)}
@@ -511,7 +500,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
             {/* Header */}
             <div className="app-header">
               <h1>
-                <BookOpenCheck className="size-6" /> Cycle 3 — Reading 3: Red Tides in Hong Kong
+                <BookOpenCheck className="size-6" /> Cycle 3 — Reading 3: A Newspaper Article
               </h1>
             </div>
 
@@ -783,7 +772,7 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
                   <div className="card celebration-card">
                     <div className="trophy">🏆</div>
                     <h2>Reading 3 Completed!</h2>
-                    <p>You have just completed Cycle 3 — Reading 3: Red Tides in Hong Kong.</p>
+                    <p>You have just completed Cycle 3 — Reading 3: A Newspaper Article.</p>
                     <div className="final-score">
                       {score} / {TOTAL_QUESTIONS}
                     </div>

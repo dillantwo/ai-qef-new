@@ -46,7 +46,7 @@ const TABS: { id: Section; label: string; icon: typeof Eye }[] = [
 const articleStyles = `
 .rc-learning .article { background: var(--bg-article); border: 2px solid var(--border-light); border-radius: var(--radius-sm); padding: 16px 18px; transition: border-color 0.4s ease, box-shadow 0.4s ease; }
 .rc-learning .article.clue-active { border-color: var(--accent-orange) !important; box-shadow: 0 0 20px rgba(255,140,66,0.2); }
-.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); text-decoration: underline; margin-bottom: 12px; }
+.rc-learning .article-title { text-align: center; font-weight: 800; font-size: 20px; color: var(--text-primary); margin-bottom: 12px; }
 .rc-learning .article p { font-size: 13.5px; line-height: 1.95; color: var(--text-secondary); margin: 0 0 12px; }
 .rc-learning .article p:last-child { margin-bottom: 0; }
 .rc-learning .article p.focus-para { color: var(--text-primary); }

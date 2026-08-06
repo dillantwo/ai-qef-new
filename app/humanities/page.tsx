@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Droplets, Swords, ArrowRight } from "lucide-react";
+import { Droplets, Swords, FolderDown, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 
 const topics: {
@@ -31,6 +31,15 @@ const topics: {
     accent: "#ed52cb",
     available: true,
   },
+  {
+    id: "learning-materials",
+    label: "學習資源",
+    labelEn: "Learning Materials",
+    description: "下載人文科的補充教材、工作紙與參考資源。",
+    icon: FolderDown,
+    accent: "#7a3dff",
+    available: true,
+  },
 ];
 
 export default function HumanitiesPage() {
@@ -44,6 +53,10 @@ export default function HumanitiesPage() {
     }
     if (topicId === "anti-japanese-war") {
       router.push("/humanities/anti-japanese-war");
+      return;
+    }
+    if (topicId === "learning-materials") {
+      router.push("/humanities/materials");
       return;
     }
   }

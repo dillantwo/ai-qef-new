@@ -59,7 +59,7 @@ export const questions: Question[] = [
         <br />
         The text says <em>&quot;In April 2026, a red tide appeared at Stanley Bay.&quot;</em> People
         were told not to swim, so A is wrong. Only one red tide was at Stanley Bay — the other two
-        were in Sai Kung (C). <em>&quot;Luckily, no fish died&quot;</em> makes D wrong.
+        were in Sai Kung and in May (C). <em>&quot;Luckily, no fish died&quot;</em> makes D wrong.
       </>
     ),
   },
@@ -273,8 +273,7 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> Think about the writer&apos;s feeling. The writer talks about{" "}
-        <em>danger</em>, <em>safety</em>, and how{" "}
-        <em>&quot;we should keep the sea clean and try to reduce water pollution.&quot;</em>
+        <em>danger</em>, <em>safety and protecting the environment.</em>
       </>
     ),
     strategy: (

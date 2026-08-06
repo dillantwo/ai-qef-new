@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PenTool, BookOpen, MessageSquare, ScrollText, ArrowRight } from "lucide-react";
+import { PenTool, BookOpen, MessageSquare, ScrollText, FolderDown, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 
 const topics: {
@@ -52,6 +52,15 @@ const topics: {
     accent: "#ff6b00",
     available: true,
   },
+  {
+    id: "learning-materials",
+    label: "學習資源",
+    labelEn: "Learning Materials",
+    description: "下載中國語文科的補充教材、工作紙與參考資源。",
+    icon: FolderDown,
+    accent: "#7a3dff",
+    available: true,
+  },
 ];
 
 export default function ChinesePage() {
@@ -73,6 +82,10 @@ export default function ChinesePage() {
     }
     if (topicId === "wenyan") {
       router.push("/chinese/wenyan");
+      return;
+    }
+    if (topicId === "learning-materials") {
+      router.push("/chinese/materials");
       return;
     }
   }
