@@ -47,9 +47,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Scan for the keywords and read the first sentence. A red tide{" "}
-        <em>appeared</em> at Stanley Bay — that is the clue. People were told <em>not</em> to swim
-        (so A is wrong), the three red tides were in different places (C), and{" "}
-        <em>&quot;no fish died&quot;</em> (D).
+        <em>appeared</em> at Stanley Bay — that is the clue. People were told <em>not</em> to swim, the three red tides were in different places.
       </>
     ),
     explain: (
@@ -87,8 +85,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Scan for <em>&quot;government&quot;</em> and read the sentences after
-        it. People were told <em>not</em> to swim, so A is wrong. Closing all beaches (C) and not
-        eating fish (D) are not in the text — they are distractors.
+        it. People were told <em>not</em> to swim. Closing all beaches and not
+        eating fish are not in the text.
       </>
     ),
     explain: (
@@ -127,8 +125,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         The text says the sea <em>&quot;may be unsafe&quot;</em>. Re-read the
-        nearby sentences to find <em>why</em>: some algal blooms can harm people. Fish attacks (B)
-        are never mentioned; C and D do not answer the question.
+        nearby sentences to find <em>why</em>: some algal blooms can harm people. Fish attacks 
+        are never mentioned.
       </>
     ),
     explain: (
@@ -164,8 +162,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Skim for the main idea, not one small detail. Blooms around the
-        world (A) is only one line; the paragraph never describes what algae look like (B); it says
-        to stay <em>out</em> of the sea, not how to swim safely (D). The big idea is the danger.
+        world is only one line; the paragraph never describes what algae look like; it says
+        to stay <em>out</em> of the sea, not how to swim safely.
       </>
     ),
     explain: (
@@ -204,7 +202,7 @@ export const questions: Question[] = [
       <>
         Look for the exact words <em>&quot;algal bloom&quot;</em>. The sentence
         before it explains it is the <em>sudden growth</em> of algae. Be careful: <em>algae</em>{" "}
-        (D) are the living things, not the bloom. C is a distractor from paragraph 3.
+        are the living things, not the bloom.
       </>
     ),
     explain: (
@@ -242,9 +240,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Use the words around <em>&quot;nutrients&quot;</em> to guess its
-        meaning. They <em>help red tides form</em> (help algae grow). B is never mentioned;{" "}
-        <em>&quot;only on beaches&quot;</em> (C) does not match; colours (D) cannot help algae grow.
+        Activate your background knowledge of the topic. Use the words around <em>&quot;nutrients&quot;</em> to guess its
+        meaning. They <em>help red tides form</em> (help algae grow). Colours cannot help algae grow.
       </>
     ),
     explain: (
@@ -279,9 +276,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Interpret the writer&apos;s attitude: is it positive, neutral or
-        negative? Warnings about danger and a call to protect the sea show the writer is{" "}
-        <em>worried</em>. There is no evidence of excitement (A) or boredom (C); red tides are a
-        known problem, not a surprise (D).
+        negative? There is no evidence of excitement or boredom; red tides are a
+        known problem, not a surprise.
       </>
     ),
     explain: (
@@ -317,8 +313,7 @@ export const questions: Question[] = [
     strategy: (
       <>
         Skim the whole text for the main idea. The best title must cover
-        everything, not just one part. A is too narrow (only the colour), C is too narrow (only
-        algae growth), and D is only one part (the warnings).
+        everything, not just one part.
       </>
     ),
     explain: (

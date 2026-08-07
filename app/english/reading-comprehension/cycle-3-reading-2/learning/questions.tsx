@@ -46,8 +46,8 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        All four items are in the list, so
-        find the one that is only <em>helpful</em>, not needed. The note{" "}
+        Understand the different between must-have and extra things. All four items are in the list, so
+        find the one that is only <em>helpful</em>, not a must. The note{" "}
         <em>&quot;helpful if you have one&quot;</em> means it is okay without it.
       </>
     ),
@@ -82,9 +82,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        The advice sits under{" "}
-        <em>Safety</em>, so it is about keeping safe. Children can use a spoon too, and washing the
-        tray is not a reason to ask for help — those answers have no evidence.
+        Connect your knowledges with the clue and make a reasonable guess. The advice sits under{" "}
+        <em>Safety</em>. Children can use a spoon too, and washing the
+        tray is not the main reason to ask for help — those answers have no evidence.
       </>
     ),
     explain: (
@@ -162,9 +162,9 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        Link Step 6 with <em>How It Works</em>. Bubbles (B) and
-        the balloon puffing up (C) are stated. The liquid turning less clear (A) matches the milky
-        colour in the picture. Nothing says the bottle shrinks.
+        Link Step 6 with <em>How It Works</em>. Bubbles and
+        the balloon puffing up are stated. Look for evidence to support your understanding. The liquid turning less clear matches the milky
+        colour in the picture. 
       </>
     ),
     explain: (
@@ -200,8 +200,8 @@ export const questions: Question[] = [
     strategy: (
       <>
         Connect the <em>Tip</em> with <em>How It Works</em>.
-        More baking soda and more vinegar will make more gas, and gas puffs up the balloon. Pink liquid (A) is never
-        mentioned, and B and C go against the text.
+        More baking soda and more vinegar will make more gas, and gas puffs up the balloon. Pink liquid is never
+        mentioned.
       </>
     ),
     explain: (
@@ -236,9 +236,7 @@ export const questions: Question[] = [
     ),
     strategy: (
       <>
-        This is a science experiment, not a story
-        (A), not cooking food (B), and not sport (D). A science activity fits the{" "}
-        <em>Little Scientist</em> section.
+        Understand the purpose of the text. This is a science experiment, not a story, not about cooking food, and not sports.
       </>
     ),
     explain: (
