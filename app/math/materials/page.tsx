@@ -4,7 +4,7 @@ export default function MathMaterialsPage() {
   return (
     <MaterialsBrowser
       subject="math"
-      backHref="/math/dashboard"
+      backHref="/math"
       backLabel="數學科"
       eyebrow="學習資源"
       heading="學習資源下載"

@@ -48,7 +48,6 @@ const articleStyles = `
 .rc-learning .article-inner { padding: 18px 20px 20px; }
 .rc-learning .article-p { font-size: 14px; line-height: 1.9; color: var(--text-secondary); margin: 0 0 14px; text-align: justify; }
 .rc-learning .article-p:last-child { margin-bottom: 0; }
-.rc-learning .article-p .para-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent-blue); background: rgba(20,110,245,0.08); border-radius: 10px; padding: 1px 8px; margin-right: 6px; vertical-align: middle; }
 .rc-learning .article-p.dim { opacity: 0.4; }
 .rc-learning .article-figure { margin: 16px 0 0; text-align: center; }
 .rc-learning .article-figure img { max-width: 100%; height: auto; border-radius: var(--radius-sm); display: inline-block; }
@@ -345,7 +344,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
 
   const para1 = (withClues: boolean, dim = false) => (
     <p className={`article-p${dim ? " dim" : ""}`}>
-      <span className="para-tag">Para 1</span>
       {withClues ? (
         <span className={clueClass("q1")} ref={setClueRef("q1")}>
           In April 2026, a red tide appeared at Stanley Bay.
@@ -373,7 +371,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
       }${withClues && activeClues.badge === "q4" ? " clue-badge" : ""}`}
       ref={withClues ? setClueRef("q4") : undefined}
     >
-      <span className="para-tag">Para 2</span>
       Red tides happen in many places around the world.{" "}
       {withClues ? (
         <span className={clueClass("q5")} ref={setClueRef("q5")}>
@@ -399,7 +396,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
 
   const para3 = (withClues: boolean, dim = false) => (
     <p className={`article-p${dim ? " dim" : ""}`}>
-      <span className="para-tag">Para 3</span>
       Why do red tides happen?{" "}
       {withClues ? (
         <span className={clueClass("q6")} ref={setClueRef("q6")}>
@@ -442,7 +438,6 @@ export default function EnglishReadingComprehensionCycle3Reading3LearningPage() 
         {para1(true)}
         {para2(true)}
         <p className="article-p dim">
-          <span className="para-tag">Para 3</span>
           Why do red tides happen? Warm water, a lot of sunlight, and too many nutrients in the sea
           can help red tides form...
         </p>

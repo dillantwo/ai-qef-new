@@ -58,10 +58,10 @@ const START_BY_TASK: Record<number, { x: number; y: number; facing: Direction }>
   // Task 3 starts inside the church box (West Street, west side, middle-north)
   // facing the street; the student crosses to North Street to reach the bank.
   3: { x: 15, y: 50, facing: "right" },
-  // Task 4 starts inside the post office box (West Street, west side, south end)
-  // facing the street; the student walks up to North Street then over to the
-  // clinic at the end of East Street.
-  4: { x: 15, y: 86, facing: "right" },
+  // Task 4 starts inside the fire station box (North Street, north side, east
+  // end) facing the street; the student walks west along North Street, crosses
+  // over, comes back east and goes down East Street to the clinic.
+  4: { x: 87, y: 13, facing: "down" },
 };
 
 function startFor(task: number | null) {

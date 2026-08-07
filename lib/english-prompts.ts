@@ -175,7 +175,7 @@ Opening sequence:
 2. Use the fixed [A] and [B] given in the "Fixed Locations for This Task" override section below (this is a cross-street route). Do NOT pick your own pair. Keep this [A] and [B] for the rest of this task.
 3. Ask: "Great! Let us start Task 4. Look at the map. How can I go from the [A] to the [B]? Write a complete paragraph with linking words."
 
-Route for this task: the map shows a MARKED route from the post office to the clinic (up West Street, cross West Street at the zebra crossing, along North Street, then cross East Street at the zebra crossing). Do NOT use the shortest path — verify against the "Verified Correct Route" section below, including both zebra crossings and every turn.
+Route for this task: the map shows a MARKED route from the fire station to the clinic (west along North Street, cross North Street at the zebra crossing, back east along North Street, then cross East Street at the zebra crossing and walk south to the end of East Street). Do NOT use the shortest path — verify against the "Verified Correct Route" section below, including both zebra crossings and every turn. Note in particular that the FIRST step out of the fire station is "turn right": if the student writes "turn left" there, you MUST correct it.
 
 Focus for this task (ADDED on top of the baseline requirements):
 - Complete sentences with punctuation, plus linking words (First, Then, After that, Finally)
@@ -247,7 +247,7 @@ export const LOCATION_FIXED_PAIRS: Record<number, LocationPair> = {
   1: { from: "book shop", to: "train station" },
   2: { from: "post office", to: "book shop" },
   3: { from: "church", to: "bank" },
-  4: { from: "post office", to: "clinic" },
+  4: { from: "fire station", to: "clinic" },
 };
 
 // Pre-verified model routes for each fixed pair, traced against "The Map" section
@@ -261,12 +261,12 @@ export const LOCATION_FIXED_ROUTES: Record<string, string> = {
   // station (east side, south end). Walk south; the train station is the next
   // building down on the same side, so there is nothing to walk past.
   "book shop→train station":
-    "Go out of the book shop. Turn left. Walk along West Street. The train station is on your left.",
+    "The train station is just next to the book shop. Exit the book shop. Turn left. Walk a few steps. The train station is on your left.",
   // Task 2 — post office → book shop. This follows the specific route DRAWN on
   // the Task 2 map (up West Street, across at the zebra crossing), NOT the
   // shortest same-street path. This exact answer is the ground truth.
   "post office→book shop":
-    "Exit the post office and turn left. Walk straight ahead along West Street. Walk past the church. Turn right. Walk across the street at the zebra crossing. Turn right again. Walk past the hospital. The book shop is on your left.",
+    "Exit the post office. Turn left. Walk straight ahead along West Street. Walk past the church. Turn right. Walk across the street at the zebra crossing. Turn right again. Walk along West Street. Walk past the hospital. The book shop is on your left.",
   // Spare same-street route (North Street), sports centre (west) → fire station
   // (east). Not used by the current fixed pairs.
   "sports centre→fire station":
@@ -276,14 +276,15 @@ export const LOCATION_FIXED_ROUTES: Record<string, string> = {
   // West Street at the zebra crossing, then cross North Street at the zebra
   // crossing), NOT the shortest path. This exact answer is the ground truth.
   "church→bank":
-    "First, exit the church. Then turn left and walk a few steps. After that, walk across West Street at the zebra crossing. Then turn left and walk a few steps. Next, turn right into North Street. After that, walk across North Street at the zebra crossing. Next, turn right. Then walk along North Street. Walk past the sports centre. Finally, the bank is on your left.",
-  // Task 4 — cross street, post office (West Street, west side, south end) →
-  // clinic (East Street, south end). This follows the specific route DRAWN on
-  // the Task 4 map (cross West Street at the zebra crossing, along North Street,
-  // then cross East Street at the zebra crossing), NOT the shortest path. This
-  // exact answer is the ground truth.
-  "post office→clinic":
-    "Here are the directions to go from the post office to the clinic. First, exit the post office. Then walk along West Street. Stop when you pass the entrance of the church. Next, walk across West Street at the zebra crossing. Then walk along North Street. Walk past the hospital. After that, turn right into East Street. Walk across East Street at the zebra crossing. Next, turn right and walk along East Street. Walk past the bakery. Finally, the clinic is on your left. It is at the end of East Street.",
+    "First, exit the church. Then turn left and walk a few steps. After that, walk across West Street at the zebra crossing. Then turn left and walk a few steps. Next, turn right into North Street. After that, turn left. Walk across North Street at the zebra crossing. Next, turn right. Then walk along North Street. Walk past the sports centre. Finally, the bank is on your left.",
+  // Task 4 — cross street, fire station (North Street, north side, east end) →
+  // clinic (East Street, east side, south end). This follows the specific route
+  // DRAWN on the Task 4 map (walk WEST along North Street, cross North Street at
+  // the zebra crossing, walk back EAST along North Street, then cross East Street
+  // at the zebra crossing and walk south to the end of East Street), NOT the
+  // shortest path. This exact answer is the ground truth.
+  "fire station→clinic":
+    "Here are the directions to go from the fire station to the clinic. First, exit the fire station. Then turn right and walk along North Street. Next, cross North Street at the zebra crossing. Then turn left. Walk along North Street. Walk past the hospital. After that, turn right into East Street. Walk across East Street at the zebra crossing. Next, turn right and walk along East Street. Walk past the bakery. Finally, the clinic is on your left. It is at the end of East Street.",
 };
 
 /**

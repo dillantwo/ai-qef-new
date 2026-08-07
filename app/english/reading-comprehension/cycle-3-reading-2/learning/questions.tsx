@@ -84,7 +84,7 @@ export const questions: Question[] = [
       <>
         Connect your knowledges with the clue and make a reasonable guess. The advice sits under{" "}
         <em>Safety</em>. Children can use a spoon too, and washing the
-        tray is not the main reason to ask for help — those answers have no evidence.
+        tray is not the main reason to ask for help — those answers have no evidence from the text.
       </>
     ),
     explain: (

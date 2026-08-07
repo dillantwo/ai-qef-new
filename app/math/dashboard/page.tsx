@@ -21,7 +21,6 @@ import {
   Save,
   X,
   MousePointerClick,
-  FolderDown,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -1495,18 +1494,11 @@ function MathDashboardContent() {
           <div className="flex items-center gap-1">
             <SidebarTrigger />
             <Link
-              href="/"
+              href="/math"
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="size-4" />
-              選科目
-            </Link>
-            <Link
-              href="/math/materials"
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <FolderDown className="size-4" />
-              學習資源
+              數學科
             </Link>
           </div>
           {!chatVisible && !hideChatForTool && (

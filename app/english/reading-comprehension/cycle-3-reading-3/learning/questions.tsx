@@ -306,7 +306,7 @@ export const questions: Question[] = [
     hint: (
       <>
         <strong>💡 Hint:</strong> A good title covers the <strong>whole</strong> article. This
-        article is about red tides in Hong Kong — where they happened, what they are, why they
+        article is about red tides in — where they happened, what they are, why they
         happen, and what we can do.
       </>
     ),
